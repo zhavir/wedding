@@ -1,0 +1,10 @@
+{% extends "upstream/sqladmin/base.html" %}
+{% block head_css %}{{ super() }}
+<style>
+@media (max-width: 767px) {
+  .d-flex.min-w-0 { flex-direction: column; }
+  .filter-sidebar-col { width: 100%; max-width: 100%; flex-basis: auto; position: static; margin-top: 1rem; }
+  .card .dropdown-menu { z-index: 1050; }
+}
+</style>
+{% endblock %}

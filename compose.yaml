@@ -1,0 +1,130 @@
+name: wedding
+x-api-env: &api-env
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  AWS_DEFAULT_REGION: eu-central-1
+  AWS_REGION: eu-central-1
+  AWS_ENDPOINT_URL: http://floci:4566
+  S3_PUBLIC_ENDPOINT: http://localhost:4566
+  EMAIL_FROM: ${EMAIL_FROM:-wedding@example.com}
+  RSVP_NOTIFICATION_EMAIL: ${RSVP_NOTIFICATION_EMAIL:-}
+  BUCKET_NAME: wedding-photos
+  INVITE_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+  COOKIE_SECURE: "false"
+  SITE_URL: http://localhost:5173
+  ALLOWED_ORIGINS: http://web:5173
+  DATABASE_URL: postgresql+asyncpg://wedding:wedding@db:5432/wedding
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: wedding
+      POSTGRES_PASSWORD: wedding
+      POSTGRES_DB: wedding
+    volumes: ["postgres-data:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wedding -d wedding"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  floci:
+    image: floci/floci:2.3.0
+    ports: ["127.0.0.1:4566:4566"]
+    environment:
+      FLOCI_STORAGE_MODE: persistent
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+    volumes: ["floci-data:/app/data"]
+  init:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: base
+    environment: *api-env
+    command: ["python", "scripts/init_aws.py"]
+    depends_on:
+      floci:
+        condition: service_started
+      db:
+        condition: service_healthy
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: base
+    environment: *api-env
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    ports: ["127.0.0.1:5173:5173"]
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5173').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  integration:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: base
+    environment:
+      <<: *api-env
+      API_URL: http://api:8000
+    volumes: ["./tests:/tests:ro"]
+    command: ["python", "/tests/integration.py"]
+    depends_on:
+      api:
+        condition: service_healthy
+  unit:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: test
+    environment: *api-env
+  admin-test-setup:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: base
+    environment: *api-env
+    command: ["python", "scripts/seed_admin_test.py"]
+    volumes: ["admin-test-credentials:/credentials"]
+    depends_on:
+      web:
+        condition: service_healthy
+  browser:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: tests/browser/Dockerfile
+    environment:
+      WEB_URL: http://web:5173
+      DOCKER_BROWSER: "1"
+      ADMIN_TEST_CREDENTIALS: /credentials/admin.json
+    volumes: ["admin-test-credentials:/credentials:ro"]
+    depends_on:
+      admin-test-setup:
+        condition: service_completed_successfully
+      web:
+        condition: service_healthy
+volumes:
+  admin-test-credentials:
+  postgres-data:
+  floci-data:

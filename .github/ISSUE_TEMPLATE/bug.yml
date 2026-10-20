@@ -1,0 +1,22 @@
+name: Bug report
+description: Report a reproducible issue without private guest data.
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the command and redacted error. Never include invitation codes or guest details.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behaviour
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit, operating system and Docker version
+
+labels: [bug]

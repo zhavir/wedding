@@ -1,0 +1,83 @@
+name: Release to AWS
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Create DNS first; deploy the website after nameserver delegation
+        type: choice
+        options: [deploy, setup-dns]
+        default: deploy
+      approval:
+        description: Type deploy to explicitly approve this release
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+jobs:
+  authorize:
+    if: github.actor == github.repository_owner && github.ref == 'refs/heads/main' && inputs.approval == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Owner-authorized release from main.'
+  verify:
+    needs: authorize
+    uses: ./.github/workflows/pull-request-checks.yml
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      STAGE: ${{ inputs.operation == 'setup-dns' && 'production-dns' || 'production' }}
+      SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+      EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+      SES_IDENTITY_ARN: ${{ vars.SES_IDENTITY_ARN }}
+      RSVP_NOTIFICATION_EMAIL: ${{ vars.RSVP_NOTIFICATION_EMAIL }}
+      SST_TELEMETRY_DISABLED: '1'
+      BUILDX_NO_DEFAULT_ATTESTATIONS: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: Validate release configuration without contacting AWS
+        run: node scripts/validate_release_config.mjs
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - run: npm ci && npm --prefix frontend ci
+      - name: Deploy infrastructure and application
+        run: npx sst deploy --stage "$STAGE"
+      - name: Publish deployment outputs
+        run: |
+          node --input-type=module <<'JS' >> "$GITHUB_STEP_SUMMARY"
+          import { readFileSync } from 'node:fs';
+          const output = JSON.parse(readFileSync('.sst/outputs.json', 'utf8'));
+          console.log('```json\n' + JSON.stringify(output, null, 2) + '\n```');
+          JS
+      - name: Migrate database and grant runtime role
+        if: inputs.operation != 'setup-dns'
+        run: |
+          docker build --target base -f backend/Dockerfile -t wedding-operator .
+          DSQL_HOST=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).databaseHost)")
+          RUNTIME_ROLE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).runtimeRoleArn)")
+          export DSQL_HOST
+          docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION=eu-central-1 -e DSQL_HOST -e DB_USER=admin -e INVITE_ENCRYPTION_KEY=unused-for-migration wedding-operator python -m app.manage migrate --runtime-role "$RUNTIME_ROLE"
+      - name: Verify deployed routing
+        if: inputs.operation != 'setup-dns'
+        run: |
+          WEBSITE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).website)")
+          curl --fail --retry 5 --retry-all-errors "$WEBSITE/api/health"
+          curl --fail --retry 5 --retry-all-errors "$WEBSITE/api/admin/login" >/dev/null

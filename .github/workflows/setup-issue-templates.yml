@@ -1,0 +1,36 @@
+name: Setup issue templates
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/ISSUE_TEMPLATE/**
+      - .github/issue-labels.json
+      - .github/workflows/setup-issue-templates.yml
+      - scripts/sync_issue_labels.sh
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: setup-issue-templates
+  cancel-in-progress: true
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: '3.15'
+      - run: uv sync --frozen --all-packages --all-groups
+      - run: uv run --frozen --package wedding-api prek run check-yaml --files .github/ISSUE_TEMPLATE/bug.yml .github/ISSUE_TEMPLATE/config.yml
+      - run: python -m json.tool .github/issue-labels.json > /dev/null
+      - name: Synchronize issue labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash scripts/sync_issue_labels.sh

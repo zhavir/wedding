@@ -1,0 +1,19 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="card"><div class="card-body">
+{% if results is not none %}
+<h1>Sending results</h1><ul>{% for result in results %}<li>{{ result.id }}: {{ result.status }}{% if result.error %} — {{ result.error }}{% endif %}</li>{% endfor %}</ul>
+<p>Sent, sending and uncertain deliveries are never automatically resent.</p>
+{% else %}
+<h1>Review invitation emails</h1>
+<p>Creating an entry does not send email. Confirm below to send these invitations now.</p>
+<ul>{% for invite in invites %}<li>{{ invite.name }} — {{ invite.email }} ({{ invite.email_status }}){% if not invite.active %} · inactive{% endif %}</li>{% endfor %}</ul>
+<p>Only active draft or failed invitations with an email address will be sent. Others will be skipped.</p>
+<form method="post" action="{{ request.url_for('admin:view-invitation-send_confirm') }}">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<button class="btn btn-primary" type="submit">Confirm and send emails</button>
+</form>
+{% endif %}
+<a class="btn btn-outline-secondary mt-3" href="{{ request.url_for('admin:list', identity='invitation') }}">Back to invitations</a>
+</div></div>
+{% endblock %}

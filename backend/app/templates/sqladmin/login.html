@@ -1,0 +1,16 @@
+{% extends "sqladmin/base.html" %}
+{% block body %}
+<div class="d-flex align-items-center justify-content-center min-vh-100 p-3">
+  <form class="col-12 col-md-6 col-lg-4 card" action="{{ url_for('admin:login') }}" method="post">
+    <div class="card-body">
+      <h1 class="h2 mb-4">{{ admin.title }}</h1>
+      <p>Sign in with your administrator account.</p>
+      {% if error %}<p role="alert" class="alert alert-danger">{{ error }}</p>{% endif %}
+      <div class="mb-3"><label class="form-label" for="admin-username">Username</label><input class="form-control" id="admin-username" name="username" type="text" autocomplete="username" required maxlength="100"></div>
+      <div class="mb-4"><label class="form-label" for="admin-password">Password</label><input class="form-control" id="admin-password" name="password" type="password" autocomplete="current-password" required maxlength="1024"></div>
+      <div class="mb-3"><label for="admin-otp" class="form-label">Authenticator code</label><input class="form-control" id="admin-otp" name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"><small>For your first login, leave this blank to set up your authenticator.</small></div>
+<button type="submit" class="btn btn-primary w-100">Login</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 650" role="img" aria-labelledby="title"><title id="title">A little dachshund with a green bow tie — placeholder for Akamaru</title>
+<rect width="800" height="650" rx="90" fill="#eee8da"/><circle cx="402" cy="300" r="225" fill="#f9f5eb"/>
+<path d="M180 215q-45-45-75-5c-28 38 38 71 75 101 36-30 103-63 75-101-29-40-60-12-75 5" fill="#c98873" opacity=".7"/>
+<ellipse cx="410" cy="520" rx="240" ry="20" fill="#d9d0bc"/>
+<path d="M565 366q95-36 84-122" fill="none" stroke="#804a2e" stroke-width="27" stroke-linecap="round"/>
+<rect x="245" y="320" width="345" height="139" rx="66" fill="#995d38"/>
+<path d="M295 413v85q0 22-32 16h-24M527 416v82q0 22 32 16h25" fill="none" stroke="#804a2e" stroke-width="36" stroke-linecap="round"/>
+<ellipse cx="253" cy="308" rx="75" ry="93" fill="#ad744a"/>
+<path d="M234 230c-65-34-78 56-45 131 20 43 59 23 55-15" fill="#6e4029"/>
+<ellipse cx="303" cy="331" rx="58" ry="35" fill="#c99260"/>
+<ellipse cx="349" cy="320" rx="18" ry="14" fill="#342b25"/><circle cx="277" cy="284" r="11" fill="#342b25"/><circle cx="280" cy="280" r="3" fill="white"/>
+<path d="M301 351q16 13 28 0" stroke="#6e4029" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path d="m257 379-42-23v53l42-20 44 22v-55z" fill="#50644e"/><circle cx="257" cy="383" r="12" fill="#334b39"/>
+<path d="m622 163 5 16 17 5-17 5-5 17-5-17-17-5 17-5z" fill="#bc9664"/>
+<text x="400" y="594" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="40" fill="#50644e">Akamaru</text></svg>

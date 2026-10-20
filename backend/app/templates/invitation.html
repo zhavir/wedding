@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="{{ language }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ w.email.subject }}</title>
+<style>@media(max-width:600px){.card{padding:28px 20px!important}h1{font-size:34px!important}.button{display:block!important}}</style></head>
+<body style="margin:0;background:#f7f5ef;color:#354b3d;font-family:Arial,sans-serif">
+<div style="display:none;max-height:0;overflow:hidden">{{ w.names | join(' & ') }} · {{ w.dateLabel }}</div>
+<table role="presentation" style="width:100%;border-collapse:collapse"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" style="width:100%;max-width:600px;border-collapse:collapse;background:#ffffff"><tr><td class="card" style="padding:48px 40px;text-align:center">
+<p style="font-size:14px;letter-spacing:3px">{{ 'SIETE INVITATI' if language == 'it' else 'YOU’RE INVITED' }}</p><h1 style="font:42px Georgia,serif;line-height:1.2">{{ w.names | join(' & ') }}</h1>
+<p style="font:italic 26px Georgia,serif">{{ w.email.heading }}</p><p style="font-size:18px;line-height:1.7">{{ 'Ciao' if language == 'it' else 'Dear' }} {{ guest.name }},</p><p style="font-size:18px;line-height:1.7">{{ w.email.intro }}</p>
+<p style="font-size:18px;line-height:1.8">{{ w.dateLabel }}<br>{{ w.venue }}<br>{{ w.location }}</p>
+<table role="presentation" style="margin:28px auto"><tr><td style="background:#354b3d;padding:16px 24px"><a class="button" href="{{ link }}" style="color:#ffffff;text-decoration:none;display:inline-block;min-height:24px;line-height:24px;font-size:18px">{{ w.email.button }} →</a></td></tr></table>
+<p style="font-size:18px"><a href="{{ link.replace('/#invite=', '/gallery#invite=') }}">{{ 'Apri la galleria fotografica' if language == 'it' else 'Open the photo gallery' }}</a></p>
+{% if short_code %}<p style="font-size:18px;line-height:1.6">{{ 'Oppure inserite questo codice sul sito per rispondere o caricare le foto.' if language == 'it' else 'Or enter this code on the website to RSVP or upload photos.' }}</p><p style="font-size:28px;font-weight:bold;letter-spacing:3px">{{ short_code }}</p>{% endif %}
+<p style="font-size:16px;line-height:1.7">{{ w.email.footer }}</p><p style="font-size:16px;line-height:1.7">{{ 'Domande?' if language == 'it' else 'Questions?' }} <a href="mailto:{{ w.contactEmail }}">{{ w.contactEmail }}</a></p>
+</td></tr></table></td></tr></table></body></html>

@@ -1,0 +1,115 @@
+{
+  "names": [
+    "Andrea",
+    "Sara"
+  ],
+  "date": "2027-05-20T00:00:00+02:00",
+  "dateLabel": "20 May 2027",
+  "location": "Tradate, Varese · Italy",
+  "venue": "Villa Valentina",
+  "address": "Via Donizetti 17, 21049 Tradate (VA), Italy",
+  "mapUrl": "https://www.google.com/maps/dir/?api=1&destination=Villa+Valentina+Via+Donizetti+17+Tradate",
+  "rsvpBy": "a date we’ll share soon",
+  "contactEmail": "hello@example.com",
+  "intro": "Andrea, Sara, and a little dachshund named Akamaru. Our favourite kind of family. Now, one beautiful day to celebrate with the people we love.",
+  "story": "Every love story is made of small moments: a walk together, a shared laugh, and coming home to the same wagging tail. On 20 May 2027, we’ll begin a new chapter at Villa Valentina. Our story will soon find its words here; for now, we’re just happy you’ll be part of it.",
+  "heroImage": "/images/venue-exterior.webp",
+  "heroAlt": "Floral decorations and ceremony chairs at Villa Valentina",
+  "storyImage": "/images/venue-interior.webp",
+  "storyAlt": "The light-filled interior of Villa Valentina",
+  "schedule": [
+    {
+      "time": "01",
+      "title": "The “I do”",
+      "text": "A moment for us, surrounded by the people we love. Ceremony details and timing will follow."
+    },
+    {
+      "time": "02",
+      "title": "A little aperitivo",
+      "text": "A toast to our next chapter, good company, and a little Italian aperitivo at Villa Valentina."
+    },
+    {
+      "time": "03",
+      "title": "Dinner & dancing",
+      "text": "Good food, heartfelt toasts, and a dance floor that’s waiting for you. Bring your favourite moves."
+    }
+  ],
+  "faqs": [
+    {
+      "question": "What should I wear?",
+      "answer": "Garden party elegant. Think summer colours and comfortable shoes for the garden. Bring a light layer for the evening."
+    },
+    {
+      "question": "How do I get there?",
+      "answer": "You’ll find driving directions, train information and a map below. Details of our partner hotel will follow."
+    },
+    {
+      "question": "Can I bring a plus-one or children?",
+      "answer": "Your invitation includes the number of places reserved for your party. If you have any questions, please get in touch."
+    },
+    {
+      "question": "A note on gifts",
+      "answer": "Having you with us is the best gift. Your love, laughter, and company are all we’re wishing for."
+    }
+  ],
+  "email": {
+    "subject": "You’re invited to our wedding",
+    "heading": "It wouldn’t be the same without you.",
+    "intro": "We would love you to join us for our next chapter. Open your invitation to RSVP and share memories.",
+    "button": "Open your invitation",
+    "footer": "This personal link signs you in. Please keep it private."
+  },
+  "scheduleUnconfirmed": true,
+  "travel": {
+    "website": "https://www.villa-valentina.it/",
+    "source": "https://www.villa-valentina.it/contatti.php",
+    "trainUrl": "https://www.trenord.it/linee-e-orari/circolazione/le-nostre-linee/varese-saronno-milano/?code=R22",
+    "mapEmbed": "https://maps.google.com/maps?q=Villa%20Valentina%20Via%20Donizetti%2017%20Tradate&output=embed",
+    "image": "/images/venue-garden.webp",
+    "eyebrow": "A PLACE TO COME TOGETHER",
+    "title": "See you at Villa Valentina.",
+    "intro": "A historic villa in Tradate, with a courtyard, portico and rooms full of character. The perfect setting for the beginning of our next chapter.",
+    "venueLink": "Explore the villa ↗",
+    "carTitle": "By car",
+    "carText": "Set your navigation to Villa Valentina, Via Donizetti 17, Tradate (VA). Coming from Milan, Varese or Como, use the live route below for current traffic and the best approach. We’ll share arrival and parking arrangements closer to the day.",
+    "directions": "Get driving directions ↗",
+    "trainTitle": "By public transport",
+    "trainText": "Trenord’s Milano Cadorna–Saronno–Varese line serves Tradate. Plan your train to Tradate, then arrange a taxi or a lift to the villa in advance. Check connections and the return journey near the wedding date; the May 2027 timetable is not yet confirmed.",
+    "trains": "Plan your train journey ↗",
+    "mapTitle": "Find Villa Valentina",
+    "mapButton": "Show interactive map",
+    "mapNote": "Loading the map connects to Google Maps. You can also use the directions link.",
+    "hotelEyebrow": "STAY A LITTLE LONGER",
+    "hotelTitle": "A room for our favourite people.",
+    "hotelText": "We’re preparing information about a partner hotel for our wedding guests. The hotel name, agreed rate, booking instructions and any transport arrangements will appear here once confirmed.",
+    "hotelStatus": "Partner hotel · details coming soon",
+    "imageAlt": "A horse-drawn carriage in front of Villa Valentina"
+  },
+  "dog": {
+    "name": "Akamaru",
+    "image": "/images/akamaru-placeholder.svg",
+    "instagram": "https://www.instagram.com/akamaru_theminisausage/",
+    "eyebrow": "OUR LITTLE PLUS-ONE",
+    "title": "Small paws. A very big place in our hearts.",
+    "text": "Meet Akamaru, our little dachshund and much-loved member of the family. Expert in cuddles, enthusiastic about walks, and always part of our story.",
+    "imageAlt": "Playful placeholder illustration of a dachshund wearing a bow tie",
+    "placeholder": "A little illustration for now. Akamaru’s own photo is coming soon.",
+    "linkLabel": "Say hello to Akamaru ↗"
+  },
+  "witnessEmail": {
+    "subject": "Will you be our witness?",
+    "heading": "By our side, for our next chapter.",
+    "intro": "We would love you to stand beside us as our wedding witness. Open your personal invitation to confirm your role, attendance and guest details.",
+    "button": "Open your witness invitation",
+    "footer": "This personal link signs you in. Please keep it private."
+  },
+  "confirmationEmail": {
+    "subject": "Thank you — save our wedding date!",
+    "eyebrow": "SAVE THE DATE · THANK YOU",
+    "intro": "thank you for saying yes! We cannot wait to celebrate our wedding with you.",
+    "witnessIntro": "thank you for being our witness. Having you by our side makes this day even more special.",
+    "calendarHelp": "Open the attached .ics file to add 20 May 2027 to your calendar. It is an all-day reminder; the ceremony time will follow.",
+    "calendarDescription": "Andrea and Sara’s wedding. Ceremony time and final details will follow.",
+    "button": "Visit our wedding website"
+  }
+}

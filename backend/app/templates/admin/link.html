@@ -1,0 +1,12 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="card"><div class="card-body">
+<h1>Personal invitation for {{ invite.name }}</h1>
+<p>Copy this private link into a message. No email address is required and no email is sent.</p>
+<label for="personal-link">Invitation link</label><input id="personal-link" class="form-control" readonly value="{{ link }}">
+<p class="mt-3"><a href="{{ link }}" target="_blank" rel="noreferrer">Open invitation</a></p>
+<label for="short-code">Short code</label><input id="short-code" class="form-control" readonly value="{{ code }}">
+<p class="mt-3">The link and code grant access to RSVP and private photos. Deactivate the invitation to revoke access. Lost-code recovery requires an email address saved on the invitation.</p>
+<a href="{{ request.url_for('admin:list', identity='invitation') }}">Back to invitations</a>
+</div></div>
+{% endblock %}

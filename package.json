@@ -1,0 +1,23 @@
+{
+  "name": "our-wedding",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "check": "npm --prefix frontend run check",
+    "format": "npm --prefix frontend run format",
+    "build": "npm --prefix frontend run build",
+    "test:e2e": "playwright test",
+    "deploy": "sst deploy --stage production",
+    "check:infra": "sst install && tsc -p tsconfig.infra.json"
+  },
+  "devDependencies": {
+    "@playwright/test": ">=1.64.1",
+    "sst": ">=4.17.2",
+    "typescript": ">=6.0.3",
+    "@pulumi/docker-build": ">=0.0.22"
+  },
+  "engines": {
+    "node": ">=26.12.0"
+  }
+}

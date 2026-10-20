@@ -1,0 +1,17 @@
+.git
+.aws
+.codex
+.agents
+**/node_modules
+**/.svelte-kit
+**/build
+.venv
+.sst
+**/__pycache__
+**/.env
+
+reports/
+
+**/.env.*
+!**/.env.example
+.serena/
