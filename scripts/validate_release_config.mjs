@@ -2,7 +2,7 @@
 const required = [
   'STAGE', 'AWS_ACCOUNT_ID', 'AWS_DEPLOY_ROLE_ARN',
   'SITE_DOMAIN',
-  ...(process.env.STAGE === 'production-dns' ? [] : ['EMAIL_FROM']),
+  ...(process.env.STAGE === 'production-dns' ? [] : ['EMAIL_FROM', 'WEDDING_GROOM_NAME', 'WEDDING_GROOM_EMAIL', 'WEDDING_BRIDE_NAME', 'WEDDING_BRIDE_EMAIL']),
 ];
 const errors = [];
 const values = Object.fromEntries(
@@ -32,7 +32,7 @@ if (values.SES_IDENTITY_ARN && (!identity || identity[1] !== values.AWS_ACCOUNT_
   errors.push('SES_IDENTITY_ARN must be a Frankfurt SES identity in AWS_ACCOUNT_ID.');
 }
 // These settings are bare addresses; display names belong in the email template.
-for (const key of ['EMAIL_FROM', 'RSVP_NOTIFICATION_EMAIL']) {
+for (const key of ['EMAIL_FROM', 'RSVP_NOTIFICATION_EMAIL', ...(values.STAGE === 'production-dns' ? [] : ['WEDDING_GROOM_EMAIL', 'WEDDING_BRIDE_EMAIL'])]) {
   if (!values[key] && (key === 'RSVP_NOTIFICATION_EMAIL' || values.STAGE === 'production-dns')) continue;
   if (!/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(values[key])) {
     errors.push(`${key} must be a bare email address.`);

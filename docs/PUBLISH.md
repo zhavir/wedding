@@ -1,6 +1,6 @@
 # First publication with your custom domain
 
-All `example.com` addresses in this guide are placeholders. Set your actual domain as `SITE_DOMAIN` under **GitHub Settings → Environments → production → Environment variables**. The release workflow reads it from `${{ vars.SITE_DOMAIN }}`; do not put the actual domain in source files. GitHub variables are configuration, not secrets: deployment logs, job summaries and public DNS may reveal their values.
+All `example.com` addresses in this guide are placeholders. Store deployment identifiers, domains, sender addresses and host details under **GitHub Settings → Environments → production → Environment secrets**. The workflow uses `${{ secrets.SITE_DOMAIN }}` and the other secrets below. GitHub Variables are not automatically masked. Public DNS and the published website remain discoverable.
 
 Follow this guide in order, starting with your empty GitHub repository and AWS account. Nothing in this guide has already been deployed. Domain names are case-insensitive; `EXAMPLE.COM` is normalized to `example.com`.
 
@@ -20,7 +20,7 @@ The checked-in release workflow currently supports a **personally owned reposito
 2. Open **Settings → Environments → New environment**, create `production`. Under deployment branches/tags, select a rule for branch `main` only. If GitHub requires the branch to exist first, finish this restriction immediately after the first push, before running a release. For a single maintainer, do not enable a required-reviewer policy that prevents you approving your own deployment. Manual dispatch still requires typing `deploy`.
 3. Under **Settings → Secrets and variables → Actions → Secrets**, add repository secret `GH_TOKEN`: a fine-grained PAT for this repository with **Administration: read/write** and Metadata read. This is only for ruleset synchronization; it is not an AWS credential.
 4. Under the adjacent **Variables** tab, add repository variable `RELEASE_APP_ID`: the numeric App ID of your authorized release GitHub App (not its installation ID). If you have no such app, create one under your GitHub developer settings, restrict installation to your account and install it on this repository. No App private key is used by the current workflows; this ID only configures its ruleset bypass. The manual release runs as you using OIDC. See [GitHub setup](GITHUB.md) for repository protection details.
-5. Set these **environment variables** under **Settings → Environments → production → Environment variables**. The role ARN comes from the next section; complete it before release.
+5. Set these **environment secrets** under **Settings → Environments → production → Environment secrets**. The role ARN comes from the next section; complete it before release.
 
 | Name | Value | Required when |
 | --- | --- | --- |
@@ -28,6 +28,10 @@ The checked-in release workflow currently supports a **personally owned reposito
 | `AWS_ACCOUNT_ID` | Your 12-digit AWS account ID | Both operations |
 | `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::YOUR_ACCOUNT_ID:role/wedding-github-deploy` | Both operations |
 | `EMAIL_FROM` | `wedding@example.com` | Website deployment |
+| `WEDDING_GROOM_NAME` | Groom display name | Website deployment |
+| `WEDDING_GROOM_EMAIL` | Groom email address | Website deployment |
+| `WEDDING_BRIDE_NAME` | Bride display name | Website deployment |
+| `WEDDING_BRIDE_EMAIL` | Bride email address | Website deployment |
 | `RSVP_NOTIFICATION_EMAIL` | An existing inbox you read | Optional |
 | `SES_IDENTITY_ARN` | Leave unset to use SST's domain identity | Optional override for an already verified SES identity |
 
@@ -59,7 +63,7 @@ There are **no AWS access-key secrets**, certificate secrets, or application-key
 ```
 
 4. For a straightforward initial deployment in a **dedicated wedding AWS account**, attach AWS managed `AdministratorAccess` to this deployment role. This grants infrastructure automation full account control, including creation of runtime IAM roles; only trusted code on protected `main` should be deployed. This is an infrastructure role, never the application's role. If this account hosts other workloads, use an administrator-reviewed scoped deployment policy instead. It must cover SST bootstrap/state (S3/SSM and associated resources), Route 53, ACM in `us-east-1`, SES identities, CloudFront, API Gateway, Lambda, ECR, DSQL including `dsql:DbConnectAdmin`, CloudWatch Logs and IAM role/policy management with `iam:PassRole`. [SST credential guidance](https://sst.dev/docs/iam-credentials/) explains the bootstrap permissions. Tighten the deployment policy after reviewing actual resource ARNs and CloudTrail activity.
-5. Copy the role ARN to GitHub's `production` variable `AWS_DEPLOY_ROLE_ARN`. Your existing IAM service account is for local administration; GitHub assumes this new role without a stored password or access key.
+5. Copy the role ARN to GitHub's `production` secret `AWS_DEPLOY_ROLE_ARN`. Your existing IAM service account is for local administration; GitHub assumes this new role without a stored password or access key.
 
 ## 4. Push the code
 
@@ -83,7 +87,7 @@ The first push can run repository-setup workflows, which is why `GH_TOKEN` and `
 
 1. Open **Actions → Release to AWS → Run workflow**. Choose branch `main`, operation `setup-dns`, and enter `deploy` in the approval field. Approve any configured environment review.
 2. This runs checks, then deploys the protected SST stage `production-dns`. It creates one public Route 53 zone, the SES domain identity, verification TXT record, three DKIM CNAMEs, and a monitoring-mode DMARC record. It does not create the application or wait for DNS verification.
-3. Open the completed deploy job's summary and copy all four `nameservers`. The `hostedZoneId` and `emailIdentityArn` are also shown. You do not need to copy those into GitHub variables.
+3. Open the AWS Route 53 console with your operator account, select the hosted zone for your domain, and copy all four NS record values. Deployment outputs are deliberately withheld from public job summaries.
 4. At your domain registrar, change the domain's **authoritative nameservers** to those four values. If registered with Route 53, change them under **Registered domains**, not just the hosted zone's NS record. This one manual step proves control of the domain; SST cannot change an unrelated registrar account.
 5. Wait for delegation to propagate, potentially up to 48 hours. Check with `nslookup -type=NS example.com` (Windows/macOS/Linux where installed), or `dig NS example.com`. The public result must match the SST output. Existing DNSSEC/DS records from a previous provider must be removed or correctly migrated to avoid `SERVFAIL`.
 6. In Frankfurt SES, wait for the domain identity and DKIM to show verified/success. SST manages the DNS records; do not delete certificate or SES validation records later. SES uses its default MAIL FROM domain for SPF; aligned DKIM supplies DMARC alignment. This setup sends mail but **does not provide a mailbox** at `wedding@...`.
@@ -127,11 +131,11 @@ Check the AWS account ID first. Paste the generated key into the SST prompt and 
 1. Run **Release to AWS** again with operation `deploy`, branch `main`, approval `deploy`.
 2. SST finds the public zone for `SITE_DOMAIN`, creates the CloudFront certificate with DNS validation, HTTPS routing and DNS aliases. Both the apex domain and `www` receive certificates; `www` redirects to the apex. HTTP requests redirect to HTTPS. Leave DNS validation records in place for automatic certificate renewal.
 3. The workflow builds the frontend and Lambda container, deploys resources, applies database migrations/grants, then checks API health and the admin login page. Allow time for certificate issuance and CloudFront propagation. If the certificate waits for validation, fix delegation/CAA restrictions before rerunning. If a new account's Lambda concurrency quota is too low for the configured reservation, request an increase in Service Quotas before retrying.
-4. The job summary contains `website`, `databaseHost` and other non-secret resource outputs. Open `https://example.com`. Check `http://example.com` and `https://www.example.com` redirect correctly and the browser reports a trusted certificate.
+4. Deployment outputs are deliberately withheld from the public job summary. Open `https://example.com`. Check `http://example.com` and `https://www.example.com` redirect correctly and the browser reports a trusted certificate.
 
 ## 8. Create your administrator and verify guest flows
 
-Use the same local operator profile, installed dependencies and saved encryption key. Get `databaseHost` from the deploy job summary. Set `DSQL_HOST` to it, `DB_USER=admin`, `SITE_URL=https://example.com`, and `INVITE_ENCRYPTION_KEY` to the saved key in your private terminal environment (`export NAME=value` in bash/zsh or `$env:NAME = "value"` in PowerShell). Do not use the development `.env` with dummy credentials against production.
+Use the same local operator profile, installed dependencies and saved encryption key. Get the cluster endpoint from the Aurora DSQL console using your operator account (or your private local `.sst/outputs.json` after a local deployment). Set `DSQL_HOST` to it, `DB_USER=admin`, `SITE_URL=https://example.com`, and `INVITE_ENCRYPTION_KEY` to the saved key in your private terminal environment (`export NAME=value` in bash/zsh or `$env:NAME = "value"` in PowerShell). Do not use the development `.env` with dummy credentials against production.
 
 ```sh
 uv run --frozen --package wedding-api python -m app.manage admin-user --username andrea
@@ -146,3 +150,11 @@ Future updates: push/merge reviewed changes and run operation `deploy` again. DN
 Use the **non-exportable ACM public certificate** that SST provisions for CloudFront: it has [no certificate fee](https://aws.amazon.com/certificate-manager/pricing/) and managed renewal. A self-signed certificate would produce browser trust errors and saves no certificate cost here. Do not create an ACM Private CA or request an exportable certificate for this site.
 
 One [Route 53 public hosted zone costs $0.50/month](https://aws.amazon.com/route53/pricing/) for the first 25 zones; CloudFront alias A/AAAA queries are free. Other DNS queries may cost a small amount. Domain registration/renewal, S3 storage/downloads, CloudFront, Lambda, API Gateway, SES, ECR, logs and Aurora DSQL are separate usage charges. There is no always-on VM, load balancer, NAT gateway or database server in this architecture. Free-tier eligibility and media traffic affect the final bill; this is not a zero-cost guarantee.
+
+## Public repository privacy
+
+For existing setups, copy each deployment variable to a production environment secret with the same name, add the four host secrets above, then remove the old variables. The workflow intentionally has no variable fallback. Do this before the next release. Host secrets seed fresh databases only; update existing invitations through the admin UI.
+
+Deployment, database migration and routing checks suppress both stdout and stderr, including on failure. Generated SST outputs are registered for masking before downstream steps, are never published as summaries/artifacts, and `.sst` is removed at the end of the job. Failures retain a failing status but only show a generic message. Diagnose privately with an authorized local terminal or the AWS console; do not enable Actions step/runner debug logging for production or upload deployment logs as public artifacts.
+
+These changes affect future runs and the current source tree. Previously committed personal data remains in Git history and copies/forks. Existing Actions logs and summaries require separate deletion; coordinate any history rewrite with collaborators. Rotate exposed credentials if any were published. ARNs and account IDs identify resources but do not grant access by themselves. Public DNS, certificates and browser-delivered site content cannot be made confidential by workflow masking. Review `content/`, images, Git author metadata and historical artifacts before publishing if those details should be private.

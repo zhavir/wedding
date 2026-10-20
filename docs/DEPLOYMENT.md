@@ -23,11 +23,11 @@ Follow [the complete first-publication guide](PUBLISH.md) for registration, GitH
 
 Set `SITE_DOMAIN=example.com` in the GitHub `production` environment. The `setup-dns` operation creates the public hosted zone and SES verification/DKIM/DMARC records in the protected `production-dns` SST stage. After delegation, `deploy` creates the application in the separate protected `production` stage. SST creates a free non-exportable ACM certificate, validation records, CloudFront aliases and the `www` redirect. HTTP redirects to HTTPS. Keep both stages and their resource names stable.
 
-`EMAIL_FROM` must belong to this domain unless you explicitly set `SES_IDENTITY_ARN` for a different verified sender. No SES ARN variable is needed for the managed domain identity. The runtime role retains its scoped SES permissions. Mailbox hosting and SES production-access approval are separate from DNS setup.
+`EMAIL_FROM` must belong to this domain unless you explicitly set `SES_IDENTITY_ARN` for a different verified sender. No SES ARN secret is needed for the managed domain identity. The runtime role retains its scoped SES permissions. Mailbox hosting and SES production-access approval are separate from DNS setup.
 
 ## Release
 
-For deployment choose **Release to AWS → Run workflow**, select `main`, operation `deploy`, and type `deploy`. The workflow checks the owner identity, runs the full CI workflow, then enters the protected environment before obtaining AWS credentials. It builds/pushes the Lambda image, deploys SST, runs Alembic and grants the runtime SQL role, then checks the deployed API/admin routes. There can be a short period before first-run migrations complete during which database routes are unavailable.
+For deployment choose **Release to AWS → Run workflow**, select `main`, operation `deploy`, and type `deploy`. The workflow checks the owner identity, runs the full CI workflow by default, then enters the protected environment before obtaining AWS credentials. For release troubleshooting, select **Skip the entire verification job for release troubleshooting** (`skip_verify`). This skips the entire reusable CI workflow for that release. Owner/branch authorization, release configuration validation, environment protection, deployment, database migrations, and deployed-route checks still run. Pull requests and pushes to `main` continue to run all checks. It builds/pushes the Lambda image, deploys SST, runs Alembic and grants the runtime SQL role, then checks the deployed API/admin routes. There can be a short period before first-run migrations complete during which database routes are unavailable.
 
 Approve the production environment review when prompted. Pushing code alone never deploys. For a local infrastructure preview (requires configured AWS credentials and the same domain/email variables):
 
@@ -39,7 +39,7 @@ The repository can be checked without AWS access using `npx sst install && npx t
 
 ## First administrator
 
-After deployment, get `databaseHost` from `.sst/outputs.json`. Use an authorized operator role and the production encryption key/site URL:
+After deployment, get the database endpoint from the Aurora DSQL console or private local `.sst/outputs.json`. Public workflow logs and summaries withhold these outputs. Use an authorized operator role and the production encryption key/site URL:
 
 ```sh
 export AWS_REGION=eu-central-1
@@ -53,10 +53,10 @@ The command prompts for a password of at least 14 characters. Sign in at `https:
 
 ## Offline release configuration check
 
-Before authorizing a release, set `STAGE=production`, `AWS_ACCOUNT_ID`, `AWS_DEPLOY_ROLE_ARN`, `SITE_DOMAIN`, and `EMAIL_FROM` in your local environment (optionally set `SES_IDENTITY_ARN` to override the managed identity, and `RSVP_NOTIFICATION_EMAIL` for response notifications), then run:
+Before authorizing a release, set `STAGE=production`, `AWS_ACCOUNT_ID`, `AWS_DEPLOY_ROLE_ARN`, `SITE_DOMAIN`, `EMAIL_FROM`, `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL` in your local environment (optionally set `SES_IDENTITY_ARN` to override the managed identity, and `RSVP_NOTIFICATION_EMAIL` for response notifications), then run:
 
 ```sh
 node scripts/validate_release_config.mjs
 ```
 
-This check validates required values and account/region consistency without contacting AWS or printing configured values. The release workflow runs it before requesting AWS credentials. It does not verify SES identity status, IAM permissions, SST secrets, or deployed behavior; those require the explicitly approved production deployment. Configure the same values in the GitHub `production` environment (the workflow supplies `STAGE` automatically).
+This check validates required values and account/region consistency without contacting AWS or printing configured values. The release workflow runs it before requesting AWS credentials. It does not verify SES identity status, IAM permissions, SST secrets, or deployed behavior; those require the explicitly approved production deployment. Configure the same values as secrets in the GitHub `production` environment (the workflow supplies `STAGE` automatically).

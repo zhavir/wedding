@@ -3,9 +3,17 @@
 import asyncio
 
 from alembic import context
+from alembic.ddl.postgresql import PostgresqlImpl
 from app.db.models import Base
-from app.db.session import engine
+from app.db.session import database_url, engine
 from sqlalchemy import Connection
+
+
+class AuroraDSQLImpl(PostgresqlImpl):
+    """Register DSQL with Alembic while retaining PostgreSQL schema comparison."""
+
+    __dialect__ = "auroradsql"
+    transactional_ddl = False
 
 
 def migrate(connection: Connection) -> None:
@@ -28,7 +36,7 @@ async def online() -> None:
 
 if context.is_offline_mode():
     context.configure(
-        url="postgresql://",
+        url=database_url(),
         target_metadata=Base.metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},

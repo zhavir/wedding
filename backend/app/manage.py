@@ -8,6 +8,7 @@ import secrets
 import sys
 
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.admin.auth import hash_password
 from app.core.config import settings
@@ -44,15 +45,20 @@ async def migrate(runtime_role: str | None = None) -> None:
             async with engine().begin() as connection:
                 await connection.execute(text("CREATE ROLE wedding_app WITH LOGIN"))
         tables = ", ".join(f'"{name}"' for name in Base.metadata.tables if name != "admin_users")
+        # public already allows schema usage. DSQL treats it as a system
+        # entity and rejects attempts to change its privileges at commit.
         for statement in [
-            "GRANT USAGE ON SCHEMA public TO wedding_app",
             f"GRANT SELECT, INSERT, UPDATE ON TABLE {tables} TO wedding_app",
             "GRANT SELECT, UPDATE (failed_attempts, locked_until, totp_secret, totp_enabled, totp_last_step, version) ON admin_users TO wedding_app",
             "GRANT DELETE ON invitation_messages TO wedding_app",
             f"AWS IAM GRANT wedding_app TO '{runtime_role}'",
         ]:
-            async with engine().begin() as connection:
-                await connection.execute(text(statement))
+            try:
+                async with engine().begin() as connection:
+                    await connection.execute(text(statement))
+            except SQLAlchemyError as exc:
+                exc.add_note(f"Runtime-role permission setup failed for: {statement}")
+                raise
 
 
 async def seed_local() -> None:

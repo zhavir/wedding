@@ -2,6 +2,8 @@ FROM ghcr.io/astral-sh/uv:latest AS uv
 FROM python:3.15.0-slim AS base
 COPY --from=uv /uv /usr/local/bin/uv
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
+# Point psycopg's bundled OpenSSL at Debian's CA bundle for sslrootcert=system.
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 COPY backend/pyproject.toml backend/pyproject.toml

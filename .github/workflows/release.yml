@@ -11,6 +11,10 @@ on:
         description: Type deploy to explicitly approve this release
         type: string
         required: true
+      skip_verify:
+        description: Skip the entire verification job for release troubleshooting
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -24,9 +28,11 @@ jobs:
       - run: echo 'Owner-authorized release from main.'
   verify:
     needs: authorize
+    if: ${{ !inputs.skip_verify }}
     uses: ./.github/workflows/pull-request-checks.yml
   deploy:
-    needs: verify
+    needs: [authorize, verify]
+    if: ${{ !cancelled() && needs.authorize.result == 'success' && (needs.verify.result == 'success' || (inputs.skip_verify && needs.verify.result == 'skipped')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: production
@@ -35,12 +41,16 @@ jobs:
       id-token: write
     env:
       STAGE: ${{ inputs.operation == 'setup-dns' && 'production-dns' || 'production' }}
-      SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
-      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
-      AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-      EMAIL_FROM: ${{ vars.EMAIL_FROM }}
-      SES_IDENTITY_ARN: ${{ vars.SES_IDENTITY_ARN }}
-      RSVP_NOTIFICATION_EMAIL: ${{ vars.RSVP_NOTIFICATION_EMAIL }}
+      SITE_DOMAIN: ${{ secrets.SITE_DOMAIN }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      SES_IDENTITY_ARN: ${{ secrets.SES_IDENTITY_ARN }}
+      RSVP_NOTIFICATION_EMAIL: ${{ secrets.RSVP_NOTIFICATION_EMAIL }}
+      WEDDING_GROOM_NAME: ${{ secrets.WEDDING_GROOM_NAME }}
+      WEDDING_GROOM_EMAIL: ${{ secrets.WEDDING_GROOM_EMAIL }}
+      WEDDING_BRIDE_NAME: ${{ secrets.WEDDING_BRIDE_NAME }}
+      WEDDING_BRIDE_EMAIL: ${{ secrets.WEDDING_BRIDE_EMAIL }}
       SST_TELEMETRY_DISABLED: '1'
       BUILDX_NO_DEFAULT_ATTESTATIONS: '1'
     steps:
@@ -54,30 +64,45 @@ jobs:
         run: node scripts/validate_release_config.mjs
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: eu-central-1
-          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
-      - run: npm ci && npm --prefix frontend ci
-      - name: Deploy infrastructure and application
-        run: npx sst deploy --stage "$STAGE"
-      - name: Publish deployment outputs
+          mask-aws-account-id: true
+          allowed-account-ids: ${{ secrets.AWS_ACCOUNT_ID }}
+      - name: Install dependencies
+        run: npm ci && npm --prefix frontend ci
+      - name: Set up Docker Buildx
+        if: inputs.operation != 'setup-dns'
+        uses: docker/setup-buildx-action@v3
+      - name: Authenticate to AWS Public ECR
         run: |
-          node --input-type=module <<'JS' >> "$GITHUB_STEP_SUMMARY"
-          import { readFileSync } from 'node:fs';
-          const output = JSON.parse(readFileSync('.sst/outputs.json', 'utf8'));
-          console.log('```json\n' + JSON.stringify(output, null, 2) + '\n```');
-          JS
+          aws ecr-public get-login-password --region us-east-1 |
+            docker login --username AWS --password-stdin public.ecr.aws
+      - name: Authenticate to AWS Private ECR
+        if: inputs.operation != 'setup-dns'
+        run: |
+          aws ecr get-login-password --region eu-central-1 |
+            docker login \
+              --username AWS \
+              --password-stdin \
+              "${AWS_ACCOUNT_ID}.dkr.ecr.eu-central-1.amazonaws.com"
+      - name: Deploy infrastructure and application
+        run: node scripts/private-command.mjs npx sst deploy --stage "$STAGE"
+      - name: Mask generated deployment outputs
+        run: node scripts/mask-deployment-outputs.mjs
       - name: Migrate database and grant runtime role
         if: inputs.operation != 'setup-dns'
         run: |
-          docker build --target base -f backend/Dockerfile -t wedding-operator .
+          node scripts/private-command.mjs docker build --target base -f backend/Dockerfile -t wedding-operator .
           DSQL_HOST=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).databaseHost)")
           RUNTIME_ROLE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).runtimeRoleArn)")
           export DSQL_HOST
-          docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION=eu-central-1 -e DSQL_HOST -e DB_USER=admin -e INVITE_ENCRYPTION_KEY=unused-for-migration wedding-operator python -m app.manage migrate --runtime-role "$RUNTIME_ROLE"
+          node scripts/private-command.mjs docker run --rm -e WEDDING_GROOM_NAME -e WEDDING_GROOM_EMAIL -e WEDDING_BRIDE_NAME -e WEDDING_BRIDE_EMAIL -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION=eu-central-1 -e DSQL_HOST -e DB_USER=admin -e INVITE_ENCRYPTION_KEY=unused-for-migration wedding-operator python -m app.manage migrate --runtime-role "$RUNTIME_ROLE"
       - name: Verify deployed routing
         if: inputs.operation != 'setup-dns'
         run: |
           WEBSITE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).website)")
-          curl --fail --retry 5 --retry-all-errors "$WEBSITE/api/health"
-          curl --fail --retry 5 --retry-all-errors "$WEBSITE/api/admin/login" >/dev/null
+          node scripts/private-command.mjs curl --silent --show-error --output /dev/null --fail --retry 5 --retry-all-errors "$WEBSITE/api/health"
+          node scripts/private-command.mjs curl --silent --show-error --output /dev/null --fail --retry 5 --retry-all-errors "$WEBSITE/api/admin/login" >/dev/null
+      - name: Remove private deployment files
+        if: always()
+        run: rm -rf .sst

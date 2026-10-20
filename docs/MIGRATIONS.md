@@ -1,11 +1,30 @@
 # Alembic migrations
 
-Schema revisions live in `backend/app/migrations/versions`:
+Schema revisions live in `backend/app/migrations/versions`. The consolidated
+`0001_initial` baseline includes the application tables, invitation message defaults,
+media metadata, administrator MFA, and wedding host invitations.
 
-1. `0001_initial`: initial application tables.
-2. `0002_messages`: editable invitation message pools, persisted selected wording, and ten English/Italian guest/witness defaults.
-3. `0003_media`: private-by-default publication state and paired Live Photo metadata. Existing uploads are unpublished until reviewed.
-4. `0004_rsvp_mfa_metadata`: removes legacy RSVP JSON storage, retains normalized response tables, adds encrypted admin authenticator enrollment and replay protection, and records upload provenance and media metadata.
+When `DSQL_HOST` is set, both the application and Alembic use
+`aurora-dsql-sqlalchemy` with the AWS psycopg connector. The connector obtains IAM
+tokens for `DB_USER` in `AWS_REGION`; connections verify the server certificate
+and hostname using system CA certificates. No database password is configured.
+Local `DATABASE_URL` connections retain their configured dialect
+(PostgreSQL/asyncpg by default).
+
+The upstream DSQL adapter currently exposes synchronous drivers. The bridge in
+`backend/app/db/dsql.py` combines its compiler and reflection behavior with
+SQLAlchemy's async psycopg adapter and commits DDL through the async connection
+proxy. It also supplies the collation field required by SQLAlchemy 2.1's reflection
+reader, which the adapter's older query omits. Keep the async dialect selection,
+DDL, and reflection tests when upgrading the adapter.
+Alembic registers `auroradsql` as a PostgreSQL-derived implementation with
+nontransactional DDL. Offline SQL generation selects the same configured dialect:
+
+```sh
+DSQL_HOST=your-cluster.dsql.eu-central-1.on.aws DB_USER=admin uv run --frozen --package wedding-api alembic upgrade head --sql
+```
+
+Offline generation does not connect to AWS or obtain IAM credentials.
 
 Local startup runs `python -m app.manage migrate`, then local-only demo seeding. The same operator command is used by the release workflow with the DSQL admin role. Application requests never run migrations.
 
@@ -29,4 +48,6 @@ In **Invitation messages**, administrators can create, edit, deactivate and remo
 
 Revision `0005_additional_guests` adds parent invitation links, structured additional-guest emails, and the per-uploader S3 prefix. Existing flat-layout media remains accessible. Run the normal upgrade before starting the updated API (Docker Compose's init service does this automatically).
 
-`0006_wedding_hosts` seeds the bride and groom as ordinary active invitations without sending emails or embedding access secrets. `0007_large_media` adds multipart upload state and upgrades media size/duration fields to 64-bit integers. Fresh databases and upgrades from the previous local schema are supported.
+The baseline seeds the bride and groom as ordinary active invitations without
+sending emails or embedding access secrets. It also includes multipart upload
+state and 64-bit media size/duration fields.

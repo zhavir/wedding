@@ -6,7 +6,9 @@ export default $config({
       home: "aws",
       removal: input?.stage?.startsWith("production") ? "retain" : "remove",
       protect: input?.stage?.startsWith("production"),
-      providers: { aws: { region: "eu-central-1" } },
+      providers: {
+        aws: { region: "eu-central-1" },
+      },
     };
   },
   async run() {
@@ -22,14 +24,19 @@ export default $config({
     }
     // Separate state prevents a DNS bootstrap rerun from removing the application.
     if ($app.stage === "production-dns") {
-      const zone = new aws.route53.Zone("DomainZone", { name: domain });
-      const identity = new aws.ses.DomainIdentity("EmailIdentity", { domain });
+      const zone = new aws.route53.Zone("DomainZone", {
+        name: domain,
+      });
+      const identity = new aws.ses.DomainIdentity("EmailIdentity", {
+        domain,
+      });
+      // The AWS provider adds Route 53's TXT quotes; pass unquoted values here.
       new aws.route53.Record("EmailVerification", {
         zoneId: zone.zoneId,
         name: `_amazonses.${domain}`,
         type: "TXT",
         ttl: 300,
-        records: [$interpolate`"${identity.verificationToken}"`],
+        records: [identity.verificationToken],
       });
       const dkim = new aws.ses.DomainDkim("EmailDkim", {
         domain: identity.domain,
@@ -48,7 +55,7 @@ export default $config({
         name: `_dmarc.${domain}`,
         type: "TXT",
         ttl: 300,
-        records: ['"v=DMARC1; p=none;"'],
+        records: ["v=DMARC1; p=none"],
       });
       return {
         domain,
@@ -67,6 +74,7 @@ export default $config({
       privateZone: false,
     });
     const docker = await import("@pulumi/docker-build");
+    const path = await import("node:path");
     const emailFrom = process.env.EMAIL_FROM;
     const identityArn =
       process.env.SES_IDENTITY_ARN ||
@@ -85,7 +93,9 @@ export default $config({
     const encryptionKey = new sst.Secret("InviteEncryptionKey");
     const database = new sst.aws.Dsql("Database", {
       transform: {
-        cluster: { deletionProtectionEnabled: $app.stage === "production" },
+        cluster: {
+          deletionProtectionEnabled: $app.stage === "production",
+        },
       },
     });
     const photos = new sst.aws.Bucket("Photos", {
@@ -95,7 +105,9 @@ export default $config({
           args.rules = $output(args.rules).apply((rules) =>
             (rules ?? []).map((rule) => ({
               ...rule,
-              abortIncompleteMultipartUpload: { daysAfterInitiation: 1 },
+              abortIncompleteMultipartUpload: {
+                daysAfterInitiation: 1,
+              },
             })),
           );
         },
@@ -117,19 +129,26 @@ export default $config({
       edge: {
         viewerResponse: {
           injection: `
-        event.response.headers['x-content-type-options'] = { value: 'nosniff' };
-        event.response.headers['x-frame-options'] = { value: 'DENY' };
-        event.response.headers['strict-transport-security'] = { value: 'max-age=31536000' };
-        event.response.headers['referrer-policy'] = { value: event.request.uri.startsWith('/api/admin') ? 'same-origin' : 'no-referrer' };
-      `,
+            event.response.headers['x-content-type-options'] = { value: 'nosniff' };
+            event.response.headers['x-frame-options'] = { value: 'DENY' };
+            event.response.headers['strict-transport-security'] = { value: 'max-age=31536000' };
+            event.response.headers['referrer-policy'] = { value: event.request.uri.startsWith('/api/admin') ? 'same-origin' : 'no-referrer' };
+          `,
         },
       },
     });
     const site = new sst.aws.StaticSite("Wedding", {
       path: "frontend",
-      router: { instance: router },
-      build: { command: "npm run build", output: "build" },
-      environment: { PUBLIC_API_URL: "/api" },
+      router: {
+        instance: router,
+      },
+      build: {
+        command: "npm run build",
+        output: "build",
+      },
+      environment: {
+        PUBLIC_API_URL: "/api",
+      },
     });
     new aws.s3.BucketCorsConfiguration("PhotoCors", {
       bucket: photos.name,
@@ -144,6 +163,8 @@ export default $config({
       ],
     });
     const repository = new aws.ecr.Repository("ApiImage", {
+      // ECR rejects uppercase characters in Pulumi's generated physical name.
+      name: `${$app.name}-${$app.stage}-api`.toLowerCase(),
       forceDelete: $app.stage !== "production",
     });
     new aws.ecr.LifecyclePolicy("ApiImageRetention", {
@@ -157,7 +178,9 @@ export default $config({
               countType: "imageCountMoreThan",
               countNumber: 10,
             },
-            action: { type: "expire" },
+            action: {
+              type: "expire",
+            },
           },
         ],
       }),
@@ -166,14 +189,19 @@ export default $config({
       registryId: repository.registryId,
     });
     const image = new docker.Image("ApiContainer", {
-      context: { location: "." },
-      dockerfile: { location: "backend/Dockerfile" },
+      // The Docker provider runs from .sst/platform, not the project root.
+      context: {
+        location: $cli.paths.root,
+      },
+      dockerfile: {
+        location: path.join($cli.paths.root, "backend", "Dockerfile"),
+      },
       target: "lambda",
       platforms: ["linux/amd64"],
+      // Push the image to ECR using Buildx.
       push: true,
-      exec: true,
+      exec: false,
       buildOnPreview: false,
-      exports: [{ registry: { ociMediaTypes: false } }],
       tags: [
         $interpolate`${repository.repositoryUrl}:${process.env.GITHUB_SHA ?? "local"}`,
       ],
@@ -191,13 +219,17 @@ export default $config({
         Statement: [
           {
             Effect: "Allow",
-            Principal: { Service: "lambda.amazonaws.com" },
+            Principal: {
+              Service: "lambda.amazonaws.com",
+            },
             Action: "sts:AssumeRole",
           },
         ],
       }),
     });
-    const logs = new aws.cloudwatch.LogGroup("ApiLogs", { retentionInDays: 7 });
+    const logs = new aws.cloudwatch.LogGroup("ApiLogs", {
+      retentionInDays: 7,
+    });
     const permissions = new aws.iam.RolePolicy("ApiPermissions", {
       role: role.id,
       policy: $jsonStringify({
@@ -235,7 +267,11 @@ export default $config({
             Effect: "Allow",
             Action: ["ses:SendEmail", "ses:SendRawEmail"],
             Resource: identityArn,
-            Condition: { StringEquals: { "ses:FromAddress": emailFrom } },
+            Condition: {
+              StringEquals: {
+                "ses:FromAddress": emailFrom,
+              },
+            },
           },
         ],
       }),
@@ -244,13 +280,22 @@ export default $config({
       "FastApi",
       {
         packageType: "Image",
-        imageUri: image.ref,
+        // Pulumi may return repository:tag@sha256:digest; Lambda expects
+        // repository@sha256:digest (or repository:tag).
+        imageUri: image.ref.apply((ref) => {
+          const separator = ref.indexOf("@sha256:");
+          if (separator === -1) return ref;
+          const imageName = ref.slice(0, separator).replace(/:[^/:]+$/, "");
+          return `${imageName}${ref.slice(separator)}`;
+        }),
         role: role.arn,
         architectures: ["x86_64"],
         memorySize: 1024,
         timeout: 29,
-        reservedConcurrentExecutions: 5,
-        loggingConfig: { logFormat: "Text", logGroup: logs.name },
+        loggingConfig: {
+          logFormat: "Text",
+          logGroup: logs.name,
+        },
         environment: {
           variables: {
             DSQL_HOST: database.endpoint,
@@ -264,7 +309,9 @@ export default $config({
           },
         },
       },
-      { dependsOn: [permissions] },
+      {
+        dependsOn: [permissions],
+      },
     );
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: false,

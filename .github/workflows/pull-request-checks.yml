@@ -37,7 +37,7 @@ jobs:
       - run: npm ci && npm --prefix frontend ci
       - run: uv run --frozen --package wedding-api prek run --all-files
       - run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12
-      - run: node --test scripts/test_release_config.mjs
+      - run: node --test scripts/test_release_config.mjs scripts/test_release_privacy.mjs
       - run: npx sst install && npx tsc -p tsconfig.infra.json
   tests:
     name: All tests
@@ -57,7 +57,8 @@ jobs:
       - run: docker compose up --build -d --wait web
       - run: docker compose --profile test run --build --rm integration
       - run: docker compose run --rm api python scripts/check_migrations.py
-      - run: docker compose --profile test run --build --rm browser
+      - name: Browser E2E tests
+        run: docker compose --profile test run --build --rm browser
       - run: docker build --target lambda -f backend/Dockerfile -t wedding-lambda:check .
       - name: Clean up local test services
         if: always()

@@ -1,11 +1,8 @@
-import asyncio
-import ssl
 from collections.abc import AsyncIterator
 from functools import lru_cache
-from typing import Protocol, cast
 
-import asyncpg
-import boto3
+from aurora_dsql_psycopg import DSQLAsyncConnection
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -14,47 +11,46 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.core.config import settings
+from app.db import dsql as _dsql  # noqa: F401 -- register the async DSQL dialect
 
 
-class DSQLTokenSigner(Protocol):
-    """Boto3 injects these signing helpers at runtime; service stubs omit them."""
-
-    def generate_db_connect_admin_auth_token(self, *, Hostname: str, Region: str) -> str: ...
-    def generate_db_connect_auth_token(self, *, Hostname: str, Region: str) -> str: ...
+def database_url() -> URL:
+    cfg = settings()
+    if cfg.dsql_host:
+        return URL.create(
+            "auroradsql+psycopg_async",
+            username=cfg.db_user,
+            host=cfg.dsql_host,
+            database="postgres",
+        )
+    return make_url(cfg.database_url)
 
 
 @lru_cache
 def engine() -> AsyncEngine:
     cfg = settings()
     host = cfg.dsql_host
-    if host is not None:
+    if host:
 
         async def connect():
-            client = cast(DSQLTokenSigner, boto3.client("dsql", region_name=cfg.aws_region))
-            signer = (
-                client.generate_db_connect_admin_auth_token
-                if cfg.db_user == "admin"
-                else client.generate_db_connect_auth_token
-            )
-            password = await asyncio.to_thread(signer, Hostname=host, Region=cfg.aws_region)
-            return await asyncpg.connect(
+            return await DSQLAsyncConnection.connect(
                 host=host,
                 user=cfg.db_user,
-                password=password,
-                database="postgres",
-                ssl=ssl.create_default_context(),
-                statement_cache_size=0,
+                dbname="postgres",
+                region=cfg.aws_region,
+                sslmode="verify-full",
+                sslrootcert="system",
             )
 
         return create_async_engine(
-            "postgresql+asyncpg://",
+            database_url(),
             async_creator=connect,
             pool_pre_ping=True,
             pool_size=2,
             max_overflow=0,
             pool_recycle=600,
         )
-    return create_async_engine(cfg.database_url, pool_pre_ping=True)
+    return create_async_engine(database_url(), pool_pre_ping=True)
 
 
 @lru_cache

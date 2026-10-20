@@ -1,28 +1,129 @@
-name: Synchronize repository rulesets
+name: Sync GitHub rulesets
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - .github/rulesets/*.json
-      - .github/workflows/sync-rulesets.yml
-      - scripts/sync_rulesets.sh
+      - ".github/rulesets/*.json"
+      - ".github/workflows/sync-rulesets.yml"
 permissions:
   contents: read
-concurrency:
-  group: sync-rulesets
-  cancel-in-progress: false
 jobs:
-  synchronize:
+  sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_APP_ID: ${{ vars.RELEASE_APP_ID }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Synchronize authorized repository rulesets
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          RELEASE_APP_ID: ${{ vars.RELEASE_APP_ID }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: bash scripts/sync_rulesets.sh
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+      - name: Verify token
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::error::GH_TOKEN is empty or unavailable"
+            exit 1
+          fi
+
+          if [[ ! "${RELEASE_APP_ID:-}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::RELEASE_APP_ID must be the numeric ID of the installed release GitHub App"
+            exit 1
+          fi
+
+          is_admin="$(
+            gh api "repos/${GH_REPO}" \
+              --jq '.permissions.admin'
+          )"
+
+          if [[ "${is_admin}" != "true" ]]; then
+            echo "::error::The account associated with GH_TOKEN is not a repository administrator"
+            exit 1
+          fi
+      - name: Create or update rulesets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for file in .github/rulesets/*.json; do
+            echo "Processing ${file}"
+
+            payload="$(mktemp)"
+
+            jq --argjson release_app_id "${RELEASE_APP_ID}" '
+              walk(
+                if type == "object"
+                  and .actor_type? == "Integration"
+                  and .actor_id? == 0
+                then .actor_id = $release_app_id
+                else .
+                end
+              )
+              | {
+                  name,
+                  target,
+                  enforcement,
+                  bypass_actors,
+                  conditions,
+                  rules
+                }
+            ' "${file}" > "${payload}"
+
+            name="$(jq -r '.name' "${payload}")"
+
+            ruleset_id="$(
+              gh api \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2026-03-10" \
+                "repos/${GH_REPO}/rulesets?includes_parents=false&per_page=100" |
+              jq -r --arg name "${name}" \
+                '.[] | select(.name == $name) | .id' |
+              head -n 1
+            )"
+
+            if [[ -n "${ruleset_id}" ]]; then
+              echo "Updating '${name}'"
+
+              gh api \
+                --method PUT \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2026-03-10" \
+                "repos/${GH_REPO}/rulesets/${ruleset_id}" \
+                --input "${payload}"
+            else
+              echo "Creating '${name}'"
+
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2026-03-10" \
+                "repos/${GH_REPO}/rulesets" \
+                --input "${payload}"
+            fi
+
+            rm -f "${payload}"
+          done
+
+          # This former ruleset made every merge an update-rule bypass and
+          # prevented administrators from pushing directly to main.
+          retired_ruleset="Restrict default branch updates to administrators"
+          retired_ruleset_id="$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2026-03-10" \
+              "repos/${GH_REPO}/rulesets?includes_parents=false&per_page=100" |
+              jq -r --arg name "${retired_ruleset}" \
+                '.[] | select(.name == $name) | .id' |
+              head -n 1
+          )"
+          if [[ -n "${retired_ruleset_id}" ]]; then
+            echo "Deleting retired ruleset '${retired_ruleset}'"
+            gh api \
+              --method DELETE \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2026-03-10" \
+              "repos/${GH_REPO}/rulesets/${retired_ruleset_id}"
+          fi

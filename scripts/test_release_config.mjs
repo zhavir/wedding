@@ -4,6 +4,10 @@ import { test } from 'node:test';
 
 const baseline = {
   STAGE: 'production',
+  WEDDING_GROOM_NAME: 'Example groom',
+  WEDDING_GROOM_EMAIL: 'groom@example.com',
+  WEDDING_BRIDE_NAME: 'Example bride',
+  WEDDING_BRIDE_EMAIL: 'bride@example.com',
   AWS_ACCOUNT_ID: '123456789012',
   AWS_DEPLOY_ROLE_ARN: 'arn:aws:iam::123456789012:role/deploy',
   SITE_DOMAIN: 'EXAMPLE.COM',
@@ -40,4 +44,14 @@ test('rejects cross-account deployment and unintended stages without printing va
   const result = validate({ STAGE: 'sensitive-invalid-value' });
   assert.equal(result.status, 1);
   assert.ok(!`${result.stdout}${result.stderr}`.includes('sensitive-invalid-value'));
+});
+
+test('requires private host seed configuration without echoing it', () => {
+  for (const key of ['WEDDING_GROOM_NAME', 'WEDDING_GROOM_EMAIL', 'WEDDING_BRIDE_NAME', 'WEDDING_BRIDE_EMAIL']) {
+    assert.equal(validate({ [key]: '' }).status, 1);
+    assert.equal(validate({ STAGE: 'production-dns', [key]: '' }).status, 0);
+  }
+  const result = validate({ WEDDING_GROOM_EMAIL: 'private-invalid-address' });
+  assert.equal(result.status, 1);
+  assert.ok(!`${result.stdout}${result.stderr}`.includes('private-invalid-address'));
 });

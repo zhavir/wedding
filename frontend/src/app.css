@@ -1387,7 +1387,13 @@ footer > p:not(.eyebrow) {
   margin-top: 25px;
 }
 .memory-link {
+  max-width: none;
+  background: #e8ede5;
   text-align: center;
+}
+.memory-link > p:not(.eyebrow) {
+  max-width: 38rem;
+  margin-inline: auto;
 }
 .memory-link h2 {
   margin: 20px 0;

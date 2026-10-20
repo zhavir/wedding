@@ -19,6 +19,10 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path}/test.db")
     monkeypatch.setenv("INVITE_ENCRYPTION_KEY", "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=")
     monkeypatch.setenv("COOKIE_SECURE", "false")
+    monkeypatch.setenv("WEDDING_GROOM_NAME", "Example groom")
+    monkeypatch.setenv("WEDDING_GROOM_EMAIL", "groom@example.test")
+    monkeypatch.setenv("WEDDING_BRIDE_NAME", "Example bride")
+    monkeypatch.setenv("WEDDING_BRIDE_EMAIL", "bride@example.test")
     settings.cache_clear()
     engine.cache_clear()
     sessions.cache_clear()
@@ -719,7 +723,7 @@ def test_alembic_migrations_are_idempotent_and_match_models(client):
         async with engine().connect() as connection:
             assert (
                 await connection.scalar(text("SELECT version_num FROM alembic_version"))
-                == "0007_large_media"
+                == "0001_initial"
             )
             assert await connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 10
             differences = await connection.run_sync(
@@ -1134,8 +1138,8 @@ def test_seeded_couple_have_personal_gallery_access_without_admin_privileges(cli
             )
 
     for identity, expected_name, expected_email in [
-        ("wedding-groom", "Andrea Aramini", "andrea.aramini.lavoro@gmail.com"),
-        ("wedding-bride", "Sara Donciglio", "donciglio.sa@gmail.com"),
+        ("wedding-groom", "Example groom", "groom@example.test"),
+        ("wedding-bride", "Example bride", "bride@example.test"),
     ]:
         name, email, code = client.portal.call(credentials, identity)
         assert (name, email) == (expected_name, expected_email)

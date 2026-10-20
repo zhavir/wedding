@@ -12,7 +12,7 @@ For a fresh repository, follow [first publication](PUBLISH.md) in order; it sepa
 4. Set repository variable `RELEASE_APP_ID` to the authorized release GitHub App's positive numeric App ID, not its installation ID. Synchronization replaces Integration actor ID 0 in the checked-in rulesets with this value.
 5. Run **Pull request checks** and verify **Pre-commit** and **All tests** succeed. Then run **Synchronize repository rulesets** and review Settings → Rules → Rulesets. Administrator bypass permits initial setup.
 6. Run **Setup issue templates** to validate forms and create/update labels from `.github/issue-labels.json`. Unrelated labels are retained.
-7. Create the production environment restricted to main. Configure production owner review, accounting for GitHub self-review restrictions for single-maintainer repositories. Follow [AWS deployment](DEPLOYMENT.md) for environment variables and OIDC. Enable secret scanning and push protection where available.
+7. Create the production environment restricted to main. Configure production owner review, accounting for GitHub self-review restrictions for single-maintainer repositories. Follow [AWS deployment](DEPLOYMENT.md) for environment secrets and OIDC. Enable secret scanning and push protection where available.
 
 ## Rules and workflows
 
