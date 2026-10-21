@@ -313,6 +313,87 @@ export default $config({
         dependsOn: [permissions],
       },
     );
+    const warmupGroup = new aws.scheduler.ScheduleGroup("ApiWarmupGroup");
+    const warmupRole = new aws.iam.Role("ApiWarmupRole", {
+      assumeRolePolicy: $jsonStringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: { Service: "scheduler.amazonaws.com" },
+            Action: "sts:AssumeRole",
+            Condition: {
+              StringEquals: {
+                "aws:SourceAccount": aws.getCallerIdentityOutput().accountId,
+              },
+              ArnEquals: { "aws:SourceArn": warmupGroup.arn },
+            },
+          },
+        ],
+      }),
+    });
+    const warmupPermission = new aws.iam.RolePolicy("ApiWarmupPermission", {
+      role: warmupRole.id,
+      policy: $jsonStringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Action: "lambda:InvokeFunction",
+            Resource: fn.arn,
+          },
+        ],
+      }),
+    });
+    new aws.scheduler.Schedule(
+      "ApiWeddingWarmup",
+      {
+        groupName: warmupGroup.name,
+        description:
+          "Warm the admin/gallery API and database during the wedding period",
+        scheduleExpression: "rate(5 minutes)",
+        scheduleExpressionTimezone: "Europe/Rome",
+        // 19 May 23:45 through 4 June 00:00, 2027, in Italy (UTC+02:00).
+        startDate: "2027-05-19T21:45:00Z",
+        endDate: "2027-06-03T22:00:00Z",
+        flexibleTimeWindow: { mode: "OFF" },
+        target: {
+          arn: fn.arn,
+          roleArn: warmupRole.arn,
+          // Lambda Web Adapter requires an HTTP event, not a bare scheduled event.
+          input: JSON.stringify({
+            version: "2.0",
+            routeKey: "GET /api/health",
+            rawPath: "/api/health",
+            rawQueryString: "",
+            headers: { host: domain, "x-forwarded-proto": "https" },
+            requestContext: {
+              apiId: "scheduled-warmup",
+              domainName: domain,
+              domainPrefix: "scheduled-warmup",
+              http: {
+                method: "GET",
+                path: "/api/health",
+                protocol: "HTTP/1.1",
+                sourceIp: "127.0.0.1",
+                userAgent: "wedding-scheduled-warmup",
+              },
+              requestId: "<aws.scheduler.execution-id>",
+              routeKey: "GET /api/health",
+              stage: "$default",
+              time: "<aws.scheduler.scheduled-time>",
+              timeEpoch: 0,
+            },
+            isBase64Encoded: false,
+          }),
+          retryPolicy: {
+            maximumRetryAttempts: 0,
+            maximumEventAgeInSeconds: 60,
+          },
+        },
+      },
+      { dependsOn: [warmupPermission] },
+    );
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: false,
       transform: {

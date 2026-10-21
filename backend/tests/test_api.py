@@ -72,6 +72,48 @@ def aws(monkeypatch):
     return storage, mail
 
 
+def test_health_checks_database_and_reuses_connection(client):
+    from sqlalchemy import event
+
+    queries = []
+    connections = []
+    pool = engine().sync_engine
+
+    def record_query(conn, cursor, statement, parameters, context, executemany):
+        queries.append(statement)
+
+    def record_checkout(connection, record, proxy):
+        connections.append(connection)
+
+    event.listen(pool, "before_cursor_execute", record_query)
+    event.listen(pool, "checkout", record_checkout)
+    try:
+        for _ in range(2):
+            response = client.get("/api/health")
+            assert response.status_code == 200
+            assert response.json() == {"status": "ok"}
+        assert queries == ["SELECT 1", "SELECT 1"]
+        assert len(connections) == 2
+        assert connections[0] is connections[1]
+    finally:
+        event.remove(pool, "before_cursor_execute", record_query)
+        event.remove(pool, "checkout", record_checkout)
+
+
+def test_health_reports_database_failure(client, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    async def unavailable(*args, **kwargs):
+        raise OperationalError("SELECT 1", {}, Exception("private database details"))
+
+    monkeypatch.setattr(AsyncSession, "execute", unavailable)
+    response = client.get("/api/health")
+    assert response.status_code == 503
+    assert response.headers["Retry-After"] == "1"
+    assert "private database details" not in response.text
+
+
 def login(client, code="GUEST-CODE-123"):
     response = client.post("/api/session", json={"code": code})
     assert response.status_code == 200

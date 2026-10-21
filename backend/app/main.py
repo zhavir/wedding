@@ -1,13 +1,17 @@
 from contextlib import asynccontextmanager
+from typing import Annotated
 from urllib.parse import urlsplit
 
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.views import setup_admin
 from app.core.config import settings
+from app.db.session import get_db
 from app.routers import admin, auth, photos, rsvps
 
 
@@ -75,5 +79,6 @@ async def database_error(request: Request, exc: DBAPIError):
 
 
 @app.get("/api/health")
-async def health():
+async def health(db: Annotated[AsyncSession, Depends(get_db)]):
+    await db.execute(text("SELECT 1"))
     return {"status": "ok"}

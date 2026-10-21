@@ -17,6 +17,33 @@ The Lambda runtime role has:
 
 Migrations and admin-account provisioning use a separate trusted operator/deployment role with `dsql:DbConnectAdmin`. Guest invitation tokens never grant SQLAdmin access.
 
+## Wedding-period warm-up
+
+The production SST stack includes an EventBridge Scheduler ping every five minutes
+from **19 May 2027 at 23:45** until **4 June 2027 at 00:00**, Italy time
+(`Europe/Rome`). The UTC boundaries are explicit in `sst.config.ts`; update them
+there if the wedding dates change. Deploying the stack installs the schedule, but
+it only invokes the API within that window.
+
+The scheduler invokes the shared admin/gallery Lambda directly with an HTTP API
+event for `GET /api/health`. Its dedicated role can invoke only that function and
+can be assumed only by Scheduler for this account and schedule group. The health
+endpoint executes `SELECT 1` using the application's existing SQLAlchemy pool,
+then returns the connection to the pool for reuse. Database failures return a
+failure response rather than reporting healthy. Lambda Web Adapter also uses
+this endpoint for startup readiness.
+
+This is best-effort warming, not provisioned concurrency: AWS can replace an
+environment or start additional ones during traffic bursts, and database
+connections can expire. The pings incur Lambda and database usage during the
+window. Scheduler delivery retries are disabled; the next periodic ping tries
+again. The schedule stops invoking after its end date and remains managed by SST.
+
+After deployment, verify the schedule boundaries and target in EventBridge
+Scheduler. During the active window, check Lambda invocations and database health
+alongside real admin/gallery response times; local validation does not establish
+that production warming is working.
+
 ## One-time owner setup
 
 Follow [the complete first-publication guide](PUBLISH.md) for registration, GitHub configuration before the first push, AWS OIDC, SST DNS bootstrap, registrar delegation, SES approval, encryption-key setup and first deployment.
