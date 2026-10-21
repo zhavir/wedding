@@ -4,7 +4,7 @@
 
 Normal `docker compose up` uses Floci. It simulates SES and **does not deliver to real inboxes**. A `sent` status means the configured SES service accepted the message; it does not prove inbox delivery. Creating an invitation never sends it automatically.
 
-For production on `example.com`, the [SST DNS setup operation](PUBLISH.md) creates the domain identity and verification/DKIM/DMARC records automatically. Delegate the domain, wait for verification, and request SES production access. The manual identity instructions below are for alternate senders or standalone email testing.
+For production on `example.com`, the [SST DNS setup operation](PUBLISH.md) creates the domain identity and verification/DKIM/DMARC records automatically. Delegate the domain and wait for verification; the application deployment then requests SES production access automatically. The manual identity instructions below are for alternate senders or standalone email testing.
 
 ## Set up Amazon SES
 
@@ -112,3 +112,7 @@ Mark **Witness** when creating or editing an invitation. The selected language i
 After accepting, the guest receives a thank-you email and `andrea-sara-wedding.ics`, an all-day calendar entry for the wedding date. It is suitable for import into calendar applications that support iCalendar, including Apple Calendar, Google Calendar and Outlook. The ceremony time is not yet confirmed. Texts are editable under `witnessEmail` and `confirmationEmail` in the content JSON files. `ses:SendRawEmail` is required for attachments. Delivery states appear under **Guest confirmation emails**.
 
 Identical replies and dietary/message edits do not resend the confirmation. A new acceptance after declining, or an accepted reply using a different email, sends a new confirmation. Saving the RSVP succeeds even when mail delivery fails. The UI locks a saved form until a full page reload, including navigation away and back.
+
+## Automatic production-access request
+
+The application SST deployment checks the SES account in Frankfurt and submits a production-access request once the sender identity is verified. It uses the site URL, `TRANSACTIONAL` mail type, English, and `WEDDING_GROOM_EMAIL` as the contact inbox. Approved/pending requests are skipped; denied reviews are reported without resubmission. The release job shows a non-sensitive status message. AWS approval remains asynchronous, and sandbox limits continue until approval. See [deployment setup](DEPLOYMENT.md#ses-production-access). Review bounce/complaint feedback and any follow-up questions from AWS before sending invitations.

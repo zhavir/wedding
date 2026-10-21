@@ -37,3 +37,23 @@ test('generated output masks traverse objects and lists and escape workflow comm
     rmSync(cwd, { recursive: true, force: true });
   }
 });
+
+test('bootstrap reporting only emits fixed statuses and rejects unexpected output', () => {
+  const cwd = mkdtempSync(join(process.cwd(), '.release-privacy-'));
+  try {
+    mkdirSync(join(cwd, '.sst'));
+    for (const ses of ['approved', 'submitted', 'pending', 'denied', 'review-granted', 'identity-unverified', 'private-invalid-status']) {
+      writeFileSync(join(cwd, '.sst/outputs.json'), JSON.stringify({ website: 'private-website', bootstrapStatus: { admin: 'existing', ses } }));
+      const result = spawnSync(process.execPath, [resolve('scripts/report-bootstrap.mjs')], { cwd, encoding: 'utf8' });
+      assert.equal(result.status, ses === 'private-invalid-status' ? 1 : 0);
+      assert.ok(!`${result.stdout}${result.stderr}`.includes('private-website'));
+      assert.ok(!`${result.stdout}${result.stderr}`.includes('private-invalid-status'));
+    }
+    writeFileSync(join(cwd, '.sst/outputs.json'), 'private-invalid-json');
+    const result = spawnSync(process.execPath, [resolve('scripts/report-bootstrap.mjs')], { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.ok(!`${result.stdout}${result.stderr}`.includes('private-invalid-json'));
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});

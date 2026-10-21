@@ -36,7 +36,7 @@ Uncheck **Active** to revoke an invitation and block its guest sessions. After s
 
 ## AWS / production credentials
 
-Use the same CLI against the production database from an authorised operator environment, with the production application configuration and IAM database access. Run the database migrations first so `admin_users` exists. Use the runtime configuration’s `DSQL_HOST`, `DB_USER`, `AWS_REGION`, `SITE_URL` and `INVITE_ENCRYPTION_KEY`. Never use local test AWS keys or the local encryption key in production.
+SST creates the initial production account from the GitHub `ADMIN_USERNAME` secret and SST `AdminPassword` secret during deployment; MFA enrollment happens at first login. Redeployments preserve existing accounts. For intentional recovery only, use the same CLI against the production database from an authorised operator environment, with the production application configuration and IAM database access. Run the database migrations first so `admin_users` exists. Use the production `DSQL_HOST`, `AWS_REGION`, `SITE_URL` and `INVITE_ENCRYPTION_KEY`, with `DB_USER=admin` and an operator role authorized for `dsql:DbConnectAdmin`. Never use local test AWS keys or the local encryption key in production.
 
 ```sh
 uv run --package wedding-api python -m app.manage admin-user --username andrea
@@ -70,7 +70,7 @@ Use **Media moderation** to review photos, videos and Live Photos. Uploads are h
 
 ## Authenticator two-factor authentication
 
-After creating credentials with the existing `admin-user` CLI, sign in at `/api/admin/` with username and password. First login opens a private QR enrollment page. Scan it using Google Authenticator or another TOTP authenticator, then enter its six-digit code. Enrollment must finish before any admin data becomes accessible. Subsequent logins require the password and current authenticator code. Codes cannot be reused; wait for the next code when signing in again immediately. Keep the server and phone clocks synchronized.
+After SST creates the account (or after local creation with the `admin-user` CLI), sign in at `/api/admin/` with username and password. First login opens a private QR enrollment page. Scan it using Google Authenticator or another TOTP authenticator, then enter its six-digit code. Enrollment must finish before any admin data becomes accessible. Subsequent logins require the password and current authenticator code. Codes cannot be reused; wait for the next code when signing in again immediately. Keep the server and phone clocks synchronized.
 
 Secrets are encrypted in the database using the application encryption key. The QR is generated locally and never sent to an external QR service. Pending enrollment expires after five minutes; failed codes are rate limited.
 

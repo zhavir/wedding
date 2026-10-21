@@ -44,6 +44,7 @@ jobs:
       SITE_DOMAIN: ${{ secrets.SITE_DOMAIN }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
       EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
       SES_IDENTITY_ARN: ${{ secrets.SES_IDENTITY_ARN }}
       RSVP_NOTIFICATION_EMAIL: ${{ secrets.RSVP_NOTIFICATION_EMAIL }}
@@ -87,16 +88,11 @@ jobs:
               "${AWS_ACCOUNT_ID}.dkr.ecr.eu-central-1.amazonaws.com"
       - name: Deploy infrastructure and application
         run: node scripts/private-command.mjs npx sst deploy --stage "$STAGE"
+      - name: Report initialization and SES review status
+        if: inputs.operation != 'setup-dns'
+        run: node scripts/report-bootstrap.mjs
       - name: Mask generated deployment outputs
         run: node scripts/mask-deployment-outputs.mjs
-      - name: Migrate database and grant runtime role
-        if: inputs.operation != 'setup-dns'
-        run: |
-          node scripts/private-command.mjs docker build --target base -f backend/Dockerfile -t wedding-operator .
-          DSQL_HOST=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).databaseHost)")
-          RUNTIME_ROLE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).runtimeRoleArn)")
-          export DSQL_HOST
-          node scripts/private-command.mjs docker run --rm -e WEDDING_GROOM_NAME -e WEDDING_GROOM_EMAIL -e WEDDING_BRIDE_NAME -e WEDDING_BRIDE_EMAIL -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION=eu-central-1 -e DSQL_HOST -e DB_USER=admin -e INVITE_ENCRYPTION_KEY=unused-for-migration wedding-operator python -m app.manage migrate --runtime-role "$RUNTIME_ROLE"
       - name: Verify deployed routing
         if: inputs.operation != 'setup-dns'
         run: |

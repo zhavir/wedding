@@ -26,7 +26,7 @@ DSQL_HOST=your-cluster.dsql.eu-central-1.on.aws DB_USER=admin uv run --frozen --
 
 Offline generation does not connect to AWS or obtain IAM credentials.
 
-Local startup runs `python -m app.manage migrate`, then local-only demo seeding. The same operator command is used by the release workflow with the DSQL admin role. Application requests never run migrations.
+Local startup runs `python -m app.manage migrate`, then local-only demo seeding. SST invokes the same migration function through a private bootstrap Lambda using the DSQL admin role during deployment. Application requests never run migrations.
 
 ```sh
 docker compose run --rm api python -m app.manage migrate

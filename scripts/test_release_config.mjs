@@ -4,6 +4,7 @@ import { test } from 'node:test';
 
 const baseline = {
   STAGE: 'production',
+  ADMIN_USERNAME: 'wedding-admin',
   WEDDING_GROOM_NAME: 'Example groom',
   WEDDING_GROOM_EMAIL: 'groom@example.com',
   WEDDING_BRIDE_NAME: 'Example bride',
@@ -54,4 +55,13 @@ test('requires private host seed configuration without echoing it', () => {
   const result = validate({ WEDDING_GROOM_EMAIL: 'private-invalid-address' });
   assert.equal(result.status, 1);
   assert.ok(!`${result.stdout}${result.stderr}`.includes('private-invalid-address'));
+});
+
+test('requires admin username only for application deployment without leaking values', () => {
+  for (const ADMIN_USERNAME of ['', 'ab', 'private invalid username', 'a'.repeat(101)]) {
+    const result = validate({ ADMIN_USERNAME });
+    assert.equal(result.status, 1);
+    if (ADMIN_USERNAME) assert.ok(!`${result.stdout}${result.stderr}`.includes(ADMIN_USERNAME));
+    assert.equal(validate({ STAGE: 'production-dns', ADMIN_USERNAME }).status, 0);
+  }
 });

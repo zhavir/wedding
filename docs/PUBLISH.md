@@ -27,6 +27,7 @@ The checked-in release workflow currently supports a **personally owned reposito
 | `SITE_DOMAIN` | `example.com` | Both operations |
 | `AWS_ACCOUNT_ID` | Your 12-digit AWS account ID | Both operations |
 | `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::YOUR_ACCOUNT_ID:role/wedding-github-deploy` | Both operations |
+| `ADMIN_USERNAME` | Website administrator username (3–100 letters, digits, or `_.@+-`) | Website deployment |
 | `EMAIL_FROM` | `wedding@example.com` | Website deployment |
 | `WEDDING_GROOM_NAME` | Groom display name | Website deployment |
 | `WEDDING_GROOM_EMAIL` | Groom email address | Website deployment |
@@ -91,11 +92,11 @@ The first push can run repository-setup workflows, which is why `GH_TOKEN` and `
 4. At your domain registrar, change the domain's **authoritative nameservers** to those four values. If registered with Route 53, change them under **Registered domains**, not just the hosted zone's NS record. This one manual step proves control of the domain; SST cannot change an unrelated registrar account.
 5. Wait for delegation to propagate, potentially up to 48 hours. Check with `nslookup -type=NS example.com` (Windows/macOS/Linux where installed), or `dig NS example.com`. The public result must match the SST output. Existing DNSSEC/DS records from a previous provider must be removed or correctly migrated to avoid `SERVFAIL`.
 6. In Frankfurt SES, wait for the domain identity and DKIM to show verified/success. SST manages the DNS records; do not delete certificate or SES validation records later. SES uses its default MAIL FROM domain for SPF; aligned DKIM supplies DMARC alignment. This setup sends mail but **does not provide a mailbox** at `wedding@...`.
-7. In SES **Account dashboard**, request production access to send invitations to unverified guests. Until AWS approves, verify every test recipient, including `RSVP_NOTIFICATION_EMAIL`. See [email setup](EMAIL.md). AWS approval is manual and cannot be guaranteed by SST.
+7. The application deployment will request SES production access automatically after identity verification. Monitor the request in SES **Account dashboard**. Until AWS approves, verify every test recipient, including `RSVP_NOTIFICATION_EMAIL`. See [email setup](EMAIL.md). AWS approval remains asynchronous and cannot be guaranteed by SST.
 
 If DNS setup is rerun, it updates the same DNS stage. It cannot remove the separate application stage. Do not change `SITE_DOMAIN` casually after publication: DNS migration and old invitation URLs need deliberate handling.
 
-## 6. Set the application encryption secret once
+## 6. Set the application secrets once
 
 Install Node at the version in `.node-version`, npm, AWS CLI v2, and [uv](https://docs.astral.sh/uv/getting-started/installation/). Use an operator terminal with your AWS administrator/service profile, in this project directory. Configure that profile with `aws configure --profile wedding-admin` if using your existing service account's keys, or use your organization's SSO profile. Keep credentials local.
 
@@ -122,9 +123,12 @@ npm --prefix frontend ci
 uv sync --frozen --all-packages --all-groups
 uv run --frozen --package wedding-api python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 npx sst secret set InviteEncryptionKey --stage production
+npx sst secret set AdminPassword --stage production
 ```
 
 Check the AWS account ID first. Paste the generated key into the SST prompt and save it in your password manager. Do not paste it into GitHub logs or commit it. Keep it stable for future releases: replacing it invalidates existing encrypted invitation credentials. This command sets a secret; it does not deploy the app. A local SST diff/deploy also requires the environment variables from step 2, set in that terminal.
+
+Enter a separate password of 14–1024 characters at the `AdminPassword` prompt and save it in your password manager. SST uses it only to create a missing administrator; redeployment never resets an existing account. The username comes from the `ADMIN_USERNAME` GitHub environment secret.
 
 ## 7. Publish the HTTPS site
 
@@ -133,17 +137,13 @@ Check the AWS account ID first. Paste the generated key into the SST prompt and 
 3. The workflow builds the frontend and Lambda container, deploys resources, applies database migrations/grants, then checks API health and the admin login page. Allow time for certificate issuance and CloudFront propagation. If the certificate waits for validation, fix delegation/CAA restrictions before rerunning. If a new account's Lambda concurrency quota is too low for the configured reservation, request an increase in Service Quotas before retrying.
 4. Deployment outputs are deliberately withheld from the public job summary. Open `https://example.com`. Check `http://example.com` and `https://www.example.com` redirect correctly and the browser reports a trusted certificate.
 
-## 8. Create your administrator and verify guest flows
+## 8. Sign in and verify guest flows
 
-Use the same local operator profile, installed dependencies and saved encryption key. Get the cluster endpoint from the Aurora DSQL console using your operator account (or your private local `.sst/outputs.json` after a local deployment). Set `DSQL_HOST` to it, `DB_USER=admin`, `SITE_URL=https://example.com`, and `INVITE_ENCRYPTION_KEY` to the saved key in your private terminal environment (`export NAME=value` in bash/zsh or `$env:NAME = "value"` in PowerShell). Do not use the development `.env` with dummy credentials against production.
+SST has already run migrations, granted the runtime database role, and created the administrator if missing. No local database connection or manual SQL is needed. Open `https://example.com/admin`, sign in using `ADMIN_USERNAME` and the initial password stored as `AdminPassword`, and configure MFA as described in [administration](ADMIN.md). Existing accounts retain their current password and MFA.
 
-```sh
-uv run --frozen --package wedding-api python -m app.manage admin-user --username andrea
-```
+The release also checks/submits the SES production-access request in Frankfurt, using `WEDDING_GROOM_EMAIL` as the contact inbox. Read its status in the release job; pending or denied access still restricts recipient delivery. Check the SES console for approval or requests for more information. Once sending is permitted, create a test invitation for an inbox you control. Verify actual email receipt, invitation login, saving RSVP, notifications, photo upload/moderation and original download before inviting guests. A successful health endpoint alone does not prove these flows.
 
-Enter a password when prompted. Open `https://example.com/admin`, sign in, and configure MFA as described in [administration](ADMIN.md). Create a test invitation for an inbox you control. Verify actual email receipt, invitation login, saving an RSVP, notifications, photo upload/moderation and original download before inviting guests. A successful health endpoint alone does not prove these flows.
-
-Future updates: push/merge reviewed changes and run operation `deploy` again. DNS setup and encryption-key creation are one-time tasks. Both production stages retain/protect resources; do not use `sst remove` as a routine rollback. Retained resources continue billing until deliberately removed.
+Future updates: push/merge reviewed changes and run operation `deploy` again. DNS setup and secret creation are one-time tasks. Both production stages retain/protect resources; do not use `sst remove` as a routine rollback. Retained resources continue billing until deliberately removed.
 
 ## Costs and HTTPS
 

@@ -91,6 +91,21 @@ export default $config({
       );
     }
     const encryptionKey = new sst.Secret("InviteEncryptionKey");
+    const adminPassword = new sst.Secret("AdminPassword");
+    const adminUsername = process.env.ADMIN_USERNAME;
+    if (!adminUsername || !/^[a-zA-Z0-9_.@+-]{3,100}$/.test(adminUsername)) {
+      throw new Error("Set ADMIN_USERNAME to 3–100 letters, digits, or _.@+-.");
+    }
+    const hostKeys = [
+      "WEDDING_GROOM_NAME",
+      "WEDDING_GROOM_EMAIL",
+      "WEDDING_BRIDE_NAME",
+      "WEDDING_BRIDE_EMAIL",
+    ];
+    for (const key of hostKeys) {
+      if (!process.env[key]?.trim())
+        throw new Error(`Set ${key} before deployment.`);
+    }
     const database = new sst.aws.Dsql("Database", {
       transform: {
         cluster: {
@@ -276,18 +291,156 @@ export default $config({
         ],
       }),
     });
+    const imageUri = image.ref.apply((ref) => {
+      const separator = ref.indexOf("@sha256:");
+      if (separator === -1) return ref;
+      return `${ref.slice(0, separator).replace(/:[^/:]+$/, "")}${ref.slice(separator)}`;
+    });
+    const bootstrapRole = new aws.iam.Role("BootstrapRole", {
+      assumeRolePolicy: JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: { Service: "lambda.amazonaws.com" },
+            Action: "sts:AssumeRole",
+          },
+        ],
+      }),
+    });
+    const bootstrapLogs = new aws.cloudwatch.LogGroup("BootstrapLogs", {
+      retentionInDays: 7,
+    });
+    const bootstrapPermissions = new aws.iam.RolePolicy(
+      "BootstrapPermissions",
+      {
+        role: bootstrapRole.id,
+        policy: $jsonStringify({
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: ["logs:CreateLogStream", "logs:PutLogEvents"],
+              Resource: $interpolate`${bootstrapLogs.arn}:*`,
+            },
+            {
+              Effect: "Allow",
+              Action: "dsql:DbConnectAdmin",
+              Resource: database.nodes.cluster.arn,
+            },
+            {
+              Effect: "Allow",
+              Action: "ses:GetEmailIdentity",
+              Resource: identityArn,
+            },
+            // These SES operations are account-level and do not support identity ARNs.
+            {
+              Effect: "Allow",
+              Action: ["ses:GetAccount", "ses:PutAccountDetails"],
+              Resource: "*",
+              Condition: {
+                StringEquals: { "aws:RequestedRegion": "eu-central-1" },
+              },
+            },
+          ],
+        }),
+      },
+    );
+    const bootstrap = new aws.lambda.Function(
+      "Bootstrap",
+      {
+        packageType: "Image",
+        imageUri,
+        imageConfig: {
+          commands: [
+            "uvicorn",
+            "app.bootstrap:app",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "8000",
+            "--no-access-log",
+          ],
+        },
+        role: bootstrapRole.arn,
+        architectures: ["x86_64"],
+        memorySize: 1024,
+        timeout: 900,
+        loggingConfig: { logFormat: "Text", logGroup: bootstrapLogs.name },
+        environment: {
+          variables: {
+            DSQL_HOST: database.endpoint,
+            DB_USER: "admin",
+            INVITE_ENCRYPTION_KEY: "unused-for-bootstrap",
+            ADMIN_USERNAME: adminUsername,
+            ADMIN_PASSWORD: adminPassword.value,
+            RUNTIME_ROLE_ARN: role.arn,
+            SITE_URL: router.url,
+            SES_IDENTITY: $output(identityArn).apply(
+              (arn) => arn.split(":identity/")[1],
+            ),
+            ...Object.fromEntries(
+              hostKeys.map((key) => [key, process.env[key]!]),
+            ),
+          },
+        },
+      },
+      { dependsOn: [bootstrapPermissions] },
+    );
+    const initialization = new aws.lambda.Invocation(
+      "InitializeApplication",
+      {
+        functionName: bootstrap.name,
+        // Retry idempotent initialization on each deploy, including after partial failures.
+        triggers: { deployment: Date.now().toString() },
+        input: JSON.stringify({
+          version: "2.0",
+          routeKey: "POST /bootstrap",
+          rawPath: "/bootstrap",
+          rawQueryString: "",
+          headers: { host: "bootstrap.internal", "x-forwarded-proto": "https" },
+          requestContext: {
+            apiId: "bootstrap",
+            domainName: "bootstrap.internal",
+            domainPrefix: "bootstrap",
+            requestId: "sst-bootstrap",
+            routeKey: "POST /bootstrap",
+            stage: "$default",
+            time: "01/Jan/2026:00:00:00 +0000",
+            timeEpoch: 1767225600000,
+            http: {
+              method: "POST",
+              path: "/bootstrap",
+              protocol: "HTTP/1.1",
+              sourceIp: "127.0.0.1",
+              userAgent: "sst-bootstrap",
+            },
+          },
+          isBase64Encoded: false,
+        }),
+      },
+      {
+        dependsOn: [bootstrap, site],
+        customTimeouts: { create: "20m", update: "20m" },
+      },
+    );
+    const bootstrapStatus = initialization.result.apply((result) => {
+      const response = JSON.parse(result);
+      const body = JSON.parse(response.body ?? "{}");
+      if (response.statusCode !== 200 || body.ok !== true) {
+        throw new Error(
+          "Deployment initialization failed; inspect the private bootstrap configuration and database migration state.",
+        );
+      }
+      return { admin: body.admin as string, ses: body.ses as string };
+    });
     const fn = new aws.lambda.Function(
       "FastApi",
       {
         packageType: "Image",
         // Pulumi may return repository:tag@sha256:digest; Lambda expects
         // repository@sha256:digest (or repository:tag).
-        imageUri: image.ref.apply((ref) => {
-          const separator = ref.indexOf("@sha256:");
-          if (separator === -1) return ref;
-          const imageName = ref.slice(0, separator).replace(/:[^/:]+$/, "");
-          return `${imageName}${ref.slice(separator)}`;
-        }),
+        imageUri: bootstrapStatus.apply(() => imageUri),
         role: role.arn,
         architectures: ["x86_64"],
         memorySize: 1024,
@@ -408,6 +561,7 @@ export default $config({
     api.route("$default", fn.arn);
     router.route("/api", api.url);
     return {
+      bootstrapStatus,
       website: site.url,
       databaseHost: database.endpoint,
       runtimeRoleArn: role.arn,

@@ -15,7 +15,7 @@ The Lambda runtime role has:
 - `ses:SendEmail` and `ses:SendRawEmail` only for the configured identity ARN, restricted by `ses:FromAddress`.
 - Log writes only to its own log group, retained seven days.
 
-Migrations and admin-account provisioning use a separate trusted operator/deployment role with `dsql:DbConnectAdmin`. Guest invitation tokens never grant SQLAdmin access.
+Migrations and admin-account provisioning run in a private SST-managed bootstrap Lambda with `dsql:DbConnectAdmin`, scoped to this database. It has no public route or function URL. Only that function receives the initial admin password; the public API keeps its restricted role. Guest invitation tokens never grant SQLAdmin access.
 
 ## Wedding-period warm-up
 
@@ -54,7 +54,7 @@ Set `SITE_DOMAIN=example.com` in the GitHub `production` environment. The `setup
 
 ## Release
 
-For deployment choose **Release to AWS → Run workflow**, select `main`, operation `deploy`, and type `deploy`. The workflow checks the owner identity, runs the full CI workflow by default, then enters the protected environment before obtaining AWS credentials. For release troubleshooting, select **Skip the entire verification job for release troubleshooting** (`skip_verify`). This skips the entire reusable CI workflow for that release. Owner/branch authorization, release configuration validation, environment protection, deployment, database migrations, and deployed-route checks still run. Pull requests and pushes to `main` continue to run all checks. It builds/pushes the Lambda image, deploys SST, runs Alembic and grants the runtime SQL role, then checks the deployed API/admin routes. There can be a short period before first-run migrations complete during which database routes are unavailable.
+For deployment choose **Release to AWS → Run workflow**, select `main`, operation `deploy`, and type `deploy`. The workflow checks the owner identity, runs the full CI workflow by default, then enters the protected environment before obtaining AWS credentials. For release troubleshooting, select **Skip the entire verification job for release troubleshooting** (`skip_verify`). This skips the entire reusable CI workflow for that release. Owner/branch authorization, release configuration validation, environment protection, deployment, database migrations, and deployed-route checks still run. Pull requests and pushes to `main` continue to run all checks. It builds/pushes the Lambda image and deploys SST. SST invokes the private bootstrap Lambda to run Alembic, grant the runtime SQL role, and create the administrator if missing before updating the API Lambda. Bootstrap failures fail deployment. The workflow then checks deployed API/admin routes. Initialization reruns on every deploy, so partially completed initialization can be retried. Keep deployments serialized (the release workflow already does this).
 
 Approve the production environment review when prompted. Pushing code alone never deploys. For a local infrastructure preview (requires configured AWS credentials and the same domain/email variables):
 
@@ -66,21 +66,31 @@ The repository can be checked without AWS access using `npx sst install && npx t
 
 ## First administrator
 
-After deployment, get the database endpoint from the Aurora DSQL console or private local `.sst/outputs.json`. Public workflow logs and summaries withhold these outputs. Use an authorized operator role and the production encryption key/site URL:
+Before deployment, set `ADMIN_USERNAME` in the GitHub **production environment secrets**, using 3–100 letters, digits, or `_.@+-`. Usernames are normalized to lowercase. For local SST deploy/diff, export the same value as an environment variable.
+
+Set the separate SST password secret once using an authorized operator terminal:
 
 ```sh
-export AWS_REGION=eu-central-1
-export DSQL_HOST='your-cluster.dsql.eu-central-1.on.aws'
-export DB_USER=admin
-# Set INVITE_ENCRYPTION_KEY and SITE_URL securely in this terminal.
-uv run --frozen --package wedding-api python -m app.manage admin-user --username andrea
+npx sst secret set AdminPassword --stage production
 ```
 
-The command prompts for a password of at least 14 characters. Sign in at `https://your-site/admin`. It is safe to rerun to reset credentials; never put the password in shell arguments. Verify actual inbox receipt, a saved RSVP, admin media approval, and the original-byte download before inviting guests.
+Enter a password of 14–1024 characters at the prompt; save it in your password manager. Do not pass it as a command-line argument or put it in GitHub secrets. `InviteEncryptionKey` remains a separate, stable SST secret.
+
+SST creates the account only when that username is absent. Sign in at `https://your-site/admin` and complete the existing MFA enrollment prompt. Redeployments preserve existing passwords, MFA enrollment, sessions, account status and lockouts. Changing `AdminPassword` does not reset an existing account; changing `ADMIN_USERNAME` creates another account without deleting the old one. Use the existing `app.manage admin-user` operator command only for an intentional credential reset/recovery.
+
+## SES production access
+
+After database initialization, the bootstrap Lambda checks SES in `eu-central-1`. It skips approved and pending requests, reports denied requests without resubmitting, and submits a new request (or retries a failed review) only when the configured sender identity is verified. Requests use `TRANSACTIONAL`, the site URL, English, and `WEDDING_GROOM_EMAIL` as the additional contact. Use an inbox you monitor. AWS has deprecated the API use-case-description field; provide any additional explanation in the support case if requested.
+
+The workflow reports a fixed, non-sensitive status message. Pending review, denied requests, and unverified identities do not block deployment; AWS API errors do. Unverified identities require DNS verification followed by another deployment. SES approval remains an AWS decision and sandbox restrictions remain until production access is enabled. Check the case in the SES console, handle bounce/complaint feedback, and verify actual email delivery before inviting guests.
+
+The bootstrap role has `ses:GetEmailIdentity` for the configured identity and account-level `ses:GetAccount`/`ses:PutAccountDetails` restricted to Frankfurt. A custom deployment policy must allow creation/passing of the bootstrap role and invocation of its Lambda. The public API receives none of these additional privileges.
+
+See [SES production access](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html) and [PutAccountDetails](https://docs.aws.amazon.com/ses/latest/APIReference-V2/API_PutAccountDetails.html).
 
 ## Offline release configuration check
 
-Before authorizing a release, set `STAGE=production`, `AWS_ACCOUNT_ID`, `AWS_DEPLOY_ROLE_ARN`, `SITE_DOMAIN`, `EMAIL_FROM`, `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL` in your local environment (optionally set `SES_IDENTITY_ARN` to override the managed identity, and `RSVP_NOTIFICATION_EMAIL` for response notifications), then run:
+Before authorizing a release, set `STAGE=production`, `AWS_ACCOUNT_ID`, `AWS_DEPLOY_ROLE_ARN`, `SITE_DOMAIN`, `ADMIN_USERNAME`, `EMAIL_FROM`, `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL` in your local environment (optionally set `SES_IDENTITY_ARN` to override the managed identity, and `RSVP_NOTIFICATION_EMAIL` for response notifications), then run:
 
 ```sh
 node scripts/validate_release_config.mjs

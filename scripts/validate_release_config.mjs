@@ -2,7 +2,7 @@
 const required = [
   'STAGE', 'AWS_ACCOUNT_ID', 'AWS_DEPLOY_ROLE_ARN',
   'SITE_DOMAIN',
-  ...(process.env.STAGE === 'production-dns' ? [] : ['EMAIL_FROM', 'WEDDING_GROOM_NAME', 'WEDDING_GROOM_EMAIL', 'WEDDING_BRIDE_NAME', 'WEDDING_BRIDE_EMAIL']),
+  ...(process.env.STAGE === 'production-dns' ? [] : ['ADMIN_USERNAME', 'EMAIL_FROM', 'WEDDING_GROOM_NAME', 'WEDDING_GROOM_EMAIL', 'WEDDING_BRIDE_NAME', 'WEDDING_BRIDE_EMAIL']),
 ];
 const errors = [];
 const values = Object.fromEntries(
@@ -41,6 +41,9 @@ for (const key of ['EMAIL_FROM', 'RSVP_NOTIFICATION_EMAIL', ...(values.STAGE ===
 if (values.STAGE === 'production' && !values.SES_IDENTITY_ARN &&
     values.EMAIL_FROM.split('@')[1]?.toLowerCase() !== domain) {
   errors.push('EMAIL_FROM must belong to SITE_DOMAIN when using the SST-managed SES identity.');
+}
+if (values.STAGE === 'production' && !/^[a-zA-Z0-9_.@+-]{3,100}$/.test(values.ADMIN_USERNAME ?? '')) {
+  errors.push('ADMIN_USERNAME must contain 3–100 letters, digits, or _.@+-.');
 }
 if (errors.length) {
   // Report field names, never configuration values or credentials.
