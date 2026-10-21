@@ -6,6 +6,35 @@
 
 declare module "sst" {
   export interface Resource {
+    "AdminPassword": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "Api": {
+      "type": "sst.aws.ApiGatewayV2"
+      "url": string
+    }
+    "Database": {
+      "endpoint": string
+      "region": string
+      "type": "sst.aws.Dsql"
+    }
+    "InviteEncryptionKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "Photos": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
+    "Router": {
+      "type": "sst.aws.Router"
+      "url": string
+    }
+    "Wedding": {
+      "type": "sst.aws.StaticSite"
+      "url": string
+    }
   }
 }
 

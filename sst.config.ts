@@ -504,11 +504,8 @@ export default $config({
         groupName: warmupGroup.name,
         description:
           "Warm the admin/gallery API and database during the wedding period",
-        scheduleExpression: "rate(5 minutes)",
+        scheduleExpression: "cron(0/5 10-11 ? * * *)",
         scheduleExpressionTimezone: "Europe/Rome",
-        // 19 May 23:45 through 4 June 00:00, 2027, in Italy (UTC+02:00).
-        startDate: "2027-05-19T21:45:00Z",
-        endDate: "2027-06-03T22:00:00Z",
         flexibleTimeWindow: { mode: "OFF" },
         target: {
           arn: fn.arn,
