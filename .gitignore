@@ -26,3 +26,5 @@ reports/
 .codex/
 .agents/
 .serena/
+
+tmp/
