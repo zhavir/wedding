@@ -76,8 +76,11 @@ test('chapter dock expands without rotating labels and gallery shares the masthe
   const closed = await dock.boundingBox();
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  await expect.poll(async () => (await dock.boundingBox())!.height).toBeGreaterThan(300);
-  await expect(page.locator('.picker-label')).toHaveCSS('transform', 'none');
+  await expect(page.locator('.chapter-panel')).toBeVisible();
+  await expect.poll(async () => {
+    const panel = await page.locator('.chapter-panel').boundingBox();
+    return panel!.x + panel!.width;
+  }).toBeLessThan(closed!.x);
   const expanded = await dock.boundingBox();
   expect(Math.abs(expanded!.y + expanded!.height - closed!.y - closed!.height)).toBeLessThan(2);
   await page.screenshot({ path: testInfo.outputPath('chapters-expanded.png') });
@@ -129,6 +132,7 @@ test('curtains conceal the invitation, fold open and hold before the story', asy
 
 test('timeline ink tracks its marker through the end and Akamaru resets outside the portrait', async ({ page }, testInfo) => {
   await page.goto('/');
+  await expect(page.locator('.chapter-trigger')).toBeEnabled();
   const timeline = page.locator('.ribbon-timeline');
   for (const fraction of [.25, .6, 1]) {
     await timeline.evaluate((el, fraction) => {
@@ -204,7 +208,7 @@ test('curtain hems lead the tops, the date waits, and the reveal stays open unti
   await page.evaluate(() => scrollTo({top: 0, behavior: 'instant'}));
   await expect(page.locator('.opening-scene')).toHaveClass(/opened/);
   await expect(page.locator('.curtain-cue')).toBeHidden();
-  await expect(page.locator('.cherry-petal').first()).toHaveCSS('animation-name', 'petal-drift');
+  await expect(page.locator('.cherry-petal').first()).toHaveCSS('animation-name', 'petal-sway');
   await page.screenshot({path: testInfo.outputPath('open-with-cherry-blossoms.png')});
   await page.reload();
   await expect(page.locator('.curtain-cue')).toBeVisible();
@@ -226,4 +230,39 @@ test('save the date downloads the all-day wedding event in both languages', asyn
     expect(data).toContain('DTEND;VALUE=DATE:20270521');
     expect(data).toContain('Villa Valentina');
   }
+});
+
+
+test('scroll reveal stays pinned and chapter destinations align with the viewport', async ({ page }, testInfo) => {
+  await page.goto('/');
+  await expect(page.locator('.curtain-cue')).toBeVisible();
+  await page.evaluate(() => window.scrollTo({ top: 30, behavior: 'instant' }));
+  await expect.poll(async () => (await page.locator('.opening-stage').boundingBox())!.y).toBeCloseTo(0, 0);
+  await expect.poll(() => page.locator('.opening-scene').evaluate(el => Number(getComputedStyle(el).getPropertyValue('--opening')))).toBeGreaterThan(0);
+  await page.evaluate(() => window.scrollTo({ top: innerHeight * .7, behavior: 'instant' }));
+  await expect(page.locator('.opening-scene')).toHaveClass(/opened/);
+  const fabricWidth = await page.locator('.curtain-left').evaluate((el: SVGSVGElement) => el.querySelector('path')!.getBBox().width);
+  expect(fabricWidth).toBeGreaterThan(0);
+  if (testInfo.project.use.isMobile) await expect(page.locator('.header-date')).toBeHidden();
+  for (const id of ['story', 'details', 'menu', 'travel', 'rsvp', 'memories']) {
+    await page.locator('.chapter-trigger').click();
+    await page.locator(`.chapter-nav a[href="#${id}"]`).click();
+    await expect.poll(async () => (await page.locator(`#${id}`).boundingBox())!.y).toBeCloseTo(0, 0);
+  }
+  expect(await page.evaluate(() => document.body.scrollWidth)).toBe(await page.evaluate(() => innerWidth));
+});
+
+test('rings visibly interpolate when entering the viewport', async ({ page }) => {
+  await page.goto('/');
+  const rings = page.locator('.joined-rings');
+  const ring = rings.locator('span').first();
+  const initial = await ring.evaluate(el => getComputedStyle(el).transform);
+  await rings.evaluate(el => window.scrollTo({ top: scrollY + el.getBoundingClientRect().top - innerHeight * .4, behavior: 'instant' }));
+  await expect(page.locator('.countdown')).toHaveClass(/rings-joined/);
+  await page.waitForTimeout(200);
+  const intermediate = await ring.evaluate(el => getComputedStyle(el).transform);
+  await page.waitForTimeout(1400);
+  const final = await ring.evaluate(el => getComputedStyle(el).transform);
+  expect(intermediate).not.toBe(initial);
+  expect(intermediate).not.toBe(final);
 });

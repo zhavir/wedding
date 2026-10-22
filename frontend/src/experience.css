@@ -16,8 +16,8 @@ body {
   background: var(--paper);
 }
 html {
-  scroll-padding-top: 110px;
-  scroll-padding-bottom: 100px;
+  scroll-padding-top: 0;
+  scroll-padding-bottom: 0;
 }
 main {
   overflow: clip;
@@ -258,7 +258,7 @@ p {
 }
 .opening-stage {
   position: sticky;
-  top: min(0px, calc(100svh - var(--stage-height, 100svh)));
+  top: 0;
   overflow: hidden;
   isolation: isolate;
 }
@@ -452,7 +452,7 @@ p {
   height: calc(var(--petal-size) * 1.33);
   opacity: 0;
   transform: rotate(var(--petal-turn));
-  animation: petal-drift var(--petal-duration) ease-in-out infinite;
+  animation: petal-sway var(--petal-duration) ease-in-out infinite;
   animation-delay: var(--petal-delay);
 }
 .floral-stem .cherry-petal svg {
@@ -474,23 +474,23 @@ p {
 .footer-botanicals {
   display: none;
 }
-@keyframes petal-drift {
+@keyframes petal-sway {
   0% {
     opacity: 0;
-    transform: translate(-5px, -35px) rotate(var(--petal-turn));
+    transform: rotate(calc(var(--petal-turn) - 8deg));
   }
   20% {
     opacity: 0.8;
   }
   50% {
-    transform: translate(6px, 0) rotate(calc(var(--petal-turn) + 22deg));
+    transform: rotate(calc(var(--petal-turn) + 8deg));
   }
   80% {
     opacity: 0.8;
   }
   100% {
     opacity: 0;
-    transform: translate(-3px, 35px) rotate(calc(var(--petal-turn) + 45deg));
+    transform: rotate(calc(var(--petal-turn) - 8deg));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -539,6 +539,8 @@ p {
   object-fit: cover;
   box-shadow: inset 0 0 0 10px #fbf8f220;
   filter: saturate(0.75) sepia(0.08);
+  /* The picture stays attached to its paper frame. */
+  transform: none;
 }
 .story-image .photo-note {
   position: static;
@@ -662,21 +664,18 @@ p {
   box-shadow:
     inset 2px 1px 2px #ffffffcc,
     2px 5px 11px #604b2524;
-  transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+  /* The transform follows scroll position; a CSS transition causes lag/snapping. */
+  transition: none;
 }
 .joined-rings > span:first-child {
   left: 0;
-  transform: rotate(-28deg);
+  transform: translateX(calc((min(85vw, 760px) / 2 - 155px) * var(--ring-progress, 0)))
+    rotate(calc(-28deg + 20deg * var(--ring-progress, 0)));
 }
 .joined-rings > span:last-child {
   right: 0;
-  transform: rotate(28deg);
-}
-.rings-joined .joined-rings > span:first-child {
-  transform: translateX(calc(min(85vw, 760px) / 2 - 155px)) rotate(-8deg);
-}
-.rings-joined .joined-rings > span:last-child {
-  transform: translateX(calc((min(85vw, 760px) / 2 - 155px) * -1)) rotate(8deg);
+  transform: translateX(calc((min(85vw, 760px) / 2 - 155px) * -1 * var(--ring-progress, 0)))
+    rotate(calc(28deg - 20deg * var(--ring-progress, 0)));
 }
 .diamond {
   position: absolute;
@@ -1068,7 +1067,6 @@ footer {
   justify-content: center;
   background: var(--cream);
   color: var(--ink);
-  padding: 100px 8% 130px;
   overflow: hidden;
 }
 footer h2 {
@@ -1231,7 +1229,7 @@ footer .handwritten {
     padding: 28px 10px;
   }
   .details-seal {
-    margin: -1px auto;
+    margin: 18px auto;
     width: 80px;
     height: 80px;
   }
@@ -1254,11 +1252,13 @@ footer .handwritten {
     height: 38px;
     top: -29px;
   }
-  .rings-joined .joined-rings > span:first-child {
-    transform: translateX(calc((100vw - 48px) / 2 - 105px)) rotate(-8deg);
+  .joined-rings > span:first-child {
+    transform: translateX(calc(((100vw - 48px) / 2 - 105px) * var(--ring-progress, 0)))
+      rotate(calc(-28deg + 20deg * var(--ring-progress, 0)));
   }
-  .rings-joined .joined-rings > span:last-child {
-    transform: translateX(calc(((100vw - 48px) / 2 - 105px) * -1)) rotate(8deg);
+  .joined-rings > span:last-child {
+    transform: translateX(calc(((100vw - 48px) / 2 - 105px) * -1 * var(--ring-progress, 0)))
+      rotate(calc(28deg - 20deg * var(--ring-progress, 0)));
   }
   .clock > div {
     padding: 20px 6px;
@@ -1786,5 +1786,488 @@ body:has(.opening-scene:not(.opened)) .header-date {
   }
   .cherry-petal:nth-child(even) {
     display: none;
+  }
+}
+
+/* Floating chapter actions, adapted from the requested 21st.dev references. */
+.chapter-picker,
+.chapter-picker.expanded {
+  left: auto;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: none;
+  width: 52px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+}
+.chapter-trigger {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  min-height: 52px;
+  padding: 12px;
+  border: 1px solid #b89a6160;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 5px 24px #25352b25;
+}
+.menu-toggle-icon {
+  width: 26px;
+  height: 26px;
+}
+.menu-toggle-icon path {
+  transform-origin: 12px 12px;
+  transition:
+    transform 0.5s,
+    opacity 0.25s;
+}
+.expanded .toggle-top {
+  transform: translateY(5px) rotate(45deg);
+  transform-origin: 12px 7px;
+}
+.expanded .toggle-middle {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.expanded .toggle-bottom {
+  transform: translateY(-5px) rotate(-45deg);
+  transform-origin: 12px 17px;
+}
+.chapter-panel {
+  position: absolute;
+  right: 64px;
+  bottom: 0;
+  width: min(270px, calc(100vw - 100px));
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(16px);
+  transition:
+    transform 0.35s,
+    opacity 0.25s,
+    visibility 0.35s;
+}
+.expanded .chapter-panel {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(0);
+}
+.chapter-panel-clip {
+  overflow: visible;
+}
+.chapter-picker .chapter-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 4px;
+  max-height: calc(100svh - 48px);
+  overflow-y: auto;
+}
+.chapter-nav a {
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid #b89a6140;
+  border-radius: 12px;
+  background: #25352bf2;
+  color: var(--paper);
+  box-shadow: 0 3px 12px #25352b18;
+  transform: translateX(12px);
+  transition: transform 0.35s;
+}
+.expanded .chapter-nav a {
+  transform: translateX(0);
+  transition-delay: calc(var(--item-index) * 35ms);
+}
+.chapter-arrow,
+.inline-arrow {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.inline-arrow {
+  display: inline-block;
+  vertical-align: middle;
+}
+@media (max-width: 760px) {
+  .site-header .header-date {
+    display: none;
+  }
+  .header-identity {
+    align-items: center;
+    justify-content: center;
+  }
+  .details-seal {
+    margin: 18px auto;
+  }
+}
+
+
+/* Navigation refinements: shared viewport edge and floating editorial surfaces. */
+:root {
+  --nav-edge: clamp(18px, 4vw, 64px);
+}
+
+.site-header {
+  left: var(--nav-edge);
+  right: var(--nav-edge);
+}
+
+/* Allow the identity capsule to grow when the invitation is revealed. */
+.site-header .header-identity {
+  min-width: 0;
+  gap: 0;
+  transition: gap 550ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding 550ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.site-header .header-date {
+  max-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  margin: 0;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: max-width 600ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 350ms ease, transform 550ms ease;
+}
+.site-header.identity-revealed .header-identity {
+  gap: 18px;
+  padding-inline: 28px;
+}
+.site-header.identity-revealed .header-date {
+  max-width: 240px;
+  opacity: 1;
+  transform: translateX(0);
+}
+/* While the fabric is closed, keep the header closed too. */
+body:has(.opening-scene:not(.opened)) .site-header .header-date {
+  max-width: 0;
+  opacity: 0;
+}
+
+/* Match the right edge of the header islands on every viewport. */
+.chapter-picker,
+.chapter-picker.expanded {
+  right: max(var(--nav-edge), env(safe-area-inset-right));
+}
+
+/* The panel itself never scrolls during its reveal. Scroll only the final list
+   when the viewport is genuinely too short; keep its scrollbar invisible. */
+.chapter-panel,
+.chapter-panel-clip {
+  overflow: clip;
+  scrollbar-width: none;
+}
+.chapter-picker .chapter-nav {
+  max-height: calc(100svh - 48px - env(safe-area-inset-bottom));
+  overflow-x: clip;
+  overflow-y: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+.chapter-picker .chapter-nav::-webkit-scrollbar,
+.chapter-panel::-webkit-scrollbar,
+.chapter-panel-clip::-webkit-scrollbar {
+  display: none;
+}
+
+/* Each chapter is a miniature version of the opened masthead capsule. */
+.chapter-picker .chapter-nav a {
+  width: 100%;
+  min-height: 62px;
+  border: 1px solid #b8b49b55;
+  border-radius: 18px;
+  padding: 10px 14px;
+  background: #fbf8f2f5;
+  color: var(--ink);
+  box-shadow: 0 4px 22px #25352b10;
+  backdrop-filter: blur(12px);
+  text-align: left;
+}
+.chapter-picker .chapter-nav a[aria-current],
+.chapter-picker .chapter-nav a:hover,
+.chapter-picker .chapter-nav a:focus-visible {
+  color: var(--ink);
+  border-color: #b89a61aa;
+  background: var(--paper);
+}
+.chapter-picker .chapter-number,
+.chapter-picker .chapter-arrow { color: var(--gold); }
+.chapter-picker .chapter-copy { align-items: flex-start; }
+.chapter-picker .chapter-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+.chapter-picker .chapter-preview {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--moss);
+  font-size: 0.59rem;
+  line-height: 1.45;
+  letter-spacing: 0.035em;
+  opacity: 0.85;
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  :root { --nav-edge: max(18px, env(safe-area-inset-right)); }
+  .site-header .header-identity {
+    flex-direction: row;
+    gap: 0;
+    min-width: 0;
+  }
+  .site-header.identity-revealed .header-identity {
+    gap: 7px;
+    padding-inline: 13px;
+  }
+  .site-header .header-date {
+    display: block;
+    font-size: 0.53rem;
+  }
+  .site-header.identity-revealed .header-date {
+    max-width: 100px;
+  }
+  .chapter-picker .chapter-preview { font-size: 0.55rem; }
+}
+@media (max-width: 390px) {
+  .site-header .header-date { display: none; }
+  .site-header.identity-revealed .header-identity { gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header .header-identity,
+  .site-header .header-date { transition: none; }
+  .chapter-nav a { transition: none; }
+}
+
+/* Final navigation refinements: one-way desktop identity reveal. */
+@media (min-width: 761px) {
+  .site-header .header-identity {
+    width: 76px;
+    min-width: 76px;
+    height: 64px;
+    padding-inline: 0;
+    gap: 0;
+    justify-content: center;
+    overflow: hidden;
+    transition: width 800ms cubic-bezier(.16,1,.3,1), padding 800ms cubic-bezier(.16,1,.3,1), gap 800ms cubic-bezier(.16,1,.3,1);
+  }
+  .site-header .header-identity .monogram { transform: none; letter-spacing: -1px; }
+  .site-header.identity-revealed .header-identity {
+    width: 252px;
+    padding-inline: 22px;
+    gap: 16px;
+    justify-content: flex-start;
+  }
+  .site-header .header-date {
+    max-width: 0;
+    opacity: 0;
+    white-space: nowrap;
+    transition: max-width 0ms linear 760ms, opacity 250ms ease;
+  }
+  .site-header.identity-revealed .header-date {
+    max-width: 170px;
+    opacity: 1;
+    transition: max-width 0ms linear 760ms, opacity 350ms ease 760ms;
+  }
+  body:has(.opening-scene:not(.opened)) .site-header.identity-revealed .header-date {
+    max-width: 170px;
+    opacity: 1;
+  }
+}
+@media (max-width: 760px) {
+  .site-header .header-identity,
+  .site-header.identity-revealed .header-identity {
+    width: 58px;
+    min-width: 58px;
+    height: 58px;
+    padding: 0;
+    gap: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+  }
+  .site-header .header-identity .monogram,
+  .site-header.identity-revealed .header-identity .monogram {
+    transform: none;
+    letter-spacing: -1px;
+  }
+  .site-header .header-date,
+  .site-header.identity-revealed .header-date { display: none; }
+}
+.chapter-picker .chapter-nav a { min-height: 48px; }
+.chapter-picker .chapter-preview { display: none; }
+/* BotanicalFrame now owns a fixed falling-petal layer, not footer florals. */
+
+/* Header: follow opening curtain scroll exactly; reverse before fully opened. */
+@media (min-width: 761px) {
+  .site-header .header-identity,
+  .site-header.identity-revealed .header-identity {
+    position: relative;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: calc(var(--identity-base, 76px) + var(--identity-progress, 0) * var(--identity-growth, 0px));
+    min-width: var(--identity-base, 76px);
+    height: 64px;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    transition: none;
+  }
+  .site-header .header-identity .monogram,
+  .site-header.identity-revealed .header-identity .monogram {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: none;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .site-header .header-date,
+  .site-header.identity-revealed .header-date,
+  body:has(.opening-scene:not(.opened)) .site-header.identity-revealed .header-date {
+    position: absolute;
+    left: calc(14px + var(--logo-width, 40px) + 16px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: block;
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: none;
+    pointer-events: none;
+  }
+  .site-header.identity-revealed .header-date,
+  body:has(.opening-scene:not(.opened)) .site-header.identity-revealed .header-date {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Keep the floating chapter control comfortably clear of the viewport edge.
+   Align desktop and mobile using the same safe-area-aware inset. */
+.chapter-picker,
+.chapter-picker.expanded {
+  bottom: calc(38px + env(safe-area-inset-bottom));
+}
+
+/* A single logo geometry for both desktop start and the phone layout. */
+@media (max-width: 760px) {
+  .site-header .header-identity,
+  .site-header.identity-revealed .header-identity {
+    width: var(--identity-base, 76px);
+    min-width: var(--identity-base, 76px);
+    padding-inline: 14px;
+    box-sizing: border-box;
+  }
+}
+
+
+
+/* Background-only petals: the layer belongs to each chapter, never the viewport.
+   All chapter children (including text, frames, images and their descendants)
+   stack above it. It does not apply to the opening scene or footer. */
+:is(.intro, .celebration-details, .countdown, .details, .menu-section, .travel,
+    .rsvp-section, .dog-section, .travel-section) {
+  position: relative;
+  isolation: isolate;
+}
+:is(.intro, .celebration-details, .countdown, .details, .menu-section, .travel,
+    .rsvp-section, .dog-section, .travel-section) > :not(.chapter-petal-layer) {
+  position: relative;
+  z-index: 1;
+}
+.chapter-petal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: clip;
+  pointer-events: none;
+  contain: layout paint;
+}
+.chapter-petal-layer .chapter-petal {
+  position: absolute;
+  left: var(--petal-x);
+  top: 0;
+  width: var(--petal-size);
+  height: calc(var(--petal-size) * 1.35);
+  opacity: 0;
+  animation: chapter-petal-fall var(--petal-duration) linear var(--petal-delay) infinite;
+  will-change: transform;
+}
+.chapter-petal svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chapter-petal path:first-child { fill: #e9b5c1; stroke: #d69aaa; stroke-width: .55; }
+.chapter-petal path:last-child { fill: none; stroke: #f9e5e8; stroke-width: .8; }
+/* Continuous fall: constant lateral drift, no stop on chapter entry.
+   Fade in quickly at the upper boundary and fade out before exiting. */
+@keyframes chapter-petal-fall {
+  0% {
+    transform: translate3d(0, -45px, 0) rotate(0deg) scaleX(.8);
+    opacity: 0;
+  }
+  5% { opacity: var(--petal-opacity); }
+  86% { opacity: var(--petal-opacity); }
+  98%, 100% { opacity: 0; }
+  100% {
+    transform: translate3d(var(--petal-drift), var(--petal-distance), 0)
+      rotate(var(--petal-rotation)) scaleX(.8);
+  }
+}
+/* Fewer petals on mobile; slower animation reduces GPU work and clutter. */
+@media (max-width: 760px) {
+  .chapter-petal:nth-child(n+9) { display: none; }
+  .chapter-petal { animation-duration: calc(var(--petal-duration) * 1.25) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chapter-petal-layer { display: none; }
+}
+/* No fixed overlay can ever appear above photographs. */
+.falling-petals { display: none !important; }
+
+/* One paper photograph: the whole frame, image, caption and border move together.
+   Override the original rotation from app.css. */
+.story-image {
+  transform: rotate(0deg);
+  transform-origin: center center;
+  transition: transform 600ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  will-change: transform;
+}
+.story-image img {
+  transform: none;
+  transition: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .story-image:hover {
+    transform: translateY(-6px) rotate(3deg);
+  }
+  .story-image:hover img {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .story-image { transition: none !important; }
+  .story-image:hover { transform: none !important; }
+}
+
+/* The text ink isn't optically centered in the anchor's box (tight S).
+   The initial capsule is wider, and a 3px left correction fades as it opens.
+   The fully opened position and scroll/lock logic remain unchanged. */
+@media (min-width: 761px) {
+  .site-header .header-identity .monogram,
+  .site-header.identity-revealed .header-identity .monogram {
+    left: calc(
+      var(--identity-base, 80px) / 2
+      + (14px + var(--logo-width, 40px) / 2 - var(--identity-base, 80px) / 2) * var(--identity-progress, 0)
+      - 3px * (1 - var(--identity-progress, 0))
+    );
+    transform: translate(-50%, -50%);
   }
 }

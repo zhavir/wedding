@@ -12,10 +12,11 @@
   ];
   let active = $state('home');
   let expanded = $state(false);
+  let ready = $state(false);
   let picker: HTMLDivElement;
   let trigger: HTMLButtonElement;
-  const current = $derived(chapters.find((chapter) => chapter[0] === active) ?? chapters[0]);
   onMount(() => {
+    ready = true;
     let frame = 0;
     function update() {
       frame = 0;
@@ -57,17 +58,22 @@
   <div class="chapter-panel" aria-hidden={!expanded} inert={!expanded}>
     <div class="chapter-panel-clip">
       <nav class="chapter-nav" id="chapter-links" aria-label={t('Jump to a chapter')}>
-        <p class="eyebrow">{t('A day, a whole story')}</p>
         {#each chapters as [id, label], i (id)}
           <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Same-page anchors. -->
           <a
             href={`#${id}`}
+            style={`--item-index:${i}`}
             aria-current={active === id ? 'location' : undefined}
             onclick={() => {
               expanded = false;
             }}
-            ><span class="chapter-number">0{i + 1}</span><span>{t(label)}</span><span
-              aria-hidden="true">↗</span
+            ><span class="chapter-number">0{i + 1}</span><span class="chapter-copy"><span class="chapter-title">{t(label)}</span></span><svg
+              class="chapter-arrow"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"><path d="M6 18 18 6M6 6h12v12" /></svg
             ></a
           >
         {/each}
@@ -76,6 +82,7 @@
   </div>
   <button
     class="chapter-trigger"
+    disabled={!ready}
     type="button"
     bind:this={trigger}
     aria-label={t('Explore the chapters')}
@@ -85,8 +92,86 @@
       expanded = !expanded;
     }}
   >
-    <span class="picker-star" aria-hidden="true">✳</span><span class="picker-label"
-      ><small>{t('You are here')}</small>{t(current[1])}</span
-    ><span class="picker-toggle" aria-hidden="true">{expanded ? '−' : '+'}</span>
+    <svg
+      class="menu-toggle-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <path class="toggle-top" d="M4 7h16" />
+      <path class="toggle-middle" d="M4 12h16" />
+      <path class="toggle-bottom" d="M4 17h16" />
+    </svg>
   </button>
 </div>
+
+<style>
+  /* Keep the animated panel in its own clipped layer: no transient scrollbars. */
+  .chapter-panel {
+    overflow: clip;
+    scrollbar-width: none;
+    contain: paint;
+  }
+
+  .chapter-panel-clip {
+    overflow: clip;
+    scrollbar-width: none;
+  }
+
+  .chapter-panel::-webkit-scrollbar,
+  .chapter-panel-clip::-webkit-scrollbar,
+  .chapter-nav::-webkit-scrollbar { display: none; }
+
+  .chapter-nav {
+    overflow-x: clip;
+    scrollbar-width: none;
+  }
+
+  .chapter-nav a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .chapter-copy {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .chapter-title { display: block; }
+
+  .chapter-preview {
+    display: block;
+    font-size: .72rem;
+    line-height: 1.35;
+    letter-spacing: .065em;
+    opacity: .62;
+    transform: translateY(3px);
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+
+  .expanded .chapter-preview,
+  .chapter-nav a:hover .chapter-preview,
+  .chapter-nav a:focus-visible .chapter-preview {
+    opacity: .8;
+    transform: translateY(0);
+  }
+
+  .chapter-arrow { flex-shrink: 0; }
+
+  @media (max-width: 640px) {
+    .chapter-nav a { gap: 10px; }
+    .chapter-preview { font-size: .65rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chapter-preview { transition: none; transform: none; }
+  }
+</style>

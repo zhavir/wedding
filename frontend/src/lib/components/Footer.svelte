@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Flourish from './Flourish.svelte';
-  import BotanicalFrame from './BotanicalFrame.svelte';
   let footer: HTMLElement;
   let tied = $state(false);
   onMount(() => {
@@ -20,7 +19,6 @@
 </script>
 
 <footer bind:this={footer} class:tied>
-  <BotanicalFrame footer />
   <div class="footer-ribbon"><Flourish untied={tied ? 0 : 1} /></div>
   <p class="handwritten">{t('Tied together, always.')}</p>
   <p class="eyebrow">{t('THE BEST IS YET TO COME')}</p>
@@ -28,7 +26,15 @@
   <p>{w.dateLabel} · {w.location}</p>
   <div class="footer-bottom">
     <span>{t('Made with love, for the people we love.')}</span><a href={`mailto:${w.contactEmail}`}
-      >{t('A question? Say hello ↗')}</a
+      >{t('A question? Say hello ↗').replace('↗', '').trim()}
+      <svg
+        class="inline-arrow"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        aria-hidden="true"><path d="M6 18 18 6M6 6h12v12" /></svg
+      ></a
     ><a href={resolve('/#home')}>{t('Back to the beginning ↑')}</a>
   </div>
   <div class="marquee" aria-hidden="true">

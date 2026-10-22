@@ -6,8 +6,8 @@
   let progress = $state(0);
   let opened = $state(false);
   const foldPath = (i: number) => {
-    const top = 1 - Math.pow(progress, 1.35);
-    const hem = 1 - Math.pow(progress, 0.65);
+    const top = 1 - 0.9 * Math.pow(progress, 1.35);
+    const hem = 1 - 0.96 * Math.pow(progress, 0.65);
     const a = (i * 100) / 12,
       b = ((i + 1) * 100) / 12 + 0.025;
     return `M${a * top} 0 H${b * top} C${b * top} 320 ${b * hem} 670 ${b * hem} 1000 H${a * hem} C${a * hem} 670 ${a * top} 320 ${a * top} 0Z`;
