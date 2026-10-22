@@ -32,7 +32,7 @@
       // finish as they approach the center. This value decreases again
       // when scrolling upward, giving a fully reversible movement.
       const start = viewportHeight * 0.95;
-      const end = viewportHeight * 0.40;
+      const end = viewportHeight * 0.4;
       ringProgress = Math.max(0, Math.min(1, (start - rect.top) / (start - end)));
     };
     const scheduleRings = () => {
@@ -55,7 +55,12 @@
 </script>
 
 <section class="countdown" aria-label={t('Wedding countdown')}>
-  <div class="joined-rings" bind:this={rings} style={`--ring-progress: ${ringProgress}`} aria-hidden="true">
+  <div
+    class="joined-rings"
+    bind:this={rings}
+    style={`--ring-progress: ${ringProgress}`}
+    aria-hidden="true"
+  >
     <span><i class="diamond"></i></span><span></span>
   </div>
   <p class="eyebrow">{t('EVERY DAY, A LITTLE CLOSER')}</p>

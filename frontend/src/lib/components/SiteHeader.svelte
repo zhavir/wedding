@@ -33,7 +33,8 @@
       // Once fully revealed, keep the identity open when scrolling back upward.
       const scene = document.querySelector('.opening-scene');
       const distance = innerHeight * 0.65;
-      const amount = scene ? Math.max(0, -scene.getBoundingClientRect().top / distance)
+      const amount = scene
+        ? Math.max(0, -scene.getBoundingClientRect().top / distance)
         : scrollY / distance;
       const position = Math.max(0, Math.min(1, amount));
       // Reverse with scroll until fully open; only then latch permanently.
@@ -61,10 +62,21 @@
   });
 </script>
 
-<header class="site-header" class:gallery-header={gallery} class:scrolled={scrolled || gallery} class:identity-revealed={revealLocked || gallery}>
-  <div class="header-identity" style={`--identity-progress:${gallery ? 1 : revealProgress};--identity-growth:${identityGrowth}px;--identity-base:${identityBase}px;--logo-width:${logoWidth}px`}>
-    <a bind:this={monogramElement} class="monogram" href={gallery ? resolve('/') : '#home'} aria-label={w.names.join(' & ')}
-      >{w.names[0][0]}<em>&</em>{w.names[1][0]}</a
+<header
+  class="site-header"
+  class:gallery-header={gallery}
+  class:scrolled={scrolled || gallery}
+  class:identity-revealed={revealLocked || gallery}
+>
+  <div
+    class="header-identity"
+    style={`--identity-progress:${gallery ? 1 : revealProgress};--identity-growth:${identityGrowth}px;--identity-base:${identityBase}px;--logo-width:${logoWidth}px`}
+  >
+    <a
+      bind:this={monogramElement}
+      class="monogram"
+      href={gallery ? resolve('/') : '#home'}
+      aria-label={w.names.join(' & ')}>{w.names[0][0]}<em>&</em>{w.names[1][0]}</a
     >
     <span bind:this={dateElement} class="header-date">{w.dateLabel}</span>
   </div>
@@ -95,8 +107,14 @@
 </header>
 
 <style>
-  .monogram { flex-shrink: 0; }
+  .monogram {
+    flex-shrink: 0;
+  }
   @media (prefers-reduced-motion: reduce) {
-    .header-identity, .header-date, .monogram { transition: none !important; }
+    .header-identity,
+    .header-date,
+    .monogram {
+      transition: none !important;
+    }
   }
 </style>

@@ -29,11 +29,23 @@
       /></svg
     >
   </div>
-  <div class="menu-paper" class:touch-activated={menuActivated}
-    role="button" tabindex="0" aria-pressed={menuActivated}
+  <div
+    class="menu-paper"
+    class:touch-activated={menuActivated}
+    role="button"
+    tabindex="0"
+    aria-pressed={menuActivated}
     aria-label="Animate the menu card"
-    onclick={() => { if (window.matchMedia('(hover: none)').matches) menuActivated = !menuActivated; }}
-    onkeydown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); menuActivated = !menuActivated; } }}>
+    onclick={() => {
+      if (window.matchMedia('(hover: none)').matches) menuActivated = !menuActivated;
+    }}
+    onkeydown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        menuActivated = !menuActivated;
+      }
+    }}
+  >
     <p class="menu-word">Menu</p>
     {#each w.menu.courses as course, i (course.title)}<article>
         <span class="eyebrow">0{i + 1}</span>

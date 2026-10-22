@@ -29,4 +29,3 @@ class Resource:
     class Wedding:
         type: str
         url: str
-

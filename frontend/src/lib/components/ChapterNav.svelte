@@ -67,7 +67,9 @@
             onclick={() => {
               expanded = false;
             }}
-            ><span class="chapter-number">0{i + 1}</span><span class="chapter-copy"><span class="chapter-title">{t(label)}</span></span><svg
+            ><span class="chapter-number">0{i + 1}</span><span class="chapter-copy"
+              ><span class="chapter-title">{t(label)}</span></span
+            ><svg
               class="chapter-arrow"
               viewBox="0 0 24 24"
               fill="none"
@@ -123,7 +125,9 @@
 
   .chapter-panel::-webkit-scrollbar,
   .chapter-panel-clip::-webkit-scrollbar,
-  .chapter-nav::-webkit-scrollbar { display: none; }
+  .chapter-nav::-webkit-scrollbar {
+    display: none;
+  }
 
   .chapter-nav {
     overflow-x: clip;
@@ -145,33 +149,46 @@
     gap: 3px;
   }
 
-  .chapter-title { display: block; }
+  .chapter-title {
+    display: block;
+  }
 
   .chapter-preview {
     display: block;
-    font-size: .72rem;
+    font-size: 0.72rem;
     line-height: 1.35;
-    letter-spacing: .065em;
-    opacity: .62;
+    letter-spacing: 0.065em;
+    opacity: 0.62;
     transform: translateY(3px);
-    transition: opacity 220ms ease, transform 220ms ease;
+    transition:
+      opacity 220ms ease,
+      transform 220ms ease;
   }
 
   .expanded .chapter-preview,
   .chapter-nav a:hover .chapter-preview,
   .chapter-nav a:focus-visible .chapter-preview {
-    opacity: .8;
+    opacity: 0.8;
     transform: translateY(0);
   }
 
-  .chapter-arrow { flex-shrink: 0; }
+  .chapter-arrow {
+    flex-shrink: 0;
+  }
 
   @media (max-width: 640px) {
-    .chapter-nav a { gap: 10px; }
-    .chapter-preview { font-size: .65rem; }
+    .chapter-nav a {
+      gap: 10px;
+    }
+    .chapter-preview {
+      font-size: 0.65rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .chapter-preview { transition: none; transform: none; }
+    .chapter-preview {
+      transition: none;
+      transform: none;
+    }
   }
 </style>
