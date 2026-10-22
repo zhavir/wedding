@@ -2271,3 +2271,26 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
     transform: translate(-50%, -50%);
   }
 }
+
+/* Mobile refinements (2026-10-22): keep all other animations untouched. */
+@media (max-width: 760px) {
+  /* The seal between When and Where is decorative, not needed on narrow screens. */
+  .celebration-grid > .details-seal { display: none; }
+  .celebration-grid > article { border: 0; }
+  .celebration-grid > article:first-child { border-bottom: 1px solid #f7f2e929; }
+  /* Both translations retain their original strings; the emphasized phrase starts a new line. */
+  .countdown h2 em { display: block; }
+}
+/* Hover on computers; tap toggles the same state on touch screens. */
+@media (hover: hover) and (pointer: fine) {
+  .menu-paper:hover { transform: rotate(-1deg) translateY(-6px); }
+}
+@media (hover: none) {
+  .menu-paper:hover { transform: rotate(2deg); }
+  .menu-paper.touch-activated { transform: rotate(-1deg) translateY(-6px); }
+  .story-image:hover { transform: rotate(0deg); }
+  .story-image.touch-activated { transform: translateY(-6px) rotate(3deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-paper.touch-activated, .story-image.touch-activated { transform: none; }
+}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { wedding as w } from '#lib/wedding.ts';
   import Flourish from './Flourish.svelte';
+  let menuActivated = $state(false);
 </script>
 
 <section class="menu-section section" id="menu" aria-labelledby="menu-title">
@@ -28,7 +29,11 @@
       /></svg
     >
   </div>
-  <div class="menu-paper">
+  <div class="menu-paper" class:touch-activated={menuActivated}
+    role="button" tabindex="0" aria-pressed={menuActivated}
+    aria-label="Animate the menu card"
+    onclick={() => { if (window.matchMedia('(hover: none)').matches) menuActivated = !menuActivated; }}
+    onkeydown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); menuActivated = !menuActivated; } }}>
     <p class="menu-word">Menu</p>
     {#each w.menu.courses as course, i (course.title)}<article>
         <span class="eyebrow">0{i + 1}</span>
