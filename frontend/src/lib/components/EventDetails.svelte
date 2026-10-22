@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Timeline from './Timeline.svelte';
   import { t } from '#lib/i18n.svelte.ts';
   import { wedding as w } from '#lib/wedding.ts';
 </script>
@@ -18,14 +19,7 @@
       >
     </p>
   </div>
-  <div class="schedule">
-    {#each w.schedule as event, i (event.time)}<article>
-        <span class="event-number">0{i + 1}</span>
-        <p class="eyebrow">{w.scheduleUnconfirmed ? t('Time to be confirmed') : event.time}</p>
-        <h3>{event.title}</h3>
-        <p>{event.text}</p>
-      </article>{/each}
-  </div>
+  <Timeline />
   <div class="good-to-know">
     <h3>{t('A few little details')}</h3>
     <div>

@@ -11,7 +11,6 @@ COPY backend/app backend/app
 RUN if [ ! -f uv.lock ]; then uv lock; fi \
     && uv sync --frozen --package wedding-api --no-dev --no-editable
 COPY scripts scripts
-COPY content content
 COPY alembic.ini ./
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 EXPOSE 8000

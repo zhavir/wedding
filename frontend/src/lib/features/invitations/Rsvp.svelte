@@ -17,7 +17,7 @@
     attending: true,
     guests: [{ name: '', dietary: '' }],
     message: '',
-    consent: false,
+    consent: true,
     witness_acceptance: false
   });
   let form = $state<Rsvp>(empty());
@@ -60,6 +60,7 @@
     try {
       await api('/rsvp', 'PUT', {
         ...form,
+        consent: true,
         guests: form.attending ? form.guests : [],
         witness_acceptance: !!(
           session.guest.is_witness &&
@@ -201,13 +202,17 @@
                   >{/if}{/if}
               <label for="message">{t('A little note for us')} <span>{t('(optional)')}</span></label
               ><textarea id="message" bind:value={form.message} maxlength="1000" rows="3"
-              ></textarea><label class="checkbox"
-                ><input type="checkbox" bind:checked={form.consent} required /><span
-                  >{t(
-                    'I agree that my details are stored to organise the wedding. Dietary information is shared only as needed with the hosts and caterer.'
-                  )}</span
-                ></label
-              ><button class="button" disabled={busy || submitted}
+              ></textarea>
+              <p class="privacy-note">
+                {t(
+                  'By sending your reply, you agree that your details are stored to organise the wedding. Dietary information is shared only with the hosts and caterer as needed.'
+                )}
+              </p>
+              <button
+                class="button"
+                class:working={busy}
+                aria-busy={busy}
+                disabled={busy || submitted}
                 >{submitted
                   ? t('Reply saved')
                   : busy

@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { t } from '#lib/i18n.svelte.ts';
   import { wedding as w } from '#lib/wedding.ts';
 </script>
 
 <section class="section dog-section" id="akamaru">
   <div class="dog-picture">
-    <img src={w.dog.image} alt={w.dog.imageAlt} width="800" height="650" loading="lazy" />
+    <div class="dog-portrait">
+      <span class="dog-secret">{t('Chief of cuddles')} ♡</span>
+      <img src={w.dog.image} alt={w.dog.imageAlt} width="800" height="650" loading="lazy" />
+    </div>
     <p>{w.dog.placeholder}</p>
   </div>
   <div>

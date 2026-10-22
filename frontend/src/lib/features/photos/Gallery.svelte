@@ -335,7 +335,11 @@
         id="caption"
         bind:value={caption}
         maxlength="200"
-      /><button class="button" disabled={uploading || !files?.length}
+      /><button
+        class="button"
+        class:working={uploading}
+        aria-busy={uploading}
+        disabled={uploading || !files?.length}
         >{uploading ? t('Sharing your memories…') : t('Share the love ↗')}</button
       >
       <p role="status">{status}</p>

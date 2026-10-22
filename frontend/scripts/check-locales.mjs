@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const read = (name) =>
-  JSON.parse(readFileSync(new URL(`../../content/${name}`, import.meta.url), 'utf8'));
+  JSON.parse(readFileSync(new URL(`../src/lib/${name}`, import.meta.url), 'utf8'));
 const en = read('locales/en/ui.json');
 const it = read('locales/it/ui.json');
 assert.deepEqual(
@@ -18,8 +18,8 @@ for (const key of Object.keys(en)) {
     `Keep all placeholders in: ${key}`
   );
 }
-const wedding = read('locales/en/wedding.json');
-const italian = read('locales/it/wedding.json');
+const wedding = read('locales/en/content.json');
+const italian = read('locales/it/content.json');
 assert.equal(
   italian.schedule.length,
   wedding.schedule.length,

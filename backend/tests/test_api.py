@@ -1242,3 +1242,25 @@ def test_video_longer_than_three_minutes_is_valid(monkeypatch):
     metadata = {}
     assert video_preview(b"validated through mocked ffprobe", "video/mp4", metadata)
     assert metadata["duration_ms"] == 7200000
+
+
+def test_public_calendar_download_matches_confirmation_attachment(client):
+    from app.services.calendar import wedding_calendar
+    from app.services.email import content
+
+    uids = []
+    for locale in ("en", "it"):
+        response = client.get(f"/api/calendar.ics?locale={locale}")
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/calendar")
+        assert 'filename="andrea-sara-wedding.ics"' in response.headers["content-disposition"]
+        calendar = response.text
+        assert "DTSTART;VALUE=DATE:20270520\r\n" in calendar
+        assert "DTEND;VALUE=DATE:20270521\r\n" in calendar
+        assert "Villa Valentina" in calendar
+        assert "#invite=" not in calendar
+        uid = next(line for line in calendar.splitlines() if line.startswith("UID:"))
+        assert uid in wedding_calendar(content(locale), settings().site_url)
+        uids.append(uid)
+    assert uids[0] == uids[1]
+    assert client.get("/api/calendar.ics?locale=unknown").status_code == 422

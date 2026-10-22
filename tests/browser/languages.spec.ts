@@ -26,7 +26,7 @@ test('Italian browser defaults to Italian and reduced motion disables animations
   await page.goto(process.env.WEB_URL || 'http://localhost:5173');
   await expect(page.locator('html')).toHaveAttribute('lang', 'it');
   await expect(page.getByRole('button', { name: 'Italiano', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  expect(await page.locator('.hero-photo').evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+  await expect(page.locator('.curtain').first()).toHaveCSS('display', 'none');
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
   await page.screenshot({ path: testInfo.outputPath('landing-italian-mobile.png'), fullPage: true });
   await context.close();
@@ -39,7 +39,6 @@ test('Italian invitation and RSVP', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Benvenuti, Dear friends.' })).toBeVisible();
   await page.getByLabel('Indirizzo email').fill('italian-browser@example.com');
   await page.getByLabel('Nome e cognome').first().fill('Ospite italiano');
-  await page.getByLabel('Acconsento alla conservazione').check();
   await page.getByRole('button', { name: 'Invia la nostra risposta ↗' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Ci siete anche voi!' })).toBeVisible();
   await page.reload();
@@ -55,9 +54,11 @@ test('venue, travel, Akamaru and hero never overlap on a narrow screen', async (
   await expect(page.getByRole('heading', { name: 'Andrea & Sara', exact: true }).first()).toBeVisible();
   await expect(page.locator('.hero-date')).toContainText('20 maggio 2027');
   await page.evaluate(() => document.documentElement.style.fontSize = '22px');
-  const button = await page.locator('.hero .light-button').boundingBox();
-  const cue = await page.locator('.scroll-cue').boundingBox();
-  expect(button!.y + button!.height).toBeLessThan(cue!.y);
+  await page.getByRole('button', { name: 'Aprite il nostro invito' }).click();
+  await expect.poll(() => page.locator('.opening-scene').evaluate(el => Number(getComputedStyle(el).getPropertyValue('--opening')))).toBe(1);
+  const button = await page.locator('.hero .invitation-link').boundingBox();
+  expect(button!.height).toBeGreaterThanOrEqual(44);
+  await expect(page.locator('.curtain-cue')).toBeHidden();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 375);
   await expect(page.locator('#travel')).toContainText('Via Donizetti 17');
   await expect(page.locator('#travel')).toContainText('Hotel convenzionato');

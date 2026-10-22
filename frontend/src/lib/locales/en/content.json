@@ -1,16 +1,19 @@
 {
-  "names": [
-    "Andrea",
-    "Sara"
+  "footerPhrases": [
+    "A little love, a little magic",
+    "One day, a thousand memories",
+    "Stay for one more dance"
   ],
+  "names": ["Andrea", "Sara"],
   "date": "2027-05-20T00:00:00+02:00",
-  "dateLabel": "20 May 2027",
-  "location": "Tradate, Varese · Italy",
   "venue": "Villa Valentina",
   "address": "Via Donizetti 17, 21049 Tradate (VA), Italy",
   "mapUrl": "https://www.google.com/maps/dir/?api=1&destination=Villa+Valentina+Via+Donizetti+17+Tradate",
-  "rsvpBy": "a date we’ll share soon",
   "contactEmail": "hello@example.com",
+  "scheduleUnconfirmed": true,
+  "dateLabel": "20 May 2027",
+  "location": "Tradate, Varese · Italy",
+  "rsvpBy": "a date we’ll share soon",
   "intro": "Andrea, Sara, and a little dachshund named Akamaru. Our favourite kind of family. Now, one beautiful day to celebrate with the people we love.",
   "story": "Every love story is made of small moments: a walk together, a shared laugh, and coming home to the same wagging tail. On 20 May 2027, we’ll begin a new chapter at Villa Valentina. Our story will soon find its words here; for now, we’re just happy you’ll be part of it.",
   "heroImage": "/images/venue-exterior.webp",
@@ -52,14 +55,6 @@
       "answer": "Having you with us is the best gift. Your love, laughter, and company are all we’re wishing for."
     }
   ],
-  "email": {
-    "subject": "You’re invited to our wedding",
-    "heading": "It wouldn’t be the same without you.",
-    "intro": "We would love you to join us for our next chapter. Open your invitation to RSVP and share memories.",
-    "button": "Open your invitation",
-    "footer": "This personal link signs you in. Please keep it private."
-  },
-  "scheduleUnconfirmed": true,
   "travel": {
     "website": "https://www.villa-valentina.it/",
     "source": "https://www.villa-valentina.it/contatti.php",
@@ -96,20 +91,24 @@
     "placeholder": "A little illustration for now. Akamaru’s own photo is coming soon.",
     "linkLabel": "Say hello to Akamaru ↗"
   },
-  "witnessEmail": {
-    "subject": "Will you be our witness?",
-    "heading": "By our side, for our next chapter.",
-    "intro": "We would love you to stand beside us as our wedding witness. Open your personal invitation to confirm your role, attendance and guest details.",
-    "button": "Open your witness invitation",
-    "footer": "This personal link signs you in. Please keep it private."
-  },
-  "confirmationEmail": {
-    "subject": "Thank you — save our wedding date!",
-    "eyebrow": "SAVE THE DATE · THANK YOU",
-    "intro": "thank you for saying yes! We cannot wait to celebrate our wedding with you.",
-    "witnessIntro": "thank you for being our witness. Having you by our side makes this day even more special.",
-    "calendarHelp": "Open the attached .ics file to add 20 May 2027 to your calendar. It is an all-day reminder; the ceremony time will follow.",
-    "calendarDescription": "Andrea and Sara’s wedding. Ceremony time and final details will follow.",
-    "button": "Visit our wedding website"
+  "menu": {
+    "eyebrow": "AT THE TABLE",
+    "title": "A little taste of the day.",
+    "intro": "Long conversations, a few more toasts, and something delicious to share. We’re dreaming up our wedding menu.",
+    "courses": [
+      {
+        "title": "Aperitivo",
+        "description": "A welcome toast and little bites. Details coming soon."
+      },
+      {
+        "title": "At the table",
+        "description": "Our first and main courses are still a delicious work in progress."
+      },
+      {
+        "title": "Something sweet",
+        "description": "Wedding cake, a sweet ending, and one more reason to stay."
+      }
+    ],
+    "note": "The menu is a placeholder for now. Please tell us about allergies and dietary requirements in your RSVP."
   }
 }

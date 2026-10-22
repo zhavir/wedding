@@ -44,7 +44,7 @@ docker compose run --rm api python scripts/check_migrations.py
 
 The script upgrades, compares SQLAlchemy metadata, downgrades to base, upgrades again, verifies seed counts, then drops only the database it created. It refuses DSQL. Do not run downgrade against real wedding data. Before future releases, back up the database and test revisions against the local PostgreSQL stack.
 
-In **Invitation messages**, administrators can create, edit, deactivate and remove English/Italian wording separately for guests and witnesses. Allowed placeholders are `{name}`, `{couple}`, `{date}`, `{venue}`; text is HTML-escaped when rendered. A random matching message is saved per invitation/language/type, so preview and delivery agree. Editing a pool affects future selections, not saved wording. If no active matching message exists, the localized editable default in `content/locales/<language>/wedding.json` is used.
+In **Invitation messages**, administrators can create, edit, deactivate and remove English/Italian wording separately for guests and witnesses. Allowed placeholders are `{name}`, `{couple}`, `{date}`, `{venue}`; text is HTML-escaped when rendered. A random matching message is saved per invitation/language/type, so preview and delivery agree. Editing a pool affects future selections, not saved wording. If no active matching message exists, the localized editable default in `backend/app/locales/<language>.json` is used.
 
 Revision `0005_additional_guests` adds parent invitation links, structured additional-guest emails, and the per-uploader S3 prefix. Existing flat-layout media remains accessible. Run the normal upgrade before starting the updated API (Docker Compose's init service does this automatically).
 

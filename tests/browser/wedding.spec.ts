@@ -5,7 +5,7 @@ test('landing page, invitation and RSVP', async ({ page, context }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Andrea & Sara', exact: true }).first()).toBeVisible();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.evaluate(() => document.documentElement.clientWidth));
-  await page.locator('nav').getByRole('link', { name: /RSVP/ }).click();
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: /RSVP/ }).click();
   await page.getByLabel('Your invitation code').fill('DEMO-LOVE-2027');
   await page.getByRole('button', { name: /Open my invitation/ }).click();
   await expect(page.getByRole('heading', { name: /Welcome, Dear friends/ })).toBeVisible();
@@ -13,7 +13,7 @@ test('landing page, invitation and RSVP', async ({ page, context }) => {
   await page.getByLabel('Will you be joining us?').selectOption({ label: 'Joyfully accepts' });
   await page.getByLabel('Email address').fill('browser@example.com');
   await page.getByLabel('Full name').first().fill('Browser guest');
-  await page.getByLabel('I agree that my details').check();
+  await expect(page.locator('input[type=checkbox]')).toHaveCount(0);
   await page.getByRole('button', { name: /Send our reply/ }).click();
   await expect(page.getByText('You’re on the list!', { exact: false })).toBeVisible();
   await expect(page.locator('canvas.celebration')).toBeVisible();
@@ -65,7 +65,6 @@ test('saved witness reply is personalized and only opens for explicit editing', 
   await page.goto('/' + new URL(invite.link).hash);
   await expect(page.getByRole('heading', { name: 'Will you be our witness?' })).toBeVisible();
   await page.getByLabel('Yes, I accept the role of wedding witness.').check();
-  await page.getByLabel('I agree that my details').check();
   await page.getByRole('button', { name: 'Send our reply ↗' }).click();
   await expect(page.getByRole('button', { name: 'Edit your preferences', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send our reply ↗' })).toHaveCount(0);
@@ -92,7 +91,6 @@ test('additional guest receives a personal invitation that expires after rejecti
   const email = `additional-${Date.now()}@example.com`;
   await page.getByLabel('Additional guest email').fill(email);
   await page.getByLabel('Full name', { exact: true }).nth(1).fill('Alex');
-  await page.getByLabel('I agree that my details').check();
   await page.getByRole('button', { name: 'Send our reply ↗' }).click();
   await expect(page.getByRole('button', { name: 'Edit your preferences' })).toBeVisible();
   const list = await admin.request.get('/api/admin/invitations');

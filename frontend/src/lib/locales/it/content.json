@@ -1,7 +1,11 @@
 {
+  "footerPhrases": [
+    "Un po’ d’amore, un po’ di magia",
+    "Un giorno, mille ricordi",
+    "Ancora un ballo insieme"
+  ],
   "dateLabel": "20 maggio 2027",
   "location": "Tradate, Varese · Italia",
-  "address": "Via Donizetti 17, 21049 Tradate (VA), Italia",
   "rsvpBy": "una data che comunicheremo presto",
   "intro": "Andrea, Sara e un piccolo bassotto di nome Akamaru. La nostra idea di famiglia. Ora, un giorno bellissimo da condividere con le persone che amiamo.",
   "story": "Ogni storia d’amore è fatta di piccoli momenti: una passeggiata insieme, una risata e la stessa coda felice ad aspettarci a casa. Il 20 maggio 2027 inizieremo un nuovo capitolo a Villa Valentina. Presto racconteremo qui la nostra storia; per ora, siamo felici che ne facciate parte.",
@@ -42,13 +46,6 @@
       "answer": "Avervi con noi è il regalo più bello. Il vostro affetto, le risate e la vostra compagnia sono tutto ciò che desideriamo."
     }
   ],
-  "email": {
-    "subject": "Siete invitati al nostro matrimonio",
-    "heading": "Non sarebbe lo stesso senza di voi.",
-    "intro": "Saremmo felici di avervi con noi per il nostro nuovo capitolo. Aprite il vostro invito per rispondere e condividere i ricordi.",
-    "button": "Apri il tuo invito",
-    "footer": "Questo link personale permette di accedere. Tenetelo privato."
-  },
   "travel": {
     "website": "https://www.villa-valentina.it/",
     "source": "https://www.villa-valentina.it/contatti.php",
@@ -85,20 +82,24 @@
     "placeholder": "Per ora una piccola illustrazione. La foto di Akamaru arriverà presto.",
     "linkLabel": "Salutate Akamaru ↗"
   },
-  "witnessEmail": {
-    "subject": "Vuoi essere al nostro fianco come testimone?",
-    "heading": "Al nostro fianco, nel nostro nuovo capitolo.",
-    "intro": "Ci piacerebbe averti al nostro fianco come testimone di nozze. Apri il tuo invito personale per confermare il ruolo, la presenza e i dettagli degli ospiti.",
-    "button": "Apri il tuo invito da testimone",
-    "footer": "Questo link personale permette di accedere. Tienilo privato."
-  },
-  "confirmationEmail": {
-    "subject": "Grazie — segna la data del nostro matrimonio!",
-    "eyebrow": "SEGNA LA DATA · GRAZIE",
-    "intro": "grazie per il tuo sì! Non vediamo l’ora di festeggiare il nostro matrimonio insieme a te.",
-    "witnessIntro": "grazie per esserci come testimone. Averti al nostro fianco rende questo giorno ancora più speciale.",
-    "calendarHelp": "Apri il file .ics allegato per aggiungere il 20 maggio 2027 al calendario. È un promemoria per tutta la giornata; l’orario della cerimonia seguirà.",
-    "calendarDescription": "Il matrimonio di Andrea e Sara. L’orario della cerimonia e i dettagli definitivi seguiranno.",
-    "button": "Visita il sito del matrimonio"
+  "menu": {
+    "eyebrow": "A TAVOLA",
+    "title": "Un assaggio della giornata.",
+    "intro": "Lunghe chiacchierate, ancora un brindisi e qualcosa di buono da condividere. Stiamo immaginando il menu del nostro matrimonio.",
+    "courses": [
+      {
+        "title": "Aperitivo",
+        "description": "Un brindisi di benvenuto e piccoli assaggi. I dettagli arriveranno presto."
+      },
+      {
+        "title": "A tavola",
+        "description": "Primi e secondi sono ancora un delizioso lavoro in corso."
+      },
+      {
+        "title": "Qualcosa di dolce",
+        "description": "La torta nuziale, un dolce finale e un motivo in più per restare."
+      }
+    ],
+    "note": "Il menu è ancora provvisorio. Indicate allergie ed esigenze alimentari nella risposta all’invito."
   }
 }

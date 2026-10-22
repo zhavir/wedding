@@ -32,7 +32,7 @@ Follow [the SES setup guide](docs/EMAIL.md) to enable real delivery, select an I
 
 ## Edit content and images
 
-See [content/README.md](content/README.md). Shared settings and English copy are in `content/locales/en/wedding.json`; Italian overrides are in `content/locales/it/wedding.json`. UI translations live in `content/locales/`. Images live in `frontend/static/images/`. [Asset/source notes](content/ASSETS.md) identify the venue photographs and travel references.
+See [content guide](docs/CONTENT.md). Each app owns its event details. Frontend page copy and interface translations belong to `frontend/src/lib/locales/{en,it}/`; email translations belong to `backend/app/locales/{en,it}.json`. Images live in `frontend/static/images/`. [Asset/source notes](docs/ASSETS.md) identify the venue photographs and travel references.
 
 The date and venue are configured. Ceremony times, RSVP deadline, contact email, hotel arrangements, the full personal story and Akamaru’s real photograph still need your final content. The countdown targets the start of 20 May 2027 in Italy until a ceremony time is supplied.
 

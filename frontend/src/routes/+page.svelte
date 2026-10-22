@@ -1,14 +1,18 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { t } from '#lib/i18n.svelte.ts';
-  import LanguageSwitch from '#lib/components/LanguageSwitch.svelte';
+  import SiteHeader from '#lib/components/SiteHeader.svelte';
+  import BotanicalFrame from '#lib/components/BotanicalFrame.svelte';
+  import CelebrationDetails from '#lib/components/CelebrationDetails.svelte';
+  import Menu from '#lib/components/Menu.svelte';
   import { reveal } from '#lib/reveal.ts';
   import { onMount } from 'svelte';
   import { wedding as w } from '#lib/wedding.ts';
-  import { restoreSession, session } from '#lib/session.svelte.ts';
+  import { restoreSession } from '#lib/session.svelte.ts';
   import Travel from '#lib/components/Travel.svelte';
   import Akamaru from '#lib/components/Akamaru.svelte';
-  import Hero from '#lib/components/Hero.svelte';
+  import Opening from '#lib/components/Opening.svelte';
+  import ChapterNav from '#lib/components/ChapterNav.svelte';
   import OurStory from '#lib/components/OurStory.svelte';
   import Countdown from '#lib/components/Countdown.svelte';
   import EventDetails from '#lib/components/EventDetails.svelte';
@@ -24,26 +28,17 @@
   ><title>{w.names.join(' & ')} — {t('We’re getting married')}</title><meta
     name="description"
     content={`${w.names.join(' & ')} · ${w.dateLabel} · ${w.location}`}
-  /><meta name="theme-color" content="#f7f5ef" /><meta
+  /><meta name="theme-color" content="#fbf8f2" /><meta
     name="robots"
     content="noindex, nofollow"
   /><meta name="referrer" content="no-referrer" /></svelte:head
 >
 <a class="skip" href="#main">{t('Skip to content')}</a>
-<header>
-  <a class="monogram" href="#home">{w.names[0][0]}<span>&</span>{w.names[1][0]}</a>
-  <nav aria-label={t('Main navigation')}>
-    <a href="#story">{t('Our story')}</a><a href="#details">{t('The day')}</a><a href="#memories"
-      >{t('Memories')}</a
-    ><a class="nav-gallery" href={resolve('/gallery')}>{t('Gallery')}</a><a
-      class="nav-rsvp"
-      href="#rsvp">RSVP ↗</a
-    >{#if session.guest?.is_admin}<a href={resolve('/admin')}>{t('Admin')}</a>{/if}
-  </nav>
-  <LanguageSwitch />
-</header>
+<BotanicalFrame /><SiteHeader />
+<ChapterNav />
 <main id="main" use:reveal>
-  <Hero /><OurStory /><Countdown /><EventDetails /><Travel /><Akamaru /><Rsvp />
+  <Opening /><OurStory /><CelebrationDetails /><Countdown /><EventDetails /><Menu /><Travel
+  /><Akamaru /><Rsvp />
   <section class="section memory-link" id="memories">
     <p class="eyebrow">{t('04 / THROUGH YOUR EYES')}</p>
     <h2>{t('Share a little happiness.')}</h2>

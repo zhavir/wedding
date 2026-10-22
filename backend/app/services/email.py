@@ -1,6 +1,7 @@
 import asyncio
 import json
 from functools import lru_cache
+from importlib.resources import files
 
 from botocore.exceptions import BotoCoreError, ClientError
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -22,12 +23,8 @@ templates = Environment(
 
 @lru_cache
 def content(language: str = "en") -> dict:
-    base = json.loads(settings().content_file.read_text())
-    if language == "it":
-        base.update(
-            json.loads((settings().content_file.parent.parent / "it" / "wedding.json").read_text())
-        )
-    return base
+    locale = "it" if language == "it" else "en"
+    return json.loads(files("app").joinpath(f"locales/{locale}.json").read_text())
 
 
 def render_email(

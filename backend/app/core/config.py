@@ -1,5 +1,4 @@
 from functools import lru_cache
-from pathlib import Path
 
 from pydantic import EmailStr, Field, field_validator
 from pydantic_settings import BaseSettings
@@ -25,7 +24,6 @@ class Settings(BaseSettings):
     ses_region: str | None = None
     ses_profile: str | None = None
     email_from: str = "wedding@example.com"
-    content_file: Path = Path("content/locales/en/wedding.json")
 
     @field_validator("rsvp_notification_email", mode="before")
     @classmethod

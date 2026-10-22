@@ -1,0 +1,44 @@
+{
+  "names": [
+    "Andrea",
+    "Sara"
+  ],
+  "date": "2027-05-20T00:00:00+02:00",
+  "venue": "Villa Valentina",
+  "address": "Via Donizetti 17, 21049 Tradate (VA), Italy",
+  "contactEmail": "hello@example.com",
+  "email": {
+    "subject": "Siete invitati al nostro matrimonio",
+    "heading": "Non sarebbe lo stesso senza di voi.",
+    "intro": "Saremmo felici di avervi con noi per il nostro nuovo capitolo. Aprite il vostro invito per rispondere e condividere i ricordi.",
+    "button": "Apri il tuo invito",
+    "footer": "Questo link personale permette di accedere. Tenetelo privato."
+  },
+  "witnessEmail": {
+    "subject": "Vuoi essere al nostro fianco come testimone?",
+    "heading": "Al nostro fianco, nel nostro nuovo capitolo.",
+    "intro": "Ci piacerebbe averti al nostro fianco come testimone di nozze. Apri il tuo invito personale per confermare il ruolo, la presenza e i dettagli degli ospiti.",
+    "button": "Apri il tuo invito da testimone",
+    "footer": "Questo link personale permette di accedere. Tienilo privato."
+  },
+  "confirmationEmail": {
+    "subject": "Grazie — segna la data del nostro matrimonio!",
+    "eyebrow": "SEGNA LA DATA · GRAZIE",
+    "intro": "grazie per il tuo sì! Non vediamo l’ora di festeggiare il nostro matrimonio insieme a te.",
+    "witnessIntro": "grazie per esserci come testimone. Averti al nostro fianco rende questo giorno ancora più speciale.",
+    "calendarHelp": "Apri il file .ics allegato per aggiungere il 20 maggio 2027 al calendario. È un promemoria per tutta la giornata; l’orario della cerimonia seguirà.",
+    "calendarDescription": "Il matrimonio di Andrea e Sara. L’orario della cerimonia e i dettagli definitivi seguiranno.",
+    "button": "Visita il sito del matrimonio"
+  },
+  "dateLabel": "20 maggio 2027",
+  "location": "Tradate, Varese · Italia",
+  "labels": {
+    "invited": "SIETE INVITATI",
+    "dear": "Ciao",
+    "gallery": "Apri la galleria fotografica",
+    "codeHelp": "Oppure inserite questo codice sul sito per rispondere o caricare le foto.",
+    "questions": "Domande?",
+    "signature": "CON TUTTO IL NOSTRO AMORE",
+    "chapter": "IL PROSSIMO CAPITOLO"
+  }
+}

@@ -1,5 +1,5 @@
-import en from '../../../content/locales/en/ui.json';
-import it from '../../../content/locales/it/ui.json';
+import en from './locales/en/ui.json';
+import it from './locales/it/ui.json';
 
 export type Locale = 'en' | 'it';
 export const language = $state<{ current: Locale }>({ current: 'en' });

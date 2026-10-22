@@ -387,7 +387,7 @@ summary {
 summary::-webkit-details-marker {
   display: none;
 }
-details[open] summary span {
+.good-to-know details[open] summary span {
   transform: rotate(45deg);
 }
 details p {
@@ -628,7 +628,7 @@ footer > p:not(.eyebrow) {
   .nav-rsvp span {
     display: none;
   }
-  nav a:nth-child(3) {
+  header nav a:nth-child(3) {
     display: none;
   }
   .hero {
@@ -802,7 +802,7 @@ footer > p:not(.eyebrow) {
   }
 }
 
-/* Editorial details. Keep colours here and photography/text in content/. */
+/* Editorial details. Keep colours here and photography/text in frontend/src/lib/locales/. */
 :root {
   --accent: #a97554;
   --paper: #fcfaf4;

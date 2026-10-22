@@ -20,7 +20,7 @@ export function reveal(node: HTMLElement) {
   );
   node
     .querySelectorAll(
-      '.intro-copy, .story-image, .section-heading, .schedule article, .rsvp-card, .locked-gallery, .countdown h2'
+      '.intro-copy, .story-image, .section-heading, .schedule article, .rsvp-card, .locked-gallery, .countdown h2, .menu-intro, .menu-paper, .celebration-grid'
     )
     .forEach((element) => observer.observe(element));
   return {
