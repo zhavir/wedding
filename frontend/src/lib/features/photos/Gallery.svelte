@@ -1,10 +1,62 @@
 <script lang="ts">
   import { t } from '#lib/i18n.svelte.ts';
-  import { untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { api, type Photo } from '#lib/api.ts';
   import InvitationGate from '#lib/components/InvitationGate.svelte';
   import PhotoViewer from './PhotoViewer.svelte';
   import { session } from '#lib/session.svelte.ts';
+  // Center the active upload/invitation card on arrival, including on iOS Safari.
+  // The same #upload anchor is used for both the signed-in form and invitation gate.
+  function centerUploadCard() {
+    const card = document.getElementById('upload');
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const viewportTop = window.visualViewport?.offsetTop ?? 0;
+    // Tall cards cannot fit in the viewport; show their beginning in that case.
+    const offset = rect.height <= viewportHeight
+      ? (viewportHeight - rect.height) / 2
+      : Math.min(96, viewportHeight * 0.12);
+    const top = Math.max(0, window.scrollY + rect.top - viewportTop - offset);
+    window.scrollTo({ top, left: 0, behavior: 'instant' });
+  }
+
+  let centerFrame1 = 0;
+  let centerFrame2 = 0;
+  function scheduleCenterUpload() {
+    cancelAnimationFrame(centerFrame1);
+    cancelAnimationFrame(centerFrame2);
+    centerFrame1 = requestAnimationFrame(() => {
+      centerFrame2 = requestAnimationFrame(centerUploadCard);
+    });
+  }
+
+  onMount(() => {
+    // Ordinary Gallery navigation opens at the top. Only #upload targets the form.
+    if (window.location.hash === '#upload') scheduleCenterUpload();
+    else window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const handleHashChange = () => {
+      if (window.location.hash === '#upload') scheduleCenterUpload();
+      else if (!window.location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      cancelAnimationFrame(centerFrame1);
+      cancelAnimationFrame(centerFrame2);
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  });
+
+  // The invitation gate can be replaced with the upload form after session hydration.
+  // Recenter on that replacement, but not on photo updates or user typing.
+  $effect(() => {
+    const ready = session.ready;
+    const guest = Boolean(session.guest);
+    if (typeof window === 'undefined') return;
+    void ready;
+    void guest;
+    if (window.location.hash === '#upload') scheduleCenterUpload();
+  });
   let photos = $state<Photo[]>([]);
   let cursor = $state<string | null>(null);
   let busy = $state(false);

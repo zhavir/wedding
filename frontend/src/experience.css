@@ -1343,9 +1343,6 @@ footer .handwritten {
   .rsvp-card {
     padding: 25px 20px;
   }
-  footer {
-    padding: 85px 30px 150px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .opening-scene {
