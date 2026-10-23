@@ -44,13 +44,15 @@ def s3_url(url):
     # Container DNS: retain the signed Host while connecting to Floci's service name.
     parts = urlsplit(url)
     if parts.hostname == "localhost" and "api:8000" in base:
-        return urlunsplit((
-            parts.scheme,
-            "floci:4566",
-            parts.path,
-            parts.query,
-            parts.fragment,
-        )), parts.netloc
+        return urlunsplit(
+            (
+                parts.scheme,
+                "floci:4566",
+                parts.path,
+                parts.query,
+                parts.fragment,
+            )
+        ), parts.netloc
     return url, parts.netloc
 
 

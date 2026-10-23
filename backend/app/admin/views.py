@@ -138,12 +138,14 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     @staticmethod
     def validated(data: dict) -> InvitationCreate:
         try:
-            return InvitationCreate.model_validate({
-                **{k: data[k] for k in ("name", "max_guests")},
-                "email": data.get("email") or None,
-                "language": data.get("language", "en"),
-                "is_witness": bool(data.get("is_witness", False)),
-            })
+            return InvitationCreate.model_validate(
+                {
+                    **{k: data[k] for k in ("name", "max_guests")},
+                    "email": data.get("email") or None,
+                    "language": data.get("language", "en"),
+                    "is_witness": bool(data.get("is_witness", False)),
+                }
+            )
         except ValidationError as exc:
             raise ValueError(
                 "Enter a name, valid email address and between 1 and 12 reserved places."
@@ -499,10 +501,12 @@ def setup_admin(app) -> Admin:
         authentication_backend=auth,
     )
     assert admin.templates.env.loader is not None
-    admin.templates.env.loader = ChoiceLoader([
-        admin.templates.env.loader,
-        PrefixLoader({"upstream": PackageLoader("sqladmin", "templates")}),
-    ])
+    admin.templates.env.loader = ChoiceLoader(
+        [
+            admin.templates.env.loader,
+            PrefixLoader({"upstream": PackageLoader("sqladmin", "templates")}),
+        ]
+    )
     admin.add_view(InvitationAdmin)
     admin.add_view(MfaView)
     admin.add_view(PhotoAdmin)

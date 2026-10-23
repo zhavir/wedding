@@ -8,15 +8,16 @@ repos:
         language: system
         files: (^|/)pyproject\.toml$
         priority: 90
+
       - id: ruff-check
-        name: Ruff lint
-        entry: uv run --frozen --no-sync --package wedding-api ruff check
+        name: Ruff lint (auto-fix including unsafe)
+        entry: uv run --frozen --no-sync --package wedding-api ruff check --fix --unsafe-fixes
         language: system
         types_or: [python, pyi]
         priority: 90
       - id: ruff-format
-        name: Ruff format
-        entry: uv run --frozen --no-sync --package wedding-api ruff format --check
+        name: Ruff format (auto-fix)
+        entry: uv run --frozen --no-sync --package wedding-api ruff format
         language: system
         types_or: [python, pyi]
         priority: 90

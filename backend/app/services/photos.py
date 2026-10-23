@@ -164,11 +164,13 @@ def process_photo(photo: Photo) -> None:
         (media_key(photo, "previews", ".webp"), preview_bytes, "image/webp"),
     ]
     if motion:
-        objects.append((
-            media_key(photo, "originals", "-motion"),
-            motion,
-            photo.motion_content_type,
-        ))
+        objects.append(
+            (
+                media_key(photo, "originals", "-motion"),
+                motion,
+                photo.motion_content_type,
+            )
+        )
     for key, data, content_type in objects:
         try:
             s3().put_object(

@@ -6,8 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 def escape_text(value: str) -> str:
     return (
-        value
-        .replace("\\", "\\\\")
+        value.replace("\\", "\\\\")
         .replace("\r\n", "\n")
         .replace("\r", "\n")
         .replace("\n", "\\n")

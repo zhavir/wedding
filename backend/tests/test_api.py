@@ -1234,10 +1234,12 @@ def test_video_longer_than_three_minutes_is_valid(monkeypatch):
         "streams": [{"codec_type": "video", "width": 32, "height": 24, "codec_name": "h264"}],
         "format": {"format_name": "mov,mp4", "duration": "7200"},
     }
-    calls = iter([
-        SimpleNamespace(stdout=json.dumps(probe).encode()),
-        SimpleNamespace(stdout=frame.getvalue()),
-    ])
+    calls = iter(
+        [
+            SimpleNamespace(stdout=json.dumps(probe).encode()),
+            SimpleNamespace(stdout=frame.getvalue()),
+        ]
+    )
     monkeypatch.setattr("app.services.media.subprocess.run", lambda *args, **kwargs: next(calls))
     metadata = {}
     assert video_preview(b"validated through mocked ffprobe", "video/mp4", metadata)

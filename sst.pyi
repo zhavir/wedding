@@ -7,25 +7,32 @@ class Resource:
     class AdminPassword:
         type: str
         value: str
+
     class Api:
         type: str
         url: str
+
     class App:
         name: str
         stage: str
+
     class Database:
         endpoint: str
         region: str
         type: str
+
     class InviteEncryptionKey:
         type: str
         value: str
+
     class Photos:
         name: str
         type: str
+
     class Router:
         type: str
         url: str
+
     class Wedding:
         type: str
         url: str

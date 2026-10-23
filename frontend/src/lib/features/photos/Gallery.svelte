@@ -14,9 +14,10 @@
     const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
     const viewportTop = window.visualViewport?.offsetTop ?? 0;
     // Tall cards cannot fit in the viewport; show their beginning in that case.
-    const offset = rect.height <= viewportHeight
-      ? (viewportHeight - rect.height) / 2
-      : Math.min(96, viewportHeight * 0.12);
+    const offset =
+      rect.height <= viewportHeight
+        ? (viewportHeight - rect.height) / 2
+        : Math.min(96, viewportHeight * 0.12);
     const top = Math.max(0, window.scrollY + rect.top - viewportTop - offset);
     window.scrollTo({ top, left: 0, behavior: 'instant' });
   }

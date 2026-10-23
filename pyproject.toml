@@ -14,13 +14,20 @@ workspace.members = [ "backend" ]
 [tool.ruff]
 target-version = "py315"
 line-length = 100
-preview = true
+fix = true
+unsafe-fixes = true
 lint.select = [ "B", "E", "F", "I", "SIM", "UP" ]
 lint.ignore = [ "E501" ]
 lint.per-file-ignores."backend/tests/*" = [ "E402" ]
 lint.per-file-ignores."scripts/init_aws.py" = [ "E402" ]
+lint.fixable = [ "ALL" ]
 
 [tool.ty]
-src.include = [ "backend/app", "backend/tests", "scripts", "tests/integration.py" ]
+src.include = [
+  "backend/app",
+  "backend/tests",
+  "scripts",
+  "tests/integration.py",
+]
 environment.extra-paths = [ "backend" ]
 environment.python-version = "3.15"
