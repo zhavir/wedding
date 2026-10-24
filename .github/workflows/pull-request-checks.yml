@@ -13,8 +13,6 @@ concurrency:
 env:
   PUBLIC_API_URL: /api
   SST_TELEMETRY_DISABLED: '1'
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
 jobs:
   pre-commit:
     name: Pre-commit
@@ -35,16 +33,6 @@ jobs:
         with:
           enable-cache: true
           python-version: '3.15'
-      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: eu-central-1
-          mask-aws-account-id: true
-          allowed-account-ids: ${{ secrets.AWS_ACCOUNT_ID }}
-      - name: Authenticate to AWS Public ECR
-        run: |
-          aws ecr-public get-login-password --region us-east-1 |
-            docker login --username AWS --password-stdin public.ecr.aws
       - run: uv sync --frozen --all-packages --all-groups
       - run: npm ci && npm --prefix frontend ci
       - run: uv run --frozen --package wedding-api prek run --all-files
