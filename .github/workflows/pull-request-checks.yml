@@ -13,6 +13,8 @@ concurrency:
 env:
   PUBLIC_API_URL: /api
   SST_TELEMETRY_DISABLED: '1'
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
 jobs:
   pre-commit:
     name: Pre-commit
