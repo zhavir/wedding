@@ -1,10 +1,10 @@
 """Initial Aurora DSQL schema and seed records (squashed revisions 0001-0007)."""
 
-import os
 import time
 
 import sqlalchemy as sa
 from alembic import op
+from app.core.config import MigrationSettings
 
 revision = "0001_initial"
 down_revision = None
@@ -35,16 +35,7 @@ DEFAULTS = {
 
 
 def upgrade():
-    # Fail before schema changes if an operator bypassed release validation.
-    if os.environ.get("DSQL_HOST"):
-        for key in (
-            "WEDDING_GROOM_NAME",
-            "WEDDING_GROOM_EMAIL",
-            "WEDDING_BRIDE_NAME",
-            "WEDDING_BRIDE_EMAIL",
-        ):
-            if not os.environ.get(key, "").strip():
-                raise ValueError(f"{key} is required for the initial production migration")
+    config = MigrationSettings()
     with op.get_context().autocommit_block():
         op.create_table(
             "invitations",
@@ -254,13 +245,13 @@ def upgrade():
     for identity, name, email in [
         (
             "wedding-groom",
-            os.environ.get("WEDDING_GROOM_NAME", "Wedding groom"),
-            os.environ.get("WEDDING_GROOM_EMAIL", "groom@example.com"),
+            config.wedding_groom_name,
+            config.wedding_groom_email,
         ),
         (
             "wedding-bride",
-            os.environ.get("WEDDING_BRIDE_NAME", "Wedding bride"),
-            os.environ.get("WEDDING_BRIDE_EMAIL", "bride@example.com"),
+            config.wedding_bride_name,
+            config.wedding_bride_email,
         ),
     ]:
         op.get_bind().execute(

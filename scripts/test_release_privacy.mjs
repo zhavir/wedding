@@ -57,3 +57,13 @@ test('bootstrap reporting only emits fixed statuses and rejects unexpected outpu
     rmSync(cwd, { recursive: true, force: true });
   }
 });
+
+test('deployment debug forwards output and preserves failure', () => {
+  const result = spawnSync(process.execPath, ['scripts/private-command.mjs', process.execPath, '-e',
+    "console.log('diagnostic-output'); console.error('diagnostic-error'); process.exit(7);"], {
+    encoding: 'utf8', env: { ...process.env, DEBUG_DEPLOY: '1' },
+  });
+  assert.equal(result.status, 7);
+  assert.ok(result.stdout.includes('diagnostic-output'));
+  assert.ok(result.stderr.includes('diagnostic-error'));
+});

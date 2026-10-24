@@ -15,6 +15,10 @@ on:
         description: Skip the entire verification job for release troubleshooting
         type: boolean
         default: false
+      debug_deploy:
+        description: Show deployment output and bootstrap exception details for troubleshooting
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -53,6 +57,7 @@ jobs:
       WEDDING_BRIDE_NAME: ${{ secrets.WEDDING_BRIDE_NAME }}
       WEDDING_BRIDE_EMAIL: ${{ secrets.WEDDING_BRIDE_EMAIL }}
       SST_TELEMETRY_DISABLED: '1'
+      DEBUG_DEPLOY: ${{ inputs.debug_deploy && '1' || '0' }}
       BUILDX_NO_DEFAULT_ATTESTATIONS: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -92,13 +97,14 @@ jobs:
         if: inputs.operation != 'setup-dns'
         run: node scripts/report-bootstrap.mjs
       - name: Mask generated deployment outputs
+        if: ${{ !inputs.debug_deploy }}
         run: node scripts/mask-deployment-outputs.mjs
       - name: Verify deployed routing
         if: inputs.operation != 'setup-dns'
         run: |
           WEBSITE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.sst/outputs.json')).website)")
           node scripts/private-command.mjs curl --silent --show-error --output /dev/null --fail --retry 5 --retry-all-errors "$WEBSITE/api/health"
-          node scripts/private-command.mjs curl --silent --show-error --output /dev/null --fail --retry 5 --retry-all-errors "$WEBSITE/api/admin/login" >/dev/null
+          node scripts/private-command.mjs curl --silent --show-error --output /dev/null --fail --retry 5 --retry-all-errors "$WEBSITE/api/admin/login"
       - name: Remove private deployment files
         if: always()
         run: rm -rf .sst

@@ -378,6 +378,7 @@ export default $config({
             ADMIN_USERNAME: adminUsername,
             ADMIN_PASSWORD: adminPassword.value,
             RUNTIME_ROLE_ARN: role.arn,
+            DEBUG_DEPLOY: process.env.DEBUG_DEPLOY === "1" ? "1" : "0",
             SITE_URL: router.url,
             SES_IDENTITY: $output(identityArn).apply(
               (arn) => arn.split(":identity/")[1],
@@ -432,7 +433,9 @@ export default $config({
       const body = JSON.parse(response.body ?? "{}");
       if (response.statusCode !== 200 || body.ok !== true) {
         throw new Error(
-          "Deployment initialization failed; inspect the private bootstrap configuration and database migration state.",
+          process.env.DEBUG_DEPLOY === "1"
+            ? `Deployment initialization failed during ${body.phase ?? "unknown phase"}: ${body.error ?? response.body ?? result}`
+            : "Deployment initialization failed; inspect the private bootstrap configuration and database migration state.",
         );
       }
       return { admin: body.admin as string, ses: body.ses as string };

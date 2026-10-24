@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import os
 import re
 import secrets
 
@@ -11,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from app.admin.auth import hash_password
+from app.core.config import BootstrapSettings
 from app.db.models import AdminUser
 from app.db.session import sessions
 from app.manage import migrate
@@ -18,9 +18,9 @@ from app.manage import migrate
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 
-def admin_credentials() -> tuple[str, str]:
-    username = os.environ["ADMIN_USERNAME"].strip().lower()
-    password = os.environ["ADMIN_PASSWORD"]
+def admin_credentials(config: BootstrapSettings) -> tuple[str, str]:
+    username = config.admin_username.strip().lower()
+    password = config.admin_password.get_secret_value()
     if not re.fullmatch(r"[a-z0-9_.@+-]{3,100}", username):
         raise ValueError("ADMIN_USERNAME must contain 3–100 letters, digits, or _.@+-")
     if not 14 <= len(password) <= 1024:
@@ -43,7 +43,7 @@ async def ensure_admin(username: str, password: str) -> str:
     return "created"
 
 
-def request_ses_access() -> str:
+def request_ses_access(config: BootstrapSettings) -> str:
     client = boto3.client("sesv2", region_name="eu-central-1")
     account = client.get_account()
     if account.get("ProductionAccessEnabled"):
@@ -53,15 +53,15 @@ def request_ses_access() -> str:
         return {"PENDING": "pending", "DENIED": "denied", "GRANTED": "review-granted"}[review]
     if review not in {None, "FAILED"}:
         raise RuntimeError("Unrecognized SES review status")
-    identity = client.get_email_identity(EmailIdentity=os.environ["SES_IDENTITY"])
+    identity = client.get_email_identity(EmailIdentity=config.ses_identity)
     if not identity.get("VerifiedForSendingStatus"):
         return "identity-unverified"
     try:
         client.put_account_details(
             ProductionAccessEnabled=True,
             MailType="TRANSACTIONAL",
-            WebsiteURL=os.environ["SITE_URL"],
-            AdditionalContactEmailAddresses=[os.environ["WEDDING_GROOM_EMAIL"]],
+            WebsiteURL=config.site_url,
+            AdditionalContactEmailAddresses=[config.wedding_groom_email],
             ContactLanguage="EN",
         )
     except client.exceptions.ConflictException:
@@ -79,17 +79,26 @@ def health():
 @app.post("/bootstrap")
 async def bootstrap():
     phase = "credentials"
+    debug = False
     try:
-        username, password = admin_credentials()
+        config = BootstrapSettings()
+        debug = config.debug_deploy
+        username, password = admin_credentials(config)
         phase = "migrations"
-        await migrate(os.environ["RUNTIME_ROLE_ARN"])
+        await migrate(config.runtime_role_arn)
         phase = "administrator"
         admin = await ensure_admin(username, password)
         phase = "ses"
-        ses = await asyncio.to_thread(request_ses_access)
-    except Exception:
-        # SQLAlchemy exceptions may include credential hashes or private seed data.
-        # Do not expose exception text in Lambda logs or the invocation result.
+        ses = await asyncio.to_thread(request_ses_access, config)
+    except Exception as exc:
+        if debug:
+            logging.getLogger(__name__).exception(
+                "Deployment initialization failed during %s", phase
+            )
+            return JSONResponse(
+                {"ok": False, "phase": phase, "error": f"{type(exc).__name__}: {exc}"},
+                status_code=500,
+            )
         logging.getLogger(__name__).error("Deployment initialization failed during %s", phase)
         return JSONResponse({"ok": False}, status_code=500)
     return {"ok": True, "admin": admin, "ses": ses}

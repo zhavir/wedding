@@ -52,7 +52,7 @@ def test_bootstrap_admin_preserves_existing_account_and_leaves_mfa_for_login(tmp
 
 
 @pytest.fixture
-def ses(monkeypatch):
+def ses(monkeypatch, configured):
     client = boto3.client(
         "sesv2", region_name="eu-central-1", aws_access_key_id="test", aws_secret_access_key="test"
     )
@@ -74,12 +74,12 @@ def test_existing_ses_review_is_not_resubmitted(ses, review, expected):
         {"ProductionAccessEnabled": False, "Details": {"ReviewDetails": {"Status": review}}},
         {},
     )
-    assert bootstrap.request_ses_access() == expected
+    assert bootstrap.request_ses_access(bootstrap.BootstrapSettings()) == expected
 
 
 def test_ses_approved(ses):
     ses.add_response("get_account", {"ProductionAccessEnabled": True}, {})
-    assert bootstrap.request_ses_access() == "approved"
+    assert bootstrap.request_ses_access(bootstrap.BootstrapSettings()) == "approved"
 
 
 def test_ses_waits_for_identity_verification(ses):
@@ -87,7 +87,7 @@ def test_ses_waits_for_identity_verification(ses):
     ses.add_response(
         "get_email_identity", {"VerifiedForSendingStatus": False}, {"EmailIdentity": "example.com"}
     )
-    assert bootstrap.request_ses_access() == "identity-unverified"
+    assert bootstrap.request_ses_access(bootstrap.BootstrapSettings()) == "identity-unverified"
 
 
 @pytest.mark.parametrize("review", [None, "FAILED"])
@@ -112,11 +112,16 @@ def test_ses_submission_and_concurrent_request(ses, review, conflict):
         )
     else:
         ses.add_response("put_account_details", {}, expected)
-    assert bootstrap.request_ses_access() == ("pending" if conflict else "submitted")
+    assert bootstrap.request_ses_access(bootstrap.BootstrapSettings()) == (
+        "pending" if conflict else "submitted"
+    )
 
 
 @pytest.fixture
 def configured(monkeypatch):
+    monkeypatch.setenv("SES_IDENTITY", "example.com")
+    monkeypatch.setenv("SITE_URL", "https://example.com")
+    monkeypatch.setenv("WEDDING_GROOM_EMAIL", "groom@example.com")
     monkeypatch.setenv("ADMIN_USERNAME", "Wedding.Admin")
     monkeypatch.setenv("ADMIN_PASSWORD", "a-secure-initial-password")
     monkeypatch.setenv("RUNTIME_ROLE_ARN", "arn:aws:iam::123456789012:role/runtime")
@@ -133,7 +138,7 @@ def test_bootstrap_order_and_readiness(monkeypatch, configured):
         calls.append("admin")
         return "created"
 
-    def ses():
+    def ses(config):
         calls.append("ses")
         return "submitted"
 
@@ -149,9 +154,11 @@ def test_bootstrap_order_and_readiness(monkeypatch, configured):
 
 
 @pytest.mark.parametrize("stage", ["credentials", "migrate", "admin", "ses"])
-def test_bootstrap_failure_stops_and_does_not_disclose_secrets(
-    monkeypatch, configured, caplog, stage
+@pytest.mark.parametrize("debug", [False, True])
+def test_bootstrap_failure_stops_and_respects_debug_flag(
+    monkeypatch, configured, caplog, stage, debug
 ):
+    monkeypatch.setenv("DEBUG_DEPLOY", "1" if debug else "0")
     migration = AsyncMock()
     admin = AsyncMock(return_value="existing")
     ses = MagicMock(return_value="approved")
@@ -167,8 +174,18 @@ def test_bootstrap_failure_stops_and_does_not_disclose_secrets(
     with TestClient(bootstrap.app) as client:
         response = client.post("/bootstrap")
     assert response.status_code == 500
-    assert response.json() == {"ok": False}
-    assert "private-sensitive-data" not in response.text + caplog.text
+    if debug:
+        assert response.json()["ok"] is False
+        assert response.json()["phase"] == {"migrate": "migrations", "admin": "administrator"}.get(
+            stage, stage
+        )
+        assert "error" in response.json()
+        assert "Traceback" in caplog.text
+        if stage != "credentials":
+            assert "private-sensitive-data" in response.json()["error"]
+    else:
+        assert response.json() == {"ok": False}
+        assert "private-sensitive-data" not in response.text + caplog.text
     if stage in {"credentials", "migrate"}:
         admin.assert_not_called()
     if stage != "ses":
