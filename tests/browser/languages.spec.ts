@@ -7,9 +7,9 @@ test('switch language, preserve form input and remember choice', async ({ page }
   await page.getByLabel('Your invitation code').fill('NOT-SUBMITTED');
   await page.getByRole('button', { name: 'Italiano', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'it');
-  await expect(page.getByLabel('Il codice del vostro invito')).toHaveValue('NOT-SUBMITTED');
-  await expect(page.getByText('Ci sposiamo. E voi siete parte della nostra storia.')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Caricate le vostre foto ↗' })).toBeAttached();
+  await expect(page.getByLabel('Inserisci il codice')).toHaveValue('NOT-SUBMITTED');
+  await expect(page.getByText("Ci sposiamo! E non vediamo l'ora di festeggiarlo insieme a te.")).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Carica le tue foto/video ↗' })).toBeAttached();
   await expect(page.locator('.gallery')).toHaveCount(0);
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.evaluate(() => document.documentElement.clientWidth));
   await page.reload();
@@ -36,7 +36,7 @@ test('Italian invitation and RSVP', async ({ page }) => {
   await page.goto('/#invite=DEMO-LOVE-2027');
   await openReplyForm(page);
   await page.getByRole('button', { name: 'Italiano', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Benvenuti, Dear friends.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Benvenuto, Dear friends.' })).toBeVisible();
   await page.getByLabel('Indirizzo email').fill('italian-browser@example.com');
   await page.getByLabel('Nome e cognome').first().fill('Ospite italiano');
   await page.getByRole('button', { name: 'Invia la nostra risposta ↗' }).click();
@@ -54,7 +54,7 @@ test('venue, travel, Akamaru and hero never overlap on a narrow screen', async (
   await expect(page.getByRole('heading', { name: 'Andrea & Sara', exact: true }).first()).toBeVisible();
   await expect(page.locator('.hero-date')).toContainText('20 maggio 2027');
   await page.evaluate(() => document.documentElement.style.fontSize = '22px');
-  await page.getByRole('button', { name: 'Salta l’animazione' }).click();
+  await page.getByRole('button', { name: 'Scorri in basso' }).click();
   await expect.poll(() => page.locator('.envelope-scene').evaluate(el => Number(getComputedStyle(el).getPropertyValue('--page-reveal')))).toBe(1);
   const button = await page.locator('.hero .invitation-link').boundingBox();
   expect(button!.height).toBeGreaterThanOrEqual(44);
@@ -62,10 +62,10 @@ test('venue, travel, Akamaru and hero never overlap on a narrow screen', async (
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 375);
   await expect(page.locator('#travel')).toContainText('Via Donizetti 17');
 
-  await expect(page.locator('#akamaru img').first()).toHaveAttribute('src', '/images/akamaru.webp');
+  await expect(page.getByRole('img', { name: 'Il nostro bassotto Akamaru', exact: true })).toHaveAttribute('src', '/images/akamaru.webp');
   await expect(page.locator('#travel iframe')).toHaveCount(0);
   await page.route('https://maps.google.com/**', route => route.fulfill({ contentType: 'text/html', body: '<p>Map embed requested</p>' }));
-  await page.getByRole('button', { name: 'Mostra la mappa interattiva' }).click();
+  await page.getByRole('button', { name: 'Mostra la mappa' }).click();
   await expect(page.locator('#travel iframe')).toHaveAttribute('src', /Villa%20Valentina/);
   await page.evaluate(() => document.documentElement.style.fontSize = '18px');
   await page.screenshot({ path: testInfo.outputPath('andrea-sara-mobile.png'), fullPage: true });

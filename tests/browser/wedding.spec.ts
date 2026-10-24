@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { openReplyForm } from './rsvp-form';
 
@@ -31,7 +32,7 @@ test('landing page, invitation and RSVP', async ({ page, context }) => {
   await page.getByRole('button', { name: /Open my invitation/ }).click();
   await expect(page.getByLabel('Email address', { exact: true })).toHaveValue('browser@example.com');
   await expect(page.getByRole('button', { name: 'Edit your preferences' })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Upload your photos ↗' }).click();
+  await page.getByRole('link', { name: 'Upload your photos/videos ↗' }).click();
   await expect(page).toHaveURL(/\/gallery#upload/);
   await page.getByLabel('Choose photos and videos').setInputFiles('tests/browser/memory.png');
   await page.getByLabel('A little caption').fill('A browser-tested memory');
@@ -59,8 +60,8 @@ test('an invalid email link displays its error only once', async ({ page }) => {
 
 test('saved witness reply is personalized and only opens for explicit editing', async ({ page }) => {
   await page.request.post('/api/session', { headers: { Origin: 'http://web:5173' }, data: { code: 'DEMO-ADMIN-2027' } });
-  const created = await page.request.post('/api/admin/invitations', { headers: { Origin: 'http://web:5173' }, data: { invitations: [{ name: 'Giulia', email: 'witness@example.com', is_witness: true }] } });
-  expect(created.ok()).toBeTruthy();
+  const created = await page.request.post('/api/admin/invitations', { headers: { Origin: 'http://web:5173' }, data: { invitations: [{ name: 'Giulia', email: `witness-${randomUUID()}@example.com`, is_witness: true }] } });
+  expect(created.ok(), await created.text()).toBeTruthy();
   const invite = (await created.json()).items[0];
   await page.goto('/' + new URL(invite.link).hash);
   await expect(page.getByRole('heading', { name: 'Will you be our witness?' })).toBeVisible();
@@ -68,7 +69,7 @@ test('saved witness reply is personalized and only opens for explicit editing', 
   await page.getByRole('button', { name: 'Send our reply ↗' }).click();
   await expect(page.getByRole('button', { name: 'Edit your preferences', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send our reply ↗' })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Upload your photos ↗' }).click();
+  await page.getByRole('link', { name: 'Upload your photos/videos ↗' }).click();
   await page.getByRole('link', { name: '← Back to our wedding' }).click();
   await expect(page.getByRole('button', { name: 'Edit your preferences', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Send our reply ↗' })).toHaveCount(0);
@@ -82,8 +83,8 @@ test('additional guest receives a personal invitation that expires after rejecti
   const admin = await browser.newContext({ baseURL: process.env.WEB_URL || 'http://localhost:5173' });
   const headers = { Origin: 'http://web:5173' };
   await admin.request.post('/api/session', { headers, data: { code: 'DEMO-ADMIN-2027' } });
-  const created = await admin.request.post('/api/admin/invitations', { headers, data: { invitations: [{ name: 'Party host', email: 'party@example.com', max_guests: 2 }] } });
-  expect(created.ok()).toBeTruthy();
+  const created = await admin.request.post('/api/admin/invitations', { headers, data: { invitations: [{ name: 'Party host', email: `party-${randomUUID()}@example.com`, max_guests: 2 }] } });
+  expect(created.ok(), await created.text()).toBeTruthy();
   const parent = (await created.json()).items[0];
   await page.goto('/' + new URL(parent.link).hash);
   await expect(page.locator('header').getByRole('link', { name: 'Gallery', exact: true })).toBeVisible();

@@ -1,5 +1,12 @@
 # Validation status
 
+## 2026-10-24 — complete desktop/mobile E2E regression
+
+- **72 of 72 Playwright tests passed** (36 desktop, 36 mobile; 3.6 minutes) against the existing local Docker stack with PostgreSQL and Floci. No tests were skipped.
+- Updated language, opening, map and upload-link assertions to match the current website copy. The Akamaru check selects the photograph by its accessible name instead of relying on image order.
+- Witness and party-host fixtures now use unique email addresses, preventing duplicate-invitation conflicts across projects and repeated runs. Invitation-creation assertions include the response body when they fail.
+- Validation covered real local uploads, admin moderation, gallery access, RSVP persistence, additional-guest revocation, translations and responsive presentation. Existing local volumes were preserved; production was not contacted.
+
 ## 2026-10-24 — rebuilt Docker stack and admin browser verification
 
 - Rebuilt and started the local stack with `docker compose up --build -d --wait web`. Init completed successfully; PostgreSQL, Floci, API and web became healthy. Existing local database and media volumes were preserved.
