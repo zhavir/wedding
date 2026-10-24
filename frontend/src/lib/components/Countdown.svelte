@@ -71,9 +71,5 @@
         <span>{String(unit.value).padStart(2, '0')}</span><small>{unit.label}</small>
       </div>{/each}
   </div>
-  <p>
-    {remaining === 0
-      ? t('Our next chapter is here.')
-      : t('We’re counting the moments until we’re all together.')}
-  </p>
+  {#if remaining === 0}<p>{t('Our next chapter is here.')}</p>{/if}
 </section>

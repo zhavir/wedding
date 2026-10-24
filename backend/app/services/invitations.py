@@ -2,26 +2,45 @@ import secrets
 import time
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import cipher, digest
-from app.db.models import Invitation, InvitationLink
+from app.db.models import Guest, Invitation, InvitationLink
 from app.schemas import InvitationCreate
 from app.services.access import ensure_access
 from app.services.messages import invitation_message
 
 
 async def create_invitation(
-    db: AsyncSession, data: InvitationCreate, *, is_admin: bool = False, token: str | None = None
+    db: AsyncSession,
+    data: InvitationCreate,
+    *,
+    is_admin: bool = False,
+    token: str | None = None,
+    guest: Guest | None = None,
 ) -> Invitation:
+    if guest is not None:
+        existing = await db.scalar(select(Invitation).where(Invitation.guest_id == guest.id))
+        if existing:
+            return existing
+    email = str(data.email).casefold() if data.email else None
+    if email and await db.scalar(select(Invitation.id).where(Invitation.email == email)):
+        raise ValueError("An invitation already exists for this email address.")
+    if guest is None:
+        guest = Guest(
+            id=uuid.uuid7().hex, name=data.name, audience="witness" if data.is_witness else "guest"
+        )
+        db.add(guest)
     token = token or secrets.token_urlsafe(32)
     invite = Invitation(
         id=uuid.uuid7().hex,
-        name=data.name,
-        email=str(data.email) if data.email else "",
+        name=guest.name,
+        guest=guest,
+        email=email,
         language=data.language,
-        is_witness=data.is_witness,
+        is_witness=guest.audience == "witness",
         max_guests=data.max_guests,
         active=True,
         is_admin=is_admin,
@@ -47,7 +66,7 @@ def invitation_view(invite: Invitation) -> dict[str, object]:
     return {
         "id": invite.id,
         "name": invite.name,
-        "email": invite.email,
+        "email": invite.email or "",
         "language": invite.language,
         "is_witness": invite.is_witness,
         "max_guests": invite.max_guests,

@@ -65,6 +65,8 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        PUBLIC_ASSET_URL: ${PUBLIC_ASSET_URL:-}
     environment:
       API_PROXY_TARGET: http://api:8000
     ports: ["127.0.0.1:5173:5173"]

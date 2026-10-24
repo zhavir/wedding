@@ -8,7 +8,7 @@
   }
 
   const chapters =
-    '.intro, .celebration-details, .countdown, .details, .menu-section, .travel, .rsvp-section, .dog-section, .travel-section';
+    '.intro, .celebration-details, .countdown, .details, .visions, .travel, .rsvp-section, .dog-section, .travel-section';
 
   onMount(() => {
     const layers: HTMLElement[] = [];

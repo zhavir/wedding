@@ -7,7 +7,7 @@ from app.core.security import DB, Admin, cipher
 from app.db.models import Invitation
 from app.schemas import InvitationBatch, SendBatch
 from app.services.access import ensure_access
-from app.services.email import render_email, send_invitation
+from app.services.email import content, render_email, send_invitation
 from app.services.invitations import create_invitation, invitation_view
 from app.services.messages import invitation_message
 from app.services.rsvps import read_response
@@ -40,7 +40,10 @@ async def list_invitations(
 
 @router.post("/invitations", status_code=201)
 async def generate(body: InvitationBatch, admin: Admin, db: DB):
-    rows = [await create_invitation(db, item) for item in body.invitations]
+    try:
+        rows = [await create_invitation(db, item) for item in body.invitations]
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
     await db.commit()
     return {"items": [invitation_view(row) for row in rows]}
 
@@ -68,6 +71,7 @@ async def preview(invitation_id: str, admin: Admin, db: DB):
         invite,
         cipher().decrypt(access.encrypted_code.encode()).decode(),
         message_template=selected_message,
+        wedding=await content(invite.language or "en", db),
     )
 
 

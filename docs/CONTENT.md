@@ -1,26 +1,29 @@
-# Content ownership
+# Editing the wedding copy
 
-Edit the copy in the app that presents it. Each app owns the event details it uses; neither imports content from the other app. Keep private guest data out of all content files.
+Runtime translations live in `frontend/src/lib/locales/{en,it}/`:
 
-- `frontend/src/lib/locales/en/ui.json` and `it/ui.json`: interface labels, form wording, navigation, and accessibility text. Keep translation keys and `{placeholders}` aligned.
-- `frontend/src/lib/locales/en/content.json` and `it/content.json`: story, schedule, FAQs, travel, Akamaru, image paths/descriptions, and localized display dates. Italian copy inherits shared frontend values from English where omitted.
-- `backend/app/locales/en.json` and `it.json`: invitation, witness, and confirmation email text, including template labels and the event details used by emails and calendar attachments. These files ship inside the Python app; they are never imported by the browser.
-- `backend/app/templates/email_base.html`: shared, responsive email stationery. `invitation.html` and `confirmation.html` supply their specific copy and actions. Templates autoescape guest data. Optional CSS animations enhance supporting clients; all content and links work without animation.
+- `content/event.json`: couple, date, venue, RSVP deadline and contact details.
+- `content/story.json`, `timeline.json`, `questions.json`, `travel.json`, `akamaru.json`, `ceremony-visions.json`, `footer.json`: one section per file, matching keys in both languages.
+- `ui/<component>.json`: short interface labels grouped by the component that uses them. `shared.json` contains reused labels; `api-errors.json` contains API error translations.
 
-When changing the date, names, venue, or contact address, update both apps. Keep localized display dates consistent with the machine-readable date. Changing content requires a rebuild. Images belong in `frontend/static/images/`; see [asset notes](ASSETS.md).
+Keep the same keys and placeholders in both languages. `npm run check` checks section parity, interpolation placeholders and matching timeline times. Do not add `N/A`: remove the unused copy and its rendering instead.
 
-## Motion and interaction
+Confirmed details: 20 May 2027, arrival 16:00, ceremony 16:30, aperitivo 17:00, dinner 19:00, cake 21:00, final drinks and goodbyes 22:00–00:00. RSVP deadline: 30 April 2027. The uploaded files do not specify a separate catering appointment date.
 
-`frontend/src/experience.css` contains the linen, sage, and ribbon styling. `Opening.svelte` opens the mockup-inspired linen curtains and loosens the gold ornament with scroll or its button. `BotanicalFrame.svelte` restores the moving side flowers on desktop and keeps them at the opening/footer edges on mobile. `Timeline.svelte` follows the SVG curve with scroll and reveals decorative keepsakes. `Footer.svelte` ties the gold ornament when it enters view. `Countdown.svelte` joins the wedding rings as it enters view. `ChapterNav.svelte` provides a single expanding chapter dock with inert hidden links and Escape-key dismissal. The landing and gallery pages share `SiteHeader.svelte`; the gallery retains its back link and sign-out action. `Menu.svelte` displays clearly provisional menu copy from each frontend locale. No third-party animation runtime is required.
+`CeremonyVisions.svelte` replaces the old menu section. `OurStory.svelte` reserves three story chapters with two portrait Polaroid frames each. `Akamaru.svelte` provides a pointer/touch/keyboard comparison slider. The timeline uses compact text entries with the closest entry highlighted as the scroll marker moves. The original section-scoped petal isolation is preserved, so no chapter petals spill over the opening invitation. See [ASSETS.md](ASSETS.md) for photography and WebP conversion.
 
-Reduced-motion visitors get a fully open invitation, visible timeline content, and static decorations. Flowers do not cover mobile content. Hover details are decorative; touch and keyboard users retain every action. RSVP submission acknowledges the adjacent data-use notice without a separate checkbox; witnesses still explicitly accept their role.
+## Admin-owned email copy
 
-The Cormorant Garamond and DM Sans fonts are self-hosted under `frontend/static/fonts/`, with their OFL licenses. The monogram favicon is `frontend/static/favicon.svg`.
+Invitation layouts are code-owned Jinja templates, `backend/app/templates/invitation_en.html` and `invitation_it.html`, using shared stationery. Static email labels and event facts live in `backend/app/services/email_content.py`. There are no runtime backend locale files or section-copy database records.
 
-The language switch preserves input and remembers the visitor's choice. English is the fallback for browsers other than Italian. Guest names, messages, and captions are never machine-translated.
+**Invitation Email Template** stores mutable text by language and audience (guest, witness, groom, bride, +1). Supported placeholders are `{name}`, `{couple}`, `{date}`, `{venue}`. Previews and sends use the first active template by ID matching language/audience; edits take effect immediately. Static code-owned introductory text is the fallback when no matching template exists.
 
-## Checks
+## Authenticated photo carousel
 
-Run `npm --prefix frontend run check` for locale parity and Svelte types, `npm --prefix frontend run build`, and the backend and browser suites. Browser coverage includes mobile navigation, scroll animation, reduced motion, English/Italian switching, RSVP, witnesses, admin, and private media uploads.
+The landing page makes one asynchronous request to `/api/photos/carousel` per authenticated session. It never requests photos before authentication and clears them on logout. The static page renders independently of that request. All distinct, completed still photos with **Visible in carousel** enabled are returned; videos are excluded. Photos with guest targets are visible only to those guests, in both the carousel and gallery. Responses contain IDs, captions and temporary signed previews only.
 
-The invitation’s “Save the date” link downloads `/api/calendar.ics` in the selected language. It reuses the confirmation email’s calendar generator and stable event UID. The event is all-day until ceremony times are confirmed; its date, venue and description come from the backend locale files.
+**Visible in gallery** and **Visible in carousel** are independent controls: both, either, or neither can be enabled. Both API feeds require a valid invitation session. Empty/error responses leave the page usable. Motion pauses on hover; reduced-motion users can scroll manually. The carousel does not poll or refresh expired URLs.
+
+## Envelope opening
+
+`EnvelopeOpening.svelte` uses a pinned scroll scene. The closed envelope enlarges, the flap opens, and the invitation stays at its final viewport size while the envelope moves down. Scroll reversal reverses these transforms continuously. The animated **Scroll to reveal** cue can be clicked to reveal the invitation; reduced motion shows it immediately.

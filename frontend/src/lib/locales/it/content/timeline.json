@@ -1,0 +1,34 @@
+{
+  "schedule": [
+    {
+      "time": "16:00",
+      "title": "Arrivo in villa",
+      "text": "Lo sposo e Akamaru vi daranno il benvenuto a Villa Valentina, pronti ad accogliervi per iniziare insieme questa giornata speciale."
+    },
+    {
+      "time": "16:30",
+      "title": "Cerimonia",
+      "text": "Il momento in cui renderemo ufficiale il nostro amore, circondati dalle persone più importanti della nostra vita."
+    },
+    {
+      "time": "17:00",
+      "title": "Aperitivo",
+      "text": "La cerimonia è fatta, ora possiamo rilassarci! Ci aspetta un aperitivo con qualcosa da bere, qualcosa da mangiare e un po' di tempo per stare insieme."
+    },
+    {
+      "time": "19:00",
+      "title": "Cena",
+      "text": "Si passa a tavola! Godetevi la cena, perché la serata è ancora lunga!"
+    },
+    {
+      "time": "21:00",
+      "title": "Taglio della torta",
+      "text": "Il momento della torta, delle foto di rito e di qualcosa di buono prima di tornare ai festeggiamenti."
+    },
+    {
+      "time": "22:00 - 00:00",
+      "title": "Dopo cena e saluti",
+      "text": "Liquori, cioccolato e qualche ultima chiacchiera per concludere la serata e salutarci."
+    }
+  ]
+}

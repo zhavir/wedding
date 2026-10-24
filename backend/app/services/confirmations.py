@@ -19,8 +19,8 @@ from app.services.calendar import wedding_calendar
 from app.services.email import content, templates
 
 
-def queue_confirmation(db: AsyncSession, invite: Invitation, body: RSVP) -> str:
-    wedding = content(invite.language or "en")
+async def queue_confirmation(db: AsyncSession, invite: Invitation, body: RSVP) -> str:
+    wedding = await content(invite.language or "en", db)
     copy = wedding["confirmationEmail"]
     intro = copy["witnessIntro"] if invite.is_witness else copy["intro"]
     key = uuid.uuid7().hex

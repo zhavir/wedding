@@ -246,27 +246,6 @@ nav a {
     serif;
   margin-top: 35px;
 }
-.story-image {
-  position: relative;
-  transform: rotate(2deg);
-  padding: 14px 14px 48px;
-  background: #eee9de;
-}
-.story-image img {
-  width: 100%;
-  height: 470px;
-  object-fit: cover;
-}
-.photo-note {
-  position: absolute;
-  bottom: 15px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font:
-    italic 18px Georgia,
-    serif;
-}
 .flower {
   position: absolute;
   left: -42px;
@@ -597,17 +576,7 @@ footer > p:not(.eyebrow) {
   font-size: 10px;
   color: inherit;
 }
-.skip {
-  position: fixed;
-  top: -100px;
-  left: 20px;
-  background: white;
-  padding: 15px;
-  z-index: 100;
-}
-.skip:focus {
-  top: 15px;
-}
+
 @media (min-width: 1600px) {
   .section {
     padding-left: 40px;
@@ -654,13 +623,6 @@ footer > p:not(.eyebrow) {
   .intro {
     grid-template-columns: 1fr;
     gap: 45px;
-  }
-  .story-image {
-    max-width: 450px;
-    margin: 0 15px;
-  }
-  .story-image img {
-    height: 380px;
   }
   .flower {
     font-size: 85px;
@@ -944,21 +906,6 @@ header nav {
 .section-heading h2 em,
 .rsvp-grid h2 em {
   color: var(--accent);
-}
-.story-image {
-  background: var(--paper);
-  box-shadow: 0 25px 70px #354b3d18;
-  border: 1px solid #e5dfd2;
-}
-.story-image::before {
-  content: '';
-  width: 100px;
-  height: 28px;
-  background: #d8c6a9aa;
-  position: absolute;
-  left: calc(50% - 50px);
-  top: -12px;
-  transform: rotate(-6deg);
 }
 .countdown {
   background: radial-gradient(ellipse at 50% 0, #f4f4e9, #e6eadf);
@@ -1260,12 +1207,10 @@ footer > p:not(.eyebrow) {
   background: #eeeade;
   padding: 30px;
 }
-.travel-cards h3,
-.hotel-placeholder h3 {
+.travel-cards h3 {
   margin-bottom: 18px;
 }
 .travel-cards p,
-.hotel-placeholder p,
 .dog-section p {
   font-size: 0.95rem;
 }
@@ -1285,34 +1230,12 @@ footer > p:not(.eyebrow) {
   display: block;
   margin-top: 24px;
 }
-.hotel-placeholder {
-  border: 1px dashed #a97554;
-  padding: 35px;
-}
-.hotel-placeholder h3 {
-  margin-top: 16px;
-}
-.hotel-placeholder .badge {
-  margin-top: 24px;
-  font-size: 0.8rem;
-}
 .dog-section {
   padding-top: 30px;
 }
 .dog-section h2 {
   margin-block: 22px;
   font-size: clamp(2.3rem, 4vw, 3.5rem);
-}
-.dog-picture img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.dog-picture p {
-  font-size: 0.8rem;
-  font-style: italic;
-  margin-top: 15px;
-  text-align: center;
 }
 @media (max-width: 760px) {
   header nav a:not(.nav-rsvp):not(.nav-gallery) {
@@ -1353,7 +1276,6 @@ footer > p:not(.eyebrow) {
     height: 300px;
   }
   .travel-cards article,
-  .hotel-placeholder,
   .venue-map {
     padding: 24px;
   }

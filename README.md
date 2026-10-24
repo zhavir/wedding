@@ -24,17 +24,17 @@ docker compose exec api python -m app.manage admin-user --username andrea
 
 Enter and confirm your own password (at least 14 characters), then open **http://localhost:5173/api/admin/**. There is no default admin password. `/admin` redirects to this interface. The old admin email-link login does not authenticate SQLAdmin.
 
-Create a record in **Invitations → New Invitation**, then review its private link/email preview. Select records and choose **Actions → Send selected invitations** to review and confirm delivery separately. See [the admin guide](docs/ADMIN.md) for password resets, bulk sending, session behaviour and production credential provisioning.
+Create a name in **Guests**, select it and choose **Create invitations**, then edit its invitation and review the private link/email preview. Select invitation records and choose **Actions → Send invitation** to review and confirm delivery separately. See [the admin guide](docs/ADMIN.md) for password resets, bulk sending, session behaviour and production credential provisioning.
 
 ## Real email and RSVP notifications
 
-Follow [the SES setup guide](docs/EMAIL.md) to enable real delivery, select an Italian or English invitation template, share a private link without knowing a guest’s email, and configure `RSVP_NOTIFICATION_EMAIL`. Normal Docker uses Floci and sends no real email. The admin includes structured RSVP responses, individual attending guests and notification delivery states.
+Follow [the SES setup guide](docs/EMAIL.md) to enable real delivery, select an Italian or English invitation template, share a private link without knowing a guest’s email, and configure `RSVP_NOTIFICATION_EMAIL`. Normal Docker uses Floci and sends no real email. The admin menu contains Guests, Invitations, Gallery and Invitation Email Template. RSVP details live on invitations, and +1 emails are sent automatically with admin notifications.
 
 ## Edit content and images
 
-See [content guide](docs/CONTENT.md). Each app owns its event details. Frontend page copy and interface translations belong to `frontend/src/lib/locales/{en,it}/`; email translations belong to `backend/app/locales/{en,it}.json`. Images live in `frontend/static/images/`. [Asset/source notes](docs/ASSETS.md) identify the venue photographs and travel references.
+See the [content guide](docs/CONTENT.md). Frontend translations are grouped by section/component under `frontend/src/lib/locales/{en,it}/`. Email copy is editable in the admin database. The supplied reference images are bundled under `frontend/static/images/`; personal landing images can use the SST `LandingImages` bucket; see [image names, conversion and upload instructions](docs/ASSETS.md).
 
-The date and venue are configured. Ceremony times, RSVP deadline, contact email, hotel arrangements, the full personal story and Akamaru’s real photograph still need your final content. The countdown targets the start of 20 May 2027 in Italy until a ceremony time is supplied.
+The countdown targets 20 May 2027 at 16:30 in Italy; the RSVP deadline is 30 April 2027. Review the contact email and hotel copy before changing published content. Story photography uses six optional S3 slots; the venue, ceremony and Akamaru reference pictures are bundled.
 
 ## Validation
 
@@ -74,12 +74,12 @@ The landing page links to **`/gallery#upload`**; the gallery and photo uploader 
 
 Guest email links establish an HttpOnly session cookie. Browsers retain it for up to 400 days and authenticated requests renew it; a browser can still remove cookies. Revoking an invitation blocks its sessions. SQLAdmin uses a separate password login and eight-hour HttpOnly session cookie.
 
-Guests upload original images, videos and paired Live Photos directly to S3. Images support JPEG/PNG/WebP/HEIC/HEIF up to 25 MiB; videos support MP4/MOV/WebM without an application size or duration cap. Large files transfer directly to S3 in parts. Completion validates media and preserves original bytes while producing a small WebP preview. Uploads stay hidden until an administrator publishes them through Media moderation. See [media guidance](docs/MEDIA.md) for Live Photo export and playback details. Originals may contain location metadata. Gallery access requires an invitation; downloads use expiring signed URLs. Pending uploads expire after one day. Completed originals are not automatically deleted.
+Guests upload original images, videos and paired Live Photos directly to S3. Images support JPEG/PNG/WebP/HEIC/HEIF up to 25 MiB; videos support MP4/MOV/WebM without an application size or duration cap. Large files transfer directly to S3 in parts. Completion validates media and preserves original bytes while producing a small WebP preview. Uploads stay hidden until an administrator publishes them through Gallery. See [media guidance](docs/MEDIA.md) for Live Photo export and playback details. Originals may contain location metadata. Gallery access requires an invitation; downloads use expiring signed URLs. Pending uploads expire after one day. Completed originals are not automatically deleted.
 
 ## AWS deployment
 
-Start with the [step-by-step first-publication guide](docs/PUBLISH.md), including everything to configure before your first GitHub push. Set `SITE_DOMAIN` in GitHub to publish at `https://example.com` with SST-managed DNS and trusted HTTPS.
+The product is already released in production. Use the [production update guide](docs/PUBLISH.md) for subsequent releases and [image upload guide](docs/ASSETS.md) to replace editorial photographs. Keep the existing domain, SST stages, encryption key and storage resources.
 
 The SST configuration provisions same-origin CloudFront routing, a static SvelteKit frontend, FastAPI on Lambda, Aurora DSQL and private S3 media storage. See [deployment and approval setup](docs/DEPLOYMENT.md), [GitHub restrictions](docs/GITHUB.md), [database migrations](docs/MIGRATIONS.md), and [media uploads/moderation](docs/MEDIA.md).
 
-CI builds and tests the application. Releases are manually dispatched by the repository owner and require explicit approval. No production deployment has been performed by the development session.
+CI builds and tests the application. Releases are manually dispatched by the repository owner and require explicit approval. Local validation does not establish the health of the deployed production version.

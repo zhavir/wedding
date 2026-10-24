@@ -1,6 +1,6 @@
 # AWS deployment with SST
 
-No production deployment has been performed. Local tests and infrastructure type checks do not prove an AWS deployment or SES delivery. Releases deploy directly to production. Verify real email delivery, database access, admin login and media moderation after deployment and before inviting guests.
+The product is already released in production. Preserve the existing SST stages, database, buckets and invitation encryption key when updating it. Local tests and infrastructure type checks do not prove an AWS deployment or SES delivery. Releases deploy directly to production. Verify real email delivery, database access, admin login and media moderation after deployment and before inviting guests.
 
 ## Infrastructure
 
@@ -10,7 +10,7 @@ Aurora DSQL is the serverless SQL database, with no always-running PostgreSQL se
 
 The Lambda runtime role has:
 
-- `dsql:DbConnect` only for its database, mapped to `wedding_app`. SQL grants allow reads/inserts/updates and deletion of editable invitation messages. No schema administration is granted.
+- `dsql:DbConnect` only for its database, mapped to `wedding_app`. SQL grants allow reads/inserts/updates and deletion of editable invitation messages and photo-to-guest targeting links. No schema administration is granted.
 - Object access only to its bucket's `pending/`, `originals/` and `previews/` prefixes; deletion only in `pending/`.
 - `ses:SendEmail` and `ses:SendRawEmail` only for the configured identity ARN, restricted by `ses:FromAddress`.
 - Log writes only to its own log group, retained seven days.
@@ -46,7 +46,7 @@ that production warming is working.
 
 ## One-time owner setup
 
-Follow [the complete first-publication guide](PUBLISH.md) for registration, GitHub configuration before the first push, AWS OIDC, SST DNS bootstrap, registrar delegation, SES approval, encryption-key setup and first deployment.
+Follow [production updates and initial setup](PUBLISH.md) for registration, GitHub configuration before the first push, AWS OIDC, SST DNS bootstrap, registrar delegation, SES approval, encryption-key setup and first deployment.
 
 Set `SITE_DOMAIN=example.com` in the GitHub `production` environment. The `setup-dns` operation creates the public hosted zone and SES verification/DKIM/DMARC records in the protected `production-dns` SST stage. After delegation, `deploy` creates the application in the separate protected `production` stage. SST creates a free non-exportable ACM certificate, validation records, CloudFront aliases and the `www` redirect. HTTP redirects to HTTPS. Keep both stages and their resource names stable.
 

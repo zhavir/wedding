@@ -1,0 +1,16 @@
+{% extends "sqladmin/details.html" %}
+{% from 'sqladmin/_macros.html' import render_form_fields %}
+{% block details_table %}
+{% if model_view.check_can_edit(request, model) %}
+<section class="mb-4" aria-label="Photo visibility">
+  <h3>Photo visibility</h3>
+  <p>Check or uncheck visibility and guests, then save. Leave all guests unchecked to allow every authenticated guest.</p>
+  <form action="{{ model_view._build_url_for('admin:edit', request, model) }}" method="post">
+    {% set form = model_view.visibility_form(model) %}
+    {{ render_form_fields(form) }}
+    <button type="submit" name="save" value="Save" class="btn btn-primary">Save visibility</button>
+  </form>
+</section>
+{% endif %}
+{{ super() }}
+{% endblock %}

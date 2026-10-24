@@ -41,7 +41,7 @@ test('gallery has its own authentication gate and lost-code flow', async ({ page
   await page.goto('/');
   await expect(page.locator('.gallery')).toHaveCount(0);
   await expect(page.locator('input[type=file]')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Upload your photos ↗' }).click();
+  await page.getByRole('link', { name: 'Upload your photos/videos ↗' }).click();
   await expect(page.getByLabel('Your invitation code')).toBeVisible();
   await expect(page.getByLabel('Choose photos and videos')).toHaveCount(0);
   await page.getByRole('button', { name: 'Lost your code?' }).click();

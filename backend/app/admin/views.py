@@ -1,54 +1,87 @@
 import asyncio
+import json
 import secrets
+import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import HTTPException
 from jinja2 import ChoiceLoader, PackageLoader, PrefixLoader
 from markupsafe import Markup
-from pydantic import ValidationError
 from sqladmin import Admin, ModelView, action, expose
 from sqladmin.filters import AllUniqueStringValuesFilter, BooleanFilter
 from sqlalchemy import func, select, update
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
-from wtforms import BooleanField, Form, IntegerField, SelectField, StringField, TextAreaField
+from wtforms import BooleanField, Form, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, NumberRange, Optional
 
 from app.admin.auth import AdminAuth
 from app.admin.mfa import MfaView
 from app.core.config import settings
 from app.core.security import cipher
-from app.db.models import (
-    ConfirmationEmail,
-    Invitation,
-    InvitationMessage,
-    Photo,
-    RSVPGuest,
-    RSVPNotification,
-    RSVPResponse,
-    WitnessResponse,
-)
+from app.db.models import Guest, Invitation, InvitationMessage, Photo
 from app.db.session import sessions
 from app.schemas import InvitationCreate
 from app.services.access import ensure_access
-from app.services.email import render_email, send_invitation
+from app.services.email import content, render_email, send_invitation
 from app.services.invitations import create_invitation, invitation_link
 from app.services.messages import invitation_message, validate_message
 
+AUDIENCES = [
+    ("guest", "Guest"),
+    ("witness", "Witness"),
+    ("groom", "Groom"),
+    ("bride", "Bride"),
+    ("+1", "+1"),
+]
 
-class InvitationForm(Form):
+
+class GuestForm(Form):
     name = StringField("Name", validators=[DataRequired()])
-    email = StringField(
-        "Email",
-        validators=[Optional(), Email()],
-        description="Optional: leave blank to share the personal link yourself.",
+    audience = SelectField("Audience", choices=AUDIENCES, default="guest")
+
+
+class GuestAdmin(ModelView, model=Guest):
+    name_plural = "Guests"
+    icon = "fa-solid fa-users"
+    form = GuestForm
+    can_delete = can_export = False
+    column_list = [Guest.name, Guest.audience]
+    column_searchable_list = [Guest.name]
+    column_filters = [AllUniqueStringValuesFilter(Guest.audience)]
+
+    async def on_model_change(self, data, model, is_created, request):
+        if data["audience"] not in dict(AUDIENCES):
+            raise ValueError("Choose a supported audience.")
+        if is_created:
+            model.id = uuid.uuid7().hex
+
+    async def after_model_change(self, data, model, is_created, request):
+        # Keep the invitation's delivery snapshot in sync with the guest identity.
+        async with sessions()() as db:
+            await db.execute(
+                update(Invitation)
+                .where(Invitation.guest_id == model.id)
+                .values(name=model.name, is_witness=model.audience == "witness")
+            )
+            await db.commit()
+
+    @action(
+        name="create-invitations",
+        label="Create invitations",
+        confirmation_message="Create personal invitations for the selected guests?",
     )
-    max_guests = IntegerField("Reserved places", default=2, validators=[NumberRange(min=1, max=12)])
-    language = SelectField(
-        "Email language", choices=[("en", "English"), ("it", "Italiano")], default="en"
-    )
-    is_witness = BooleanField("Witness", default=False)
-    active = BooleanField("Active", default=True)
+    async def create_invitations(self, request):
+        ids = list(dict.fromkeys(request.query_params.get("pks", "").split(",")))
+        async with sessions()() as db:
+            guests = list(await db.scalars(select(Guest).where(Guest.id.in_(ids))))
+            for guest in guests:
+                await create_invitation(db, InvitationCreate(name=guest.name), guest=guest)
+            await db.commit()
+        return RedirectResponse(
+            request.url_for("admin:list", identity="invitation"), status_code=303
+        )
 
 
 class InvitationNamesMixin(ModelView):
@@ -88,31 +121,39 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     can_delete = False
     can_export = False
     column_list = [
-        Invitation.name,
+        Invitation.guest,
         Invitation.email,
         Invitation.language,
-        Invitation.is_witness,
-        Invitation.max_guests,
         Invitation.active,
         Invitation.email_status,
+        Invitation.attending,
     ]
     column_searchable_list = [Invitation.name, Invitation.email]
     column_sortable_list = [Invitation.name, Invitation.email, Invitation.created_at]
     column_default_sort = (Invitation.created_at, True)
     column_details_list = [
-        Invitation.name,
+        Invitation.guest,
         Invitation.email,
         Invitation.language,
-        Invitation.is_witness,
-        Invitation.max_guests,
         Invitation.id,
         Invitation.active,
         Invitation.email_status,
         Invitation.email_error,
         Invitation.has_rsvp,
         Invitation.parent_invitation_id,
+        Invitation.attending,
+        Invitation.message,
+        Invitation.dietary,
+        Invitation.response_email,
+        Invitation.response_guests,
+        Invitation.witness_acceptance,
+        Invitation.updated_at,
     ]
     column_labels = {
+        Invitation.guest: "Guest",
+        Invitation.attending: "Accepted",
+        Invitation.updated_at: "Responded at",
+        Invitation.response_guests: "Party response details",
         Invitation.max_guests: "Reserved places",
         Invitation.language: "Email language",
         Invitation.is_witness: "Witness",
@@ -120,8 +161,37 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
         Invitation.has_rsvp: "RSVP response",
         Invitation.parent_invitation_id: "Invited by",
     }
-    column_formatters_detail = {Invitation.id: lambda model, attr: invitation_link(model)}
-    form = InvitationForm
+    column_formatters_detail = {
+        Invitation.id: lambda model, attr: invitation_link(model),
+        Invitation.updated_at: lambda model, attr: (
+            datetime.fromtimestamp(model.updated_at, UTC).strftime("%Y-%m-%d %H:%M UTC")
+            if model.updated_at
+            else "Not answered"
+        ),
+        Invitation.response_guests: lambda model, attr: "; ".join(
+            person["name"] + (": " + person["dietary"] if person.get("dietary") else "")
+            for person in json.loads(model.response_guests or "[]")
+        ),
+    }
+    column_filters = [
+        BooleanFilter(Invitation.has_rsvp, title="Has responded"),
+        BooleanFilter(Invitation.attending, title="Accepted"),
+        BooleanFilter(Invitation.active),
+        AllUniqueStringValuesFilter(Invitation.email_status),
+    ]
+    form_columns = [
+        Invitation.guest,
+        Invitation.email,
+        Invitation.language,
+        Invitation.max_guests,
+        Invitation.active,
+    ]
+    form_overrides = {"language": SelectField}
+    form_args = {
+        "language": {"choices": [("en", "English"), ("it", "Italiano")]},
+        "email": {"validators": [Optional(), Email()]},
+        "max_guests": {"default": 2, "validators": [NumberRange(min=1, max=12)]},
+    }
 
     def list_query(self, request):
         return super().list_query(request).where(Invitation.is_admin.is_(False))
@@ -135,51 +205,75 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     def form_edit_query(self, request):
         return super().form_edit_query(request).where(Invitation.is_admin.is_(False))
 
-    @staticmethod
-    def validated(data: dict) -> InvitationCreate:
-        try:
-            return InvitationCreate.model_validate(
-                {
-                    **{k: data[k] for k in ("name", "max_guests")},
-                    "email": data.get("email") or None,
-                    "language": data.get("language", "en"),
-                    "is_witness": bool(data.get("is_witness", False)),
-                }
-            )
-        except ValidationError as exc:
-            raise ValueError(
-                "Enter a name, valid email address and between 1 and 12 reserved places."
-            ) from exc
-
     async def insert_model(self, request: Request, data: dict):
         async with sessions()() as db:
-            invite = await create_invitation(db, self.validated(data))
+            guest = await db.get(Guest, data["guest"])
+            if guest is None:
+                raise ValueError("Select a guest.")
+            if await db.scalar(select(Invitation.id).where(Invitation.guest_id == guest.id)):
+                raise ValueError("This guest already has an invitation.")
+            invite = await create_invitation(
+                db,
+                InvitationCreate(
+                    name=guest.name,
+                    email=data.get("email") or None,
+                    language=data["language"],
+                    max_guests=data["max_guests"],
+                ),
+                guest=guest,
+            )
             invite.active = bool(data.get("active"))
             await db.commit()
             return invite
 
     async def update_model(self, request: Request, pk: str, data: dict):
-        values = self.validated(data)
         async with sessions()() as db:
             invite = await db.get(Invitation, pk)
             if not invite or invite.is_admin:
                 raise ValueError("Invitation not found.")
-            if (
-                str(values.email) if values.email else ""
-            ) != invite.email and invite.email_status not in {"draft", "failed"}:
-                raise ValueError("Create a new invitation when changing a recipient after sending.")
-            invite.language = values.language
-            invite.is_witness = values.is_witness
-            invite.name, invite.email, invite.max_guests = (
-                values.name,
-                str(values.email) if values.email else "",
+            if data["guest"] != invite.guest_id:
+                raise ValueError("An invitation stays linked to its original guest.")
+            values = InvitationCreate(
+                name=invite.guest.name,
+                email=data.get("email") or None,
+                language=data["language"],
+                max_guests=data["max_guests"],
+            )
+            email = str(values.email).casefold() if values.email else None
+            if email and await db.scalar(
+                select(Invitation.id).where(Invitation.email == email, Invitation.id != pk)
+            ):
+                raise ValueError("This email already belongs to another invitation.")
+            if email != invite.email:
+                invite.email_status, invite.email_error = "draft", None
+            invite.email, invite.language, invite.max_guests = (
+                email,
+                values.language,
                 values.max_guests,
             )
             invite.active = bool(data.get("active"))
             await db.commit()
             return invite
 
-    @action(name="send-invitations", label="Send selected invitations")
+    @action(
+        name="activate-invitations",
+        label="Activate invitations",
+        confirmation_message="Activate the selected invitations?",
+    )
+    async def activate_invitations(self, request):
+        ids = request.query_params.get("pks", "").split(",")
+        async with sessions()() as db:
+            await db.execute(
+                update(Invitation)
+                .where(Invitation.id.in_(ids), Invitation.is_admin.is_(False))
+                .values(active=True)
+            )
+            await db.commit()
+        return RedirectResponse(
+            request.url_for("admin:list", identity="invitation"), status_code=303
+        )
+
+    @action(name="send-invitations", label="Send invitation")
     async def review_send(self, request: Request):
         ids = list(dict.fromkeys(request.query_params.get("pks", "").split(",")))
         if not ids or not ids[0] or len(ids) > 25:
@@ -192,7 +286,8 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
             )
         if len(invites) != len(ids):
             raise HTTPException(400, "Invalid invitation selection.")
-        request.session["send_ids"] = ids
+        invites = [invite for invite in invites if invite.active]
+        request.session["send_ids"] = [invite.id for invite in invites]
         request.session["send_csrf"] = secrets.token_urlsafe(32)
         return await self.templates.TemplateResponse(
             request,
@@ -252,7 +347,12 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
             code = cipher().decrypt(access.encrypted_code.encode()).decode()
             # Email HTML is autoescaped by Jinja; render it without enabling scripts.
             return HTMLResponse(
-                render_email(invite, code, message_template=selected_message)["html"],
+                render_email(
+                    invite,
+                    code,
+                    message_template=selected_message,
+                    wedding=await content(invite.language or "en", db),
+                )["html"],
                 headers={
                     "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; sandbox allow-popups"
                 },
@@ -269,21 +369,58 @@ class UploaderFilter(AllUniqueStringValuesFilter):
         return [("__all", "All"), *[(row[0], row[1] or "Deleted guest") for row in rows]]
 
 
+class GuestCheckboxes:
+    """A reversible guest selector without modifier keys or Select2 state."""
+
+    def __call__(self, field, **kwargs):
+        choices = []
+        for index, (value, label, selected, _) in enumerate(field.iter_choices()):
+            choices.append(
+                Markup(
+                    '<label class="guest-choice"><input type="checkbox" name="{}" '
+                    'id="{}-{}" value="{}" {}> <span>{}</span></label>'
+                ).format(
+                    field.name, field.id, index, value, Markup("checked") if selected else "", label
+                )
+            )
+        return Markup('<div class="guest-choices" id="{}">{}</div>').format(
+            field.id, Markup("").join(choices)
+        )
+
+
 class PhotoAdmin(InvitationNamesMixin, model=Photo):
-    name_plural = "Media moderation"
+    name_plural = "Gallery"
+    details_template = "admin/photo_details.html"
     can_create = False
     can_edit = True
-    form_columns = [Photo.published, Photo.caption]
+    form_columns = [Photo.gallery_visible, Photo.carousel_visible, Photo.caption, Photo.guests]
+    form_overrides = {"gallery_visible": BooleanField, "carousel_visible": BooleanField}
+    form_widget_args = {
+        "gallery_visible": {"class": "form-check-input"},
+        "carousel_visible": {"class": "form-check-input"},
+    }
+    form_args = {
+        "guests": {
+            "label": "Visible to guests",
+            "widget": GuestCheckboxes(),
+            "description": "Leave empty for all authenticated guests. Selected guests are the only viewers in both gallery and carousel.",
+        },
+        "gallery_visible": {
+            "label": "Visible in gallery",
+            "description": "Show this media in the authenticated gallery.",
+        },
+        "carousel_visible": {
+            "label": "Visible in carousel",
+            "description": "Show this photo in the authenticated landing carousel. Videos are excluded.",
+        },
+    }
     column_details_list = [
         Photo.id,
         Photo.caption,
         Photo.status,
-        Photo.published,
         Photo.owner,
-        Photo.uploader_name,
         Photo.original_filename,
         Photo.uploaded_at,
-        Photo.completed_at,
         Photo.width,
         Photo.height,
         Photo.duration_ms,
@@ -295,15 +432,25 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
         Photo.motion_content_type,
     ]
     column_filters = [
-        BooleanFilter(Photo.published),
+        BooleanFilter(Photo.gallery_visible),
         AllUniqueStringValuesFilter(Photo.status),
         UploaderFilter(Photo.owner, title="Uploader", parameter_name="uploader"),
     ]
     column_labels = {
         Photo.owner: "Uploaded by",
-        Photo.uploader_name: "Uploader",
+        Photo.guests: "Visible to guests",
+        Photo.uploaded_at: "Uploaded at",
+        Photo.gallery_visible: "Visible in gallery",
+        Photo.carousel_visible: "Visible in carousel",
         Photo.id: "Media preview",
     }
+
+    column_formatters = {
+        Photo.uploaded_at: lambda model, attr: datetime.fromtimestamp(
+            model.uploaded_at, UTC
+        ).strftime("%Y-%m-%d %H:%M UTC")
+    }
+    column_formatters_detail = column_formatters
 
     async def get_detail_value(self, obj, prop, request=None):
         value, formatted = await super().get_detail_value(obj, prop, request)
@@ -322,8 +469,8 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
 
     @action(
         name="approve-media",
-        label="Approve selected media",
-        confirmation_message="Publish all selected completed uploads?",
+        label="Make visible in gallery",
+        confirmation_message="Make selected completed uploads visible in the gallery?",
     )
     async def approve_media(self, request):
         ids = request.query_params.get("pks", "").split(",")[:100]
@@ -331,123 +478,59 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
             await db.execute(
                 update(Photo)
                 .where(Photo.id.in_(ids), Photo.status == "complete")
-                .values(published=True)
+                .values(gallery_visible=True)
             )
             await db.commit()
         return RedirectResponse(request.url_for("admin:list", identity="photo"), status_code=303)
 
-    async def on_model_change(self, data, model, is_created, request):
-        if data.get("published") and model.status != "complete":
-            raise ValueError("Only successfully processed media can be published.")
-
-    @action(name="review-media", label="Review selected media")
-    async def review_media(self, request):
-        from html import escape
-
-        from app.services.photos import photo_view
-
-        ids = request.query_params.get("pks", "").split(",")[:25]
+    @action(
+        name="show-carousel",
+        label="Make visible in carousel",
+        confirmation_message="Make selected completed photos visible in the carousel? Videos are excluded.",
+    )
+    async def show_carousel(self, request):
+        ids = request.query_params.get("pks", "").split(",")[:100]
         async with sessions()() as db:
-            rows = list(
-                await db.scalars(select(Photo).where(Photo.id.in_(ids), Photo.status == "complete"))
+            await db.execute(
+                update(Photo)
+                .where(
+                    Photo.id.in_(ids),
+                    Photo.status == "complete",
+                    Photo.content_type.like("image/%"),
+                )
+                .values(carousel_visible=True)
             )
-        views = await asyncio.gather(*(asyncio.to_thread(photo_view, row) for row in rows))
-        cards = []
-        for row, view in zip(rows, views, strict=True):
-            video = (
-                f'<video controls playsinline preload="none" src="{escape(view["motion"] or view["original"])}"></video>'
-                if view["kind"] != "photo"
-                else ""
-            )
-            cards.append(
-                f'<article><h2>{escape(row.caption)}</h2><img src="{escape(view["preview"])}" alt="Media preview">{video}<p><a href="{escape(view["original"])}">Download original</a></p><a href="/api/admin/photo/edit/{row.id}">Approve or unpublish</a></article>'
-            )
-        return HTMLResponse(
-            '<html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Review media</title><style>body{font:18px Arial;max-width:900px;margin:auto;padding:20px}img,video{max-width:100%;max-height:60vh}article{padding:20px;border-bottom:1px solid #ccc}</style><h1>Review uploaded media</h1><p>Media stays private until Published is checked and saved.</p>'
-            + "".join(cards)
-            + "</html>"
-        )
+            await db.commit()
+        return RedirectResponse(request.url_for("admin:list", identity="photo"), status_code=303)
+
+    async def visibility_form(self, model):
+        form = await self.scaffold_form()
+        return form(data=await self.get_form_data_for_edit(model))
+
+    async def on_model_change(self, data, model, is_created, request):
+        if (
+            data.get("gallery_visible") or data.get("carousel_visible")
+        ) and model.status != "complete":
+            raise ValueError("Only successfully processed media can be made visible.")
 
     can_delete = False
     can_export = False
     column_list = [
-        Photo.id,
+        Photo.uploaded_at,
         Photo.owner,
         Photo.caption,
         Photo.status,
-        Photo.published,
+        Photo.gallery_visible,
+        Photo.carousel_visible,
         Photo.content_type,
         Photo.size,
     ]
     column_searchable_list = [Photo.caption, Photo.uploader_name, Photo.original_filename]
 
 
-class ResponseAdmin(InvitationNamesMixin, model=RSVPResponse):
-    name_plural = "RSVP responses"
-    can_create = can_edit = can_delete = can_export = False
-    column_list = [
-        RSVPResponse.invitation_id,
-        RSVPResponse.email,
-        RSVPResponse.attending,
-        RSVPResponse.updated_at,
-    ]
-    column_details_list = [
-        RSVPResponse.invitation_id,
-        RSVPResponse.email,
-        RSVPResponse.attending,
-        RSVPResponse.message,
-        RSVPResponse.consent,
-        RSVPResponse.updated_at,
-    ]
-    column_searchable_list = [RSVPResponse.email]
-
-
-class GuestAdmin(InvitationNamesMixin, model=RSVPGuest):
-    name_plural = "Attending guests"
-    can_create = can_edit = can_delete = can_export = False
-    column_list = [RSVPGuest.invitation_id, RSVPGuest.name, RSVPGuest.dietary]
-    column_searchable_list = [RSVPGuest.name]
-
-    def list_query(self, request):
-        return super().list_query(request).where(RSVPGuest.active.is_(True))
-
-    def count_query(self, request):
-        return super().count_query(request).where(RSVPGuest.active.is_(True))
-
-
-class NotificationAdmin(InvitationNamesMixin, model=RSVPNotification):
-    name_plural = "RSVP notifications"
-    can_create = can_edit = can_delete = can_export = False
-    column_list = [
-        RSVPNotification.invitation_id,
-        RSVPNotification.recipient,
-        RSVPNotification.status,
-        RSVPNotification.error,
-        RSVPNotification.created_at,
-    ]
-
-
-class WitnessAdmin(InvitationNamesMixin, model=WitnessResponse):
-    name_plural = "Witness responses"
-    can_create = can_edit = can_delete = can_export = False
-    column_list = [WitnessResponse.invitation_id, WitnessResponse.accepted]
-
-
-class ConfirmationAdmin(InvitationNamesMixin, model=ConfirmationEmail):
-    name_plural = "Guest confirmation emails"
-    can_create = can_edit = can_delete = can_export = False
-    column_list = [
-        ConfirmationEmail.invitation_id,
-        ConfirmationEmail.recipient,
-        ConfirmationEmail.status,
-        ConfirmationEmail.error,
-        ConfirmationEmail.created_at,
-    ]
-
-
 class MessageForm(Form):
     language = SelectField("Language", choices=[("en", "English"), ("it", "Italiano")])
-    audience = SelectField("Invitation type", choices=[("guest", "Guest"), ("witness", "Witness")])
+    audience = SelectField("Invitation type", choices=AUDIENCES)
     text = TextAreaField(
         "Message",
         validators=[DataRequired()],
@@ -457,7 +540,8 @@ class MessageForm(Form):
 
 
 class MessageAdmin(ModelView, model=InvitationMessage):
-    name_plural = "Invitation messages"
+    name = "Invitation Email Template"
+    name_plural = "Invitation Email Template"
     form = MessageForm
     can_export = False
     column_list = [
@@ -472,7 +556,7 @@ class MessageAdmin(ModelView, model=InvitationMessage):
         import uuid
 
         data["text"] = validate_message(data["text"])
-        if data["language"] not in {"en", "it"} or data["audience"] not in {"guest", "witness"}:
+        if data["language"] not in {"en", "it"} or data["audience"] not in dict(AUDIENCES):
             raise ValueError("Choose a supported language and invitation type.")
         if is_created:
             model.id = uuid.uuid7().hex
@@ -507,13 +591,9 @@ def setup_admin(app) -> Admin:
             PrefixLoader({"upstream": PackageLoader("sqladmin", "templates")}),
         ]
     )
+    admin.add_view(GuestAdmin)
     admin.add_view(InvitationAdmin)
     admin.add_view(MfaView)
     admin.add_view(PhotoAdmin)
-    admin.add_view(ResponseAdmin)
-    admin.add_view(GuestAdmin)
-    admin.add_view(NotificationAdmin)
-    admin.add_view(WitnessAdmin)
-    admin.add_view(ConfirmationAdmin)
     admin.add_view(MessageAdmin)
     return admin

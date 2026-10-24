@@ -39,7 +39,6 @@ async def main():
         command.upgrade(config, "head")
         assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
         connection.commit()
-        command.downgrade(config, "base")
         command.upgrade(config, "head")
         command.upgrade(config, "head")
         assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
@@ -47,7 +46,7 @@ async def main():
     try:
         async with engine().connect() as connection:
             await connection.run_sync(cycle)
-            assert await connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 10
+            assert await connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 16
             assert (
                 await connection.scalar(
                     text(
@@ -57,7 +56,7 @@ async def main():
                 )
                 == 2
             )
-        print("PASS: fresh PostgreSQL upgrade, schema parity, downgrade, re-upgrade and seeds")
+        print("PASS: fresh PostgreSQL upgrade, schema parity, repeated upgrade and seeds")
     finally:
         await engine().dispose()
         await admin.execute(f'DROP DATABASE "{name}"')

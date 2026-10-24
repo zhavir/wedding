@@ -191,6 +191,18 @@ def process_photo(photo: Photo) -> None:
                 ) from None
 
 
+def photo_preview(photo: Photo) -> dict[str, str]:
+    return {
+        "id": photo.id,
+        "caption": photo.caption,
+        "preview": s3(True).generate_presigned_url(
+            "get_object",
+            Params={"Bucket": settings().bucket_name, "Key": media_key(photo, "previews", ".webp")},
+            ExpiresIn=3600,
+        ),
+    }
+
+
 def photo_view(photo: Photo) -> dict[str, str]:
     def url(key: str) -> str:
         return s3(True).generate_presigned_url(
@@ -198,14 +210,12 @@ def photo_view(photo: Photo) -> dict[str, str]:
         )
 
     return {
-        "id": photo.id,
+        **photo_preview(photo),
         "kind": "live"
         if photo.motion_size
         else "video"
         if photo.content_type.startswith("video/")
         else "photo",
         "motion": url(media_key(photo, "originals", "-motion")) if photo.motion_size else "",
-        "caption": photo.caption,
-        "preview": url(media_key(photo, "previews", ".webp")),
         "original": url(media_key(photo, "originals")),
     }

@@ -1,0 +1,34 @@
+{
+  "schedule": [
+    {
+      "time": "16:00",
+      "title": "Arrival at the villa",
+      "text": "The groom and Akamaru will welcome you to Villa Valentina, ready to begin this special day together."
+    },
+    {
+      "time": "16:30",
+      "title": "The ceremony",
+      "text": "The moment we make our love official, surrounded by the most important people in our lives."
+    },
+    {
+      "time": "17:00",
+      "title": "Aperitivo",
+      "text": "The ceremony is over: time to relax! Join us for drinks, bites to eat and time together."
+    },
+    {
+      "time": "19:00",
+      "title": "Dinner",
+      "text": "Time to take your seats! Enjoy dinner: the evening is still young."
+    },
+    {
+      "time": "21:00",
+      "title": "Cutting the cake",
+      "text": "Wedding cake, a few photographs and something sweet before returning to the celebrations."
+    },
+    {
+      "time": "22:00 - 00:00",
+      "title": "One last toast and goodbyes",
+      "text": "Liqueurs, chocolate and a few last conversations to end the evening and say goodbye."
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import StaticPicture from './StaticPicture.svelte';
   import { language, t } from '#lib/i18n.svelte.ts';
   import { PUBLIC_API_URL } from '$app/env/public';
   import { wedding as w } from '#lib/wedding.ts';
@@ -6,7 +7,9 @@
 </script>
 
 <section class="hero" id="home" aria-labelledby="hero-title">
-  <img class="invitation-venue" src={w.heroImage} alt={w.heroAlt} fetchpriority="high" />
+  <div class="invitation-venue">
+    <StaticPicture name="venue-exterior" alt={t('Ceremony flowers at Villa Valentina')} eager />
+  </div>
   <p class="eyebrow hero-eyebrow">{t('Together with our families')}</p>
   <h1 id="hero-title">{w.names[0]} <em>&</em> {w.names[1]}</h1>
   <p class="hero-date">{w.dateLabel} <span>·</span> {w.location}</p>

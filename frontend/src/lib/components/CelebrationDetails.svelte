@@ -12,7 +12,7 @@
     <article>
       <span class="eyebrow">{t('When')}</span>
       <h3>{w.dateLabel}</h3>
-      <p>{w.scheduleUnconfirmed ? t('Time to be confirmed') : w.schedule[0].time}</p>
+      <p>{w.schedule[0].time}</p>
     </article>
     <span class="details-seal" aria-hidden="true">{w.names[0][0]}<i>&</i>{w.names[1][0]}</span>
     <article>

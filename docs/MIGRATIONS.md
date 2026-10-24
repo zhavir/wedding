@@ -42,12 +42,18 @@ Test the complete migration cycle against a newly created, randomly named local 
 docker compose run --rm api python scripts/check_migrations.py
 ```
 
-The script upgrades, compares SQLAlchemy metadata, downgrades to base, upgrades again, verifies seed counts, then drops only the database it created. It refuses DSQL. Do not run downgrade against real wedding data. Before future releases, back up the database and test revisions against the local PostgreSQL stack.
+The script upgrades, compares SQLAlchemy metadata, repeats the upgrade, verifies seed counts, then drops only the database it created. Revision 0004 is forward-only. It refuses DSQL. Do not run downgrade against real wedding data. Before future releases, back up the database and test revisions against the local PostgreSQL stack.
 
-In **Invitation messages**, administrators can create, edit, deactivate and remove English/Italian wording separately for guests and witnesses. Allowed placeholders are `{name}`, `{couple}`, `{date}`, `{venue}`; text is HTML-escaped when rendered. A random matching message is saved per invitation/language/type, so preview and delivery agree. Editing a pool affects future selections, not saved wording. If no active matching message exists, the localized editable default in `backend/app/locales/<language>.json` is used.
+Revision `0004_guests_and_invitations` creates Guests and photo-to-guest targeting, adds response fields and a guest relationship to Invitations, normalizes optional unique invitation emails, migrates existing response details, and seeds Italian/English +1, bride and groom copy. It removes the old response, attendee, witness-response, message-selection and section-copy tables. Authentication, notification and confirmation-delivery tables remain.
 
-Revision `0005_additional_guests` adds parent invitation links, structured additional-guest emails, and the per-uploader S3 prefix. Existing flat-layout media remains accessible. Run the normal upgrade before starting the updated API (Docker Compose's init service does this automatically).
+The migration is forward-only: use a backup to restore the old schema. DSQL DDL uses separate autocommit blocks. Columns are added nullable with defaults set separately. Unique guest/email indexes use `CREATE UNIQUE INDEX ASYNC` and the online migration waits for each job. Offline DSQL SQL includes explicit instructions to wait for the returned index job IDs before application startup. It can be generated without AWS access, but does not prove a live DSQL upgrade succeeded.
 
-The baseline seeds the bride and groom as ordinary active invitations without
-sending emails or embedding access secrets. It also includes multipart upload
-state and 64-bit media size/duration fields.
+`0003_carousel_visibility` separates gallery publication from carousel selection; the gallery flag still maps to the `published` column. Revision 0004 applies guest targets to both surfaces.
+
+The baseline seeds the bride and groom without sending email. Existing invitation links and media storage paths are preserved. Template layout lives in `backend/app/templates/invitation_en.html` and `invitation_it.html`; mutable wording lives in `invitation_messages`.
+
+### Recovering a failed revision 0004
+
+Older local databases can contain multiple invitations with the same email, including case-only differences. Revision 0004 now checks for these before changing the schema and reports the number of conflicting groups. Resolve each address explicitly: keep it on the intended invitation and make the other invitations link-only (empty string before this revision, `NULL` once the email column is nullable), or reset a disposable local database only if its data is not needed. The migration does not delete or merge guest records automatically.
+
+Revision 0004 can resume after its DDL has partially committed. It recognizes existing tables, columns, indexes and template seeds, copies responses only for invitations that have not been migrated, and skips legacy tables already removed. After resolving duplicate addresses, rerun `docker compose up --build -d --wait web`; do not manually stamp the revision as complete. Offline SQL output is for fresh execution; use the online runner for recovery.

@@ -1,11 +1,11 @@
+# ruff: noqa: F811
 """The two applications own their copy; emails retain links and escaped data."""
 
-import json
-from importlib.resources import files
 from types import SimpleNamespace
 
 import pytest
 from app.services.email import content, templates
+from test_api import client  # noqa: F401, F811 - reuse the migrated database fixture
 
 
 def keys(value, prefix=""):
@@ -16,11 +16,8 @@ def keys(value, prefix=""):
     }
 
 
-def test_backend_locales_have_matching_complete_keys():
-    locales = [
-        json.loads(files("app").joinpath(f"locales/{lang}.json").read_text())
-        for lang in ("en", "it")
-    ]
+def test_admin_email_copy_has_complete_matching_sections(client):
+    locales = [client.portal.call(content, lang) for lang in ("en", "it")]
     assert keys(locales[0]) == keys(locales[1])
     for locale in locales:
         assert all(
@@ -30,12 +27,39 @@ def test_backend_locales_have_matching_complete_keys():
         assert locale["names"] == ["Andrea", "Sara"]
 
 
+def test_admin_copy_edits_survive_migration_and_are_used_immediately(client):
+    from app.db.models import InvitationMessage
+    from app.db.session import sessions
+    from app.manage import migrate
+    from sqlalchemy import select
+
+    async def edit():
+        async with sessions()() as db:
+            row = await db.scalar(
+                select(InvitationMessage)
+                .where(InvitationMessage.language == "it")
+                .order_by(InvitationMessage.id)
+            )
+            assert row is not None
+            row.text = "Il nostro invito aggiornato"
+            await db.commit()
+        await migrate()
+        async with sessions()() as db:
+            return await db.scalar(
+                select(InvitationMessage.text)
+                .where(InvitationMessage.language == "it")
+                .order_by(InvitationMessage.id)
+            )
+
+    assert client.portal.call(edit) == "Il nostro invito aggiornato"
+
+
 @pytest.mark.parametrize("language", ["en", "it"])
-def test_email_stationery_preserves_private_links_and_escapes_names(language):
-    wedding = content(language)
+def test_email_stationery_preserves_private_links_and_escapes_names(language, client):
+    wedding = client.portal.call(content, language)
     assert "story" not in wedding
     guest = SimpleNamespace(name='<img src=x onerror="bad">')
-    html = templates.get_template("invitation.html").render(
+    html = templates.get_template(f"invitation_{language}.html").render(
         w=wedding,
         guest=guest,
         language=language,

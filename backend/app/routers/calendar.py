@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/calendar.ics")
 async def calendar_download(locale: Literal["en", "it"] = "en") -> Response:
     return Response(
-        wedding_calendar(content(locale), settings().site_url),
+        wedding_calendar(await content(locale), settings().site_url),
         media_type="text/calendar; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="andrea-sara-wedding.ics"'},
     )

@@ -24,15 +24,25 @@ Run the same `admin-user` command again to reset a password. A reset invalidates
 
 For automated provisioning, `--password-stdin` reads one line from stdin. Supply it from a secret manager; do not put passwords in command arguments, source control, or workflow logs.
 
-## Create and send invitations
+## Guests and invitations
 
-1. Open **Invitations → New Invitation**. Enter the guest/group name, email and reserved places (1–12). Keep **Active** checked and save. This creates the private link without sending email.
-2. Open the record’s details to copy its **Personal invitation link**, inspect its RSVP, or select **Preview invitation email**.
-3. In the list, select one or more invitations (up to 25) and choose **Actions → Send selected invitations**.
-4. Review the recipients, then press **Confirm and send emails**. This is the step that sends email.
-5. Review the result. Only active `draft` or `failed` entries are eligible. `sent`, `sending`, or `unknown` deliveries are not automatically resent. If a delivery is uncertain, check SES before intervening.
+The menu contains **Guests**, **Invitations**, **Gallery**, and **Invitation Email Template**. Authentication and delivery records remain internal.
 
-Uncheck **Active** to revoke an invitation and block its guest sessions. After sending, changing a recipient’s email requires a new invitation. Use **Media moderation** to review uploaded photos/videos and approve publication. Originals remain private in S3. See [media moderation](MEDIA.md).
+1. In **Guests**, enter a name (the only required input) and choose Guest, Witness, Groom, Bride, or +1. Guest is the default audience.
+2. Select guests and choose **Create invitations**. Repeating this action reuses their existing invitations. Each guest has one personal invitation.
+3. In **Invitations**, optionally add an email, select English/Italian, set reserved places, and keep **Active** enabled. Email addresses are unique and matched case-insensitively; empty addresses are allowed.
+4. Open details for the personal link, **Show personal link and short code**, **Preview invitation email**, or **Send invitation**.
+5. Select up to 25 invitations and choose **Send invitation**, then confirm the recipients. Inactive invitations are excluded; entries without an email and sent/sending/unknown deliveries are skipped. **Activate invitations** enables selected records without sending email.
+
+Filters cover answered/unanswered, accepted/declined, active/inactive, and email status. Attendance, dietary details, witness acceptance and the response message belong to the invitation. An unanswered invitation has no attendance value.
+
+Deactivating an invitation blocks its link and sessions. Changing its email resets delivery status to draft; it does not send automatically.
+
+## Gallery
+
+Gallery and carousel visibility are independent. **Make visible in gallery** publishes completed uploads; **Make visible in carousel** publishes completed still photos to the landing carousel. Open a record to preview it and edit the **Visible in gallery** and **Visible in carousel** checkboxes, then **Save visibility**. Uncheck either checkbox to hide the item from that feed. The list shows one uploader and an upload date/time in UTC.
+
+**Visible to guests** is a list of individual checkboxes. Check or uncheck any guest and save; no modifier keys are needed. Leave it empty for all authenticated guests; otherwise only the selected guests receive this media in gallery and carousel API responses. The carousel fetches every eligible still-photo preview in one authenticated request. Videos stay in the gallery.
 
 ## AWS / production credentials
 
@@ -54,19 +64,17 @@ Guests without a session can paste the short code on the RSVP form or `/gallery`
 
 After updating the application, run `docker compose up --build -d --wait` so the initializer creates the invitation-access and login-throttle tables. Production migrations must also run before deploying this version. Deactivating an invitation blocks its codes, links and existing sessions.
 
-## Optional email, language and responses
+## Responses and +1 invitations
 
-The invitation email is optional. Choose **Email language** when creating/editing a record. After saving, open **View → Show personal link and short code** to copy an invitation without sending an email. Email preview and sending use the selected language. An invitation without an email address is skipped by bulk sending.
+Every additional guest must supply a distinct valid email. The RSVP transaction creates their Guest and active Invitation, or reuses an existing invitation by email. Existing Guest audience changes to +1; witness/bride/groom roles remain intact. The child invitation links to its inviter. Draft/failed emails send automatically after commit, and the configured `RSVP_NOTIFICATION_EMAIL` recipient receives the RSVP notification. Repeated identical responses do not send duplicate notifications.
 
-The admin includes **RSVP responses**, **Attending guests** and **RSVP notifications**. Responses are stored in structured SQL tables. Alembic manages schema migrations. See [email setup](EMAIL.md) for real AWS SES delivery and the notification destination setting.
+Removing a +1 or declining the parent's attendance deactivates the linked invitation and revokes its sessions. Re-adding that email reactivates the same invitation and link; old revoked sessions remain revoked. Sent invitations are not sent again. Each invitation stores its own response. Confirmation emails with calendar attachments and durable notification delivery state remain internal.
 
-## Witnesses, messages and publication
+## Invitation Email Template
 
-Set **Witness** for a witness invitation; the invitation email and RSVP form then ask them to accept that role. The guest confirmation includes a save-the-date calendar attachment after an accepted RSVP.
+Edit language, audience and templated text here. Allowed placeholders are `{name}`, `{couple}`, `{date}`, and `{venue}`; values are HTML-escaped. The first active template by ID for the invitation's language/audience is used consistently for previews and sends; edits take effect immediately. Initial Italian/English +1 templates are seeded by migration `0004_guests_and_invitations`.
 
-Use **Invitation messages** to edit the English/Italian wording pool. Separate guest and witness messages are randomly selected and saved for each invitation, so its preview and sent message match. See [migration and message details](MIGRATIONS.md).
-
-Use **Media moderation** to review photos, videos and Live Photos. Uploads are hidden until you check **Published** and save. **Review selected media** displays private previews and originals before approval. Uncheck **Published** to remove an item from future gallery requests. See [media instructions](MEDIA.md).
+The Italian/English Jinja layouts, shared stationery and static event labels live in code. There is no section-by-section copy table. Mutable invitation wording lives in the database.
 
 ## Authenticator two-factor authentication
 
@@ -94,12 +102,16 @@ The legacy invitation-token administration API and `create-admin` token command 
 
 The first attendee is the invitation holder. Every additional attendee must have a distinct valid email address. Saving an accepted RSVP creates a separate invitation for each additional guest, in the holder's language, and sends their personal link and short code, including gallery/upload access. These invitations allow one attendee each. Admin invitation details show **Invited by** using the original holder's name.
 
-Changing an additional attendee's email, removing them, or declining the holder's RSVP deactivates the old additional invitation and revokes its sessions. An additional guest who declines their own invitation also loses access. Re-adding a removed guest creates a new invitation; the old link remains expired. Existing uploaded media is retained for moderation. Unchanged RSVP retries do not create duplicate invitations or send duplicate emails. Failed email deliveries remain visible and can be resent from Invitations.
+Changing an additional attendee's email, removing them, or declining the holder's RSVP deactivates the old additional invitation and revokes its sessions. An additional guest who declines their own invitation keeps access to revise the response. Re-adding a removed guest reactivates the same invitation and link; previously revoked sessions stay revoked. An already sent invitation is not sent again. Existing email matches reuse the guest and invitation; an ordinary guest becomes audience +1. Existing uploaded media is retained for moderation. Unchanged RSVP retries do not create duplicate invitations or send duplicate emails. Failed email deliveries remain visible and can be resent from Invitations.
 
 ## Faster media moderation
 
-Media moderation displays uploader names and supports searching and filtering by uploader. Open a record's details to see its image or video immediately. Select multiple rows and choose **Approve selected media** to publish completed uploads together; incomplete uploads are never approved. Originals remain unchanged.
+Media moderation displays uploader names and supports searching and filtering by uploader. Open a record's details to see its image or video immediately. Select multiple rows and choose **Make visible in gallery** to publish completed uploads together; incomplete uploads are never approved. Originals remain unchanged.
 
 ## Andrea and Sara's gallery access
 
 Migration `0001_initial` creates two ordinary guest invitations using `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL`. Supply these through production environment secrets in GitHub; local runs default to fictional example addresses. Migration does not send email or grant administrator privileges. In Invitations, open each entry and generate its personal link, or send its invitation after configuring SES. Credentials are generated securely on first use with the application's encryption key. Already migrated databases retain their existing records; changing these secrets does not update existing invitations. Edit those through the administrator interface.
+
+## Email copy and private photo feeds
+
+**Invitation Email Template** edits invitation wording by language and audience. Italian and English Jinja layouts and shared email labels live in the codebase; the former section-copy table has been removed. Preview and delivery use the same active template. Gallery and carousel visibility are independent: use **Visible in gallery** and **Visible in carousel**. Both feeds require authentication, and either, both or neither flag may be enabled. Existing gallery approvals are preserved; the new carousel flag defaults to off. Originals remain invitation-only, with temporary signed S3 links.

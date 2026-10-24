@@ -1,6 +1,8 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, model_validator
+
+NormalizedEmail = Annotated[EmailStr, AfterValidator(str.casefold)]
 
 
 class Model(BaseModel):
@@ -12,13 +14,13 @@ class Login(Model):
 
 
 class Person(Model):
-    email: EmailStr | None = None
+    email: NormalizedEmail | None = None
     name: str = Field(min_length=1, max_length=100)
     dietary: str = Field(default="", max_length=500)
 
 
 class RSVP(Model):
-    email: EmailStr
+    email: NormalizedEmail
     attending: bool
     guests: list[Person] = Field(max_length=12)
     message: str = Field(default="", max_length=1000)
@@ -68,7 +70,7 @@ class Upload(Model):
 
 class InvitationCreate(Model):
     name: str = Field(min_length=1, max_length=100)
-    email: EmailStr | None = None
+    email: NormalizedEmail | None = None
     language: Literal["en", "it"] = "en"
     is_witness: bool = False
     max_guests: int = Field(default=2, ge=1, le=12)
@@ -83,7 +85,7 @@ class SendBatch(Model):
 
 
 class RecoverInvitation(Model):
-    email: EmailStr
+    email: NormalizedEmail
 
 
 class UploadPart(Model):

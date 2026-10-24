@@ -1,34 +1,41 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-const read = (name) =>
-  JSON.parse(readFileSync(new URL(`../src/lib/${name}`, import.meta.url), 'utf8'));
-const en = read('locales/en/ui.json');
-const it = read('locales/it/ui.json');
-assert.deepEqual(
-  Object.keys(it).sort(),
-  Object.keys(en).sort(),
-  'Italian and English must have the same translation keys.'
-);
-for (const key of Object.keys(en)) {
-  assert.equal(typeof it[key], 'string', `Translation must be text: ${key}`);
-  assert.ok(it[key].trim(), `Missing Italian translation: ${key}`);
-  assert.deepEqual(
-    [...it[key].matchAll(/\{\w+\}/g)].map(([value]) => value).sort(),
-    [...en[key].matchAll(/\{\w+\}/g)].map(([value]) => value).sort(),
-    `Keep all placeholders in: ${key}`
-  );
+import { readFileSync, readdirSync } from 'node:fs';
+const root = new URL('../src/lib/locales/', import.meta.url);
+const read = (lang, section, name) =>
+  JSON.parse(readFileSync(new URL(`${lang}/${section}/${name}`, root), 'utf8'));
+function compare(en, it, path) {
+  assert.equal(typeof en, typeof it, `Type mismatch: ${path}`);
+  if (Array.isArray(en)) {
+    assert.ok(Array.isArray(it), path);
+    assert.equal(en.length, it.length, `Array length: ${path}`);
+    en.forEach((value, i) => compare(value, it[i], `${path}[${i}]`));
+  } else if (en && typeof en === 'object') {
+    assert.deepEqual(Object.keys(en).sort(), Object.keys(it).sort(), `Keys: ${path}`);
+    for (const key of Object.keys(en)) compare(en[key], it[key], `${path}.${key}`);
+  } else if (typeof en === 'string') {
+    assert.ok(en.trim() && it.trim() && it !== 'N/A', `Missing copy: ${path}`);
+    assert.deepEqual(
+      [...en.matchAll(/\{\w+\}/g)].map(String).sort(),
+      [...it.matchAll(/\{\w+\}/g)].map(String).sort(),
+      `Placeholders: ${path}`
+    );
+  }
 }
-const wedding = read('locales/en/content.json');
-const italian = read('locales/it/content.json');
-assert.equal(
-  italian.schedule.length,
-  wedding.schedule.length,
-  'Both languages must describe the same schedule.'
-);
+for (const section of ['ui', 'content']) {
+  const names = readdirSync(new URL(`en/${section}/`, root)).sort();
+  assert.deepEqual(names, readdirSync(new URL(`it/${section}/`, root)).sort());
+  const used = new Set();
+  for (const name of names) {
+    const en = read('en', section, name);
+    compare(en, read('it', section, name), `${section}/${name}`);
+    for (const key of Object.keys(en)) {
+      assert.ok(!used.has(key), `Duplicate ${section} key: ${key}`);
+      used.add(key);
+    }
+  }
+}
 assert.deepEqual(
-  italian.schedule.map(({ time }) => time),
-  wedding.schedule.map(({ time }) => time),
-  'Schedule times must agree.'
+  read('en', 'content', 'timeline.json').schedule.map((x) => x.time),
+  read('it', 'content', 'timeline.json').schedule.map((x) => x.time)
 );
-assert.equal(italian.faqs.length, wedding.faqs.length, 'Keep both FAQ lists up to date.');
-console.log('English/Italian translation keys, placeholders and schedule match.');
+console.log('Section translations, placeholders and confirmed timeline match.');

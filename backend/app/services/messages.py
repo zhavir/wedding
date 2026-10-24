@@ -1,12 +1,11 @@
-"""Validated plain-text templates, selected once per invitation and language."""
+"""Validated plain-text invitation copy selected by language and guest audience."""
 
-import secrets
 from string import Formatter
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Invitation, InvitationMessage, InvitationMessageChoice
+from app.db.models import Invitation, InvitationMessage
 
 FIELDS = {"name", "couple", "date", "venue"}
 
@@ -23,30 +22,21 @@ def validate_message(text: str) -> str:
 
 
 async def invitation_message(db: AsyncSession, invite: Invitation) -> str | None:
-    audience = "witness" if invite.is_witness else "guest"
-    locale = invite.language or "en"
-    saved = await db.get(InvitationMessageChoice, invite.id)
-    if saved and saved.language == locale and saved.audience == audience:
-        return saved.text
+    audience = (
+        invite.guest.audience if invite.guest else ("witness" if invite.is_witness else "guest")
+    )
     pool = list(
         await db.scalars(
             select(InvitationMessage)
             .where(
                 InvitationMessage.active.is_(True),
-                InvitationMessage.language == locale,
+                InvitationMessage.language == (invite.language or "en"),
                 InvitationMessage.audience == audience,
             )
             .order_by(InvitationMessage.id)
         )
     )
-    if not pool:
-        return None  # Caller uses the matching locale's editable default, never another language.
-    selected = secrets.choice(pool).text
-    if saved is None:
-        saved = InvitationMessageChoice(invitation_id=invite.id)
-        db.add(saved)
-    saved.language, saved.audience, saved.text = locale, audience, selected
-    return selected
+    return pool[0].text if pool else None
 
 
 def render_message(template: str, invite: Invitation, wedding: dict) -> str:

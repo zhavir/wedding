@@ -1,0 +1,25 @@
+<!-- A custom, font-independent intertwined A/S monogram. -->
+<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="60" cy="60" r="58" fill="#fffef9" />
+  <ellipse cx="60" cy="60" rx="47" ry="51" stroke="#45634e" stroke-width="0.8" />
+  <g stroke="#45634e" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 86h19m-12 0 24-56 23 56m-10 0h19M44 65h28" stroke-width="1.8" />
+    <path d="m59 30 23 56" stroke-width="3.6" />
+    <path
+      d="M79 38c-8-12-29-9-30 4-1 12 28 15 28 29 0 17-24 22-37 9"
+      stroke="#fffef9"
+      stroke-width="6"
+    />
+    <path d="M79 38c-8-12-29-9-30 4-1 12 28 15 28 29 0 17-24 22-37 9" stroke-width="2.6" />
+    <path d="M78 30v10M40 78v10" stroke-width="1" />
+  </g>
+  <path d="m60 6 2 3-2 3-2-3Zm0 102 2 3-2 3-2-3Z" fill="#45634e" />
+</svg>
+
+<style>
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>

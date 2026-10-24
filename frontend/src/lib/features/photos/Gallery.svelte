@@ -120,6 +120,7 @@
   const viewed = $derived(viewIndex === null ? undefined : photos[viewIndex]);
   let generation = 0;
   $effect(() => {
+    void session.revision;
     if (session.guest && session.ready) untrack(() => void load(true));
     else {
       generation++;

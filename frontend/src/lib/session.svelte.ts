@@ -9,12 +9,14 @@ export type Guest = {
 export const session = $state<{
   guest: Guest | null;
   ready: boolean;
+  revision: number;
   error: string;
   submittedInvitationIds: string[];
   entry: 'restore' | 'link' | 'code';
 }>({
   guest: null,
   ready: false,
+  revision: 0,
   error: '',
   entry: 'restore',
   submittedInvitationIds: []
@@ -24,6 +26,8 @@ export async function signIn(code: string, entry: 'link' | 'code' = 'code') {
   session.entry = entry;
   session.guest = await api<Guest>('/session', 'POST', { code });
   session.error = '';
+  session.ready = true;
+  session.revision++;
 }
 export async function signOut() {
   await api('/session', 'DELETE');
@@ -43,8 +47,9 @@ export async function restoreSession() {
         null,
         '',
         window.location.pathname +
-          (window.location.pathname.startsWith('/gallery') ? '#upload' : '#rsvp')
+          (window.location.pathname.startsWith('/gallery') ? '#upload' : '')
       );
+      if (!window.location.pathname.startsWith('/gallery')) window.scrollTo(0, 0);
       await signIn(code, 'link');
     } else {
       session.guest = await api<Guest>('/session');
@@ -55,12 +60,10 @@ export async function restoreSession() {
       session.error = (error as Error).message;
   } finally {
     session.ready = true;
-    if (openingLink)
+    if (openingLink && window.location.pathname.startsWith('/gallery'))
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
-          document
-            .getElementById(window.location.pathname.startsWith('/gallery') ? 'upload' : 'rsvp')
-            ?.scrollIntoView({ block: 'start' });
+          document.getElementById('upload')?.scrollIntoView({ block: 'start' });
         })
       );
   }

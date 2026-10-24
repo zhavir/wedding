@@ -113,6 +113,8 @@ export default $config({
         },
       },
     });
+    // Public editorial images are intentionally separate from private guest uploads.
+    const landingImages = new sst.aws.Bucket("LandingImages", { access: "public" });
     const photos = new sst.aws.Bucket("Photos", {
       cors: false,
       transform: {
@@ -163,6 +165,7 @@ export default $config({
       },
       environment: {
         PUBLIC_API_URL: "/api",
+        PUBLIC_ASSET_URL: $interpolate`https://${landingImages.domain}`,
       },
     });
     new aws.s3.BucketCorsConfiguration("PhotoCors", {
@@ -564,6 +567,8 @@ export default $config({
       runtimeRoleArn: role.arn,
       databaseArn: database.nodes.cluster.arn,
       photos: photos.name,
+      landingImages: landingImages.name,
+      landingImagesUrl: $interpolate`https://${landingImages.domain}`,
     };
   },
 });

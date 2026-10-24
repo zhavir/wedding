@@ -79,17 +79,17 @@ docker compose -f compose.yaml up -d --force-recreate api
 
 ## Admin workflow
 
-- **Invitations → New Invitation**: set name, optional email, reserved places and **Email language** (English or Italiano).
+- **Guests**: create the guest name and audience, then select guests and choose **Create invitations**. In **Invitations**, set optional email, reserved places and **Email language** (English or Italiano).
 - Email unknown: leave it blank, save, open **View → Show personal link and short code**, and copy the link into your own message. This is a private invitation token, not an S3 download URL. Creating/viewing it sends no mail. Deactivation revokes access.
-- Email known: **Preview invitation email** uses the selected language. Select records and choose **Send selected invitations**, review, then confirm. Records without an email are skipped. Previously sent messages are not automatically resent.
+- Email known: **Preview invitation email** uses the selected language. Select records and choose **Send invitation**, review, then confirm. Records without an email are skipped. Previously sent messages are not automatically resent.
 - The guest's name and email prefill their first RSVP. Existing saved answers take precedence. Consent must still be checked explicitly.
-- **RSVP responses** holds attendance, contact email, message, consent and update timestamp. **Attending guests** lists individual names and dietary requirements. Alembic manages the structured response schema.
+- **Invitations** holds attendance, contact email, response message, dietary details, consent and response timestamp. Alembic manages the schema.
 
 ## RSVP notifications
 
 Set `RSVP_NOTIFICATION_EMAIL` to the destination mailbox. A new or changed RSVP sends a notification for both acceptance and decline; replaying an identical response does not send another email. The response is committed before sending. If email fails, the guest's reply remains saved.
 
-Notifications include the invitation name, yes/no answer, guest count and an admin link. Dietary details remain in the protected admin interface. **RSVP notifications** shows pending/sending/sent/failed/unknown delivery state and error codes. Blank notification configuration disables delivery. Changes made while disabled are not emailed retroactively.
+Notifications include the invitation name, yes/no answer, guest count and an admin link. Dietary details remain in the protected admin interface. The internal notification table retains pending/sending/sent/failed/unknown delivery state and error codes. Blank notification configuration disables delivery. Changes made while disabled are not emailed retroactively.
 
 Notifications are awaited by the API, not dispatched through an untracked background task. If a process stops mid-delivery, a record can remain pending/sending. There is no automatic retry worker; inspect SES before manually retrying uncertain deliveries to avoid duplicates.
 
@@ -107,12 +107,20 @@ AWS references: [verified identities](https://docs.aws.amazon.com/ses/latest/dg/
 
 ## Witnesses and acceptance confirmations
 
-Mark **Witness** when creating or editing an invitation. The selected language is used for a dedicated witness email and the guest sees a witness-role confirmation in the RSVP form. Saved witness answers appear under **Witness responses**.
+Select **Witness** as the guest audience. The selected language is used for a dedicated witness email and the guest sees a witness-role confirmation in the RSVP form. Saved witness answers appear on the invitation.
 
-After accepting, the guest receives a thank-you email and `andrea-sara-wedding.ics`, an all-day calendar entry for the wedding date. It is suitable for import into calendar applications that support iCalendar, including Apple Calendar, Google Calendar and Outlook. The ceremony time is not yet confirmed. Texts are editable under `witnessEmail` and `confirmationEmail` in the content JSON files. `ses:SendRawEmail` is required for attachments. Delivery states appear under **Guest confirmation emails**.
+After accepting, the guest receives a thank-you email and `andrea-sara-wedding.ics`, with the confirmed ceremony start at 16:30 Europe/Rome and midnight finish. It uses the same event UID as the public calendar download. Edit static event details and confirmation wording in `backend/app/services/email_content.py`. `ses:SendRawEmail` is required for attachments. Delivery states remain in the internal confirmation-email table.
 
 Identical replies and dietary/message edits do not resend the confirmation. A new acceptance after declining, or an accepted reply using a different email, sends a new confirmation. Saving the RSVP succeeds even when mail delivery fails. The UI locks a saved form until a full page reload, including navigation away and back.
 
 ## Automatic production-access request
 
 The application SST deployment checks the SES account in Frankfurt and submits a production-access request once the sender identity is verified. It uses the site URL, `TRANSACTIONAL` mail type, English, and `WEDDING_GROOM_EMAIL` as the contact inbox. Approved/pending requests are skipped; denied reviews are reported without resubmission. The release job shows a non-sensitive status message. AWS approval remains asynchronous, and sandbox limits continue until approval. See [deployment setup](DEPLOYMENT.md#ses-production-access). Review bounce/complaint feedback and any follow-up questions from AWS before sending invitations.
+
+Invitation links authenticate the guest and open the landing page at the top. Gallery links authenticate at `/gallery#invite=…`, then replace the token fragment with `#upload` and scroll to the upload section.
+
+## Current template and delivery model
+
+The admin menu exposes **Invitation Email Template** with language, audience and mutable text. `invitation_en.html` and `invitation_it.html` are the code-owned Jinja layouts; shared stationery and static labels also live in code (`email_base.html`, `services/email_content.py`). The legacy `email_copy` table is removed by migration 0004. Template edits apply to subsequent previews and sends.
+
+A +1 requires a unique email and is automatically created/reused, activated and sent after the parent's RSVP commits. `RSVP_NOTIFICATION_EMAIL` receives the response notification. Reactivation reuses an already sent invitation without resending. SES delivery outcomes remain persisted; local mocked tests do not verify delivery to a real inbox.

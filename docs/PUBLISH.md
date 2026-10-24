@@ -1,8 +1,23 @@
-# First publication with your custom domain
+# Production updates and initial setup
+
+The website is already released in production. The first-publication instructions below are reference material for a separate, new installation, not steps to repeat on the live site.
+
+## Updating the existing production site
+
+1. For website photos, follow [the exact S3 filenames and destinations](ASSETS.md). S3-backed editorial pictures do not need an application release. Bundled pictures, translations, styling and code do.
+2. Validate changes locally using the commands in [README](../README.md). Review pending migrations and the deployment diff against the existing production stage. Preserve the deployed migration history; never stamp, reset or recreate a production database to resolve an upgrade error.
+3. Preserve `SITE_DOMAIN`, the existing `production` and `production-dns` stages, `InviteEncryptionKey`, administrator credentials, and bucket identities. Do not rerun initial secret creation, registrar delegation or repository creation for an ordinary update.
+4. Merge reviewed changes through the existing repository process, then run **Release to AWS → deploy** from `main` with the workflow's confirmation. The existing release workflow applies migrations. Do not run a production deployment merely to preview local changes.
+5. Verify the published page, guest sign-in, RSVP saving and notifications, both Gallery checkboxes and guest targeting, plus upload/download and email delivery using accounts you control. Check that existing invitation links still work.
+
+For an interrupted migration or duplicate-email failure, follow [migration recovery](MIGRATIONS.md). Choose which existing invitation owns a conflicting email; do not silently merge guests or reset live data. A code rollback does not reverse a forward-only database migration.
+
+## Initial setup reference
+
 
 All `example.com` addresses in this guide are placeholders. Store deployment identifiers, domains, sender addresses and host details under **GitHub Settings → Environments → production → Environment secrets**. The workflow uses `${{ secrets.SITE_DOMAIN }}` and the other secrets below. GitHub Variables are not automatically masked. Public DNS and the published website remain discoverable.
 
-Follow this guide in order, starting with your empty GitHub repository and AWS account. Nothing in this guide has already been deployed. Domain names are case-insensitive; `EXAMPLE.COM` is normalized to `example.com`.
+Only for a new installation: follow the remaining sections in order, starting with an empty repository and the intended AWS account. Domain names are case-insensitive; `EXAMPLE.COM` is normalized to `example.com`.
 
 ## 1. Register the domain and prepare AWS
 

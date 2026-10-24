@@ -28,3 +28,5 @@ reports/
 .serena/
 
 tmp/
+
+# Personal editorial photographs can remain in the LandingImages bucket.

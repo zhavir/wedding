@@ -1,9 +1,11 @@
-import en from './locales/en/ui.json';
-import it from './locales/it/ui.json';
-
 export type Locale = 'en' | 'it';
 export const language = $state<{ current: Locale }>({ current: 'en' });
-const messages: Record<Locale, Record<string, string>> = { en, it };
+const sections = import.meta.glob('./locales/*/ui/*.json', { eager: true, import: 'default' });
+const messages: Record<Locale, Record<string, string>> = { en: {}, it: {} };
+for (const [path, copy] of Object.entries(sections)) {
+  const locale = path.split('/')[2] as Locale;
+  Object.assign(messages[locale], copy);
+}
 
 export function t(key: string, values: Record<string, string | number> = {}): string {
   const message = messages[language.current][key] ?? key;

@@ -1,16 +1,32 @@
-from sqlalchemy import BigInteger, Boolean, Integer, String, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import BigInteger, Boolean, Index, Integer, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, foreign, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
     pass
 
 
+class Guest(Base):
+    __tablename__ = "guests"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    audience: Mapped[str] = mapped_column(String(10), default="guest", server_default="guest")
+
+    def __str__(self):
+        return self.name
+
+
+class PhotoGuest(Base):
+    __tablename__ = "photo_guests"
+    photo_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    guest_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+
+
 class Invitation(Base):
     __tablename__ = "invitations"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(254))
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     language: Mapped[str] = mapped_column(String(2), default="en", server_default="en")
     max_guests: Mapped[int] = mapped_column(Integer)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -24,6 +40,31 @@ class Invitation(Base):
     email_message_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     email_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[int] = mapped_column(Integer)
+
+    guest_id: Mapped[str] = mapped_column(String(64), nullable=True)
+    guest: Mapped[Guest] = relationship(
+        primaryjoin=lambda: foreign(Invitation.guest_id) == Guest.id, lazy="joined"
+    )
+    attending: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    message: Mapped[str] = mapped_column(Text, default="", server_default="", nullable=True)
+    dietary: Mapped[str] = mapped_column(Text, default="", server_default="", nullable=True)
+    response_email: Mapped[str] = mapped_column(
+        String(254), default="", server_default="", nullable=True
+    )
+    response_guests: Mapped[str] = mapped_column(
+        Text, default="[]", server_default="[]", nullable=True
+    )
+    consent: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=True
+    )
+    witness_acceptance: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=True
+    )
+    updated_at: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=True)
+    __table_args__ = (
+        Index("uq_invitation_guest", "guest_id", unique=True),
+        Index("uq_invitation_email", "email", unique=True),
+    )
 
 
 class InvitationLink(Base):
@@ -52,7 +93,12 @@ class Photo(Base):
     duration_ms: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     codec: Mapped[str] = mapped_column(String(40), default="", server_default="")
     sha256: Mapped[str] = mapped_column(String(64), default="", server_default="")
-    published: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    gallery_visible: Mapped[bool] = mapped_column(
+        "published", Boolean, default=False, server_default="false"
+    )
+    carousel_visible: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=True
+    )
     motion_size: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     motion_content_type: Mapped[str] = mapped_column(String(50), default="", server_default="")
     __tablename__ = "photos"
@@ -63,6 +109,13 @@ class Photo(Base):
     caption: Mapped[str] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(String(20), default="pending")
     expires: Mapped[int] = mapped_column(Integer)
+
+    guests: Mapped[list[Guest]] = relationship(
+        secondary=lambda: PhotoGuest.__table__,
+        primaryjoin=lambda: Photo.id == foreign(PhotoGuest.photo_id),
+        secondaryjoin=lambda: Guest.id == foreign(PhotoGuest.guest_id),
+        lazy="selectin",
+    )
 
 
 class AdminUser(Base):
@@ -98,27 +151,6 @@ class AuthThrottle(Base):
     attempts: Mapped[int] = mapped_column(Integer)
 
 
-class RSVPResponse(Base):
-    __tablename__ = "rsvp_responses"
-    invitation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    email: Mapped[str] = mapped_column(String(254))
-    attending: Mapped[bool] = mapped_column(Boolean)
-    message: Mapped[str] = mapped_column(Text)
-    consent: Mapped[bool] = mapped_column(Boolean)
-    updated_at: Mapped[int] = mapped_column(Integer)
-
-
-class RSVPGuest(Base):
-    __tablename__ = "rsvp_guests"
-    id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    invitation_id: Mapped[str] = mapped_column(String(64))
-    position: Mapped[int] = mapped_column(Integer)
-    name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(254), default="", server_default="")
-    dietary: Mapped[str] = mapped_column(Text)
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-
 class RSVPNotification(Base):
     __tablename__ = "rsvp_notifications"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -129,12 +161,6 @@ class RSVPNotification(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending")
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[int] = mapped_column(Integer)
-
-
-class WitnessResponse(Base):
-    __tablename__ = "witness_responses"
-    invitation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    accepted: Mapped[bool] = mapped_column(Boolean)
 
 
 class ConfirmationEmail(Base):
@@ -159,11 +185,3 @@ class InvitationMessage(Base):
     audience: Mapped[str] = mapped_column(String(10), default="guest")
     text: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-
-class InvitationMessageChoice(Base):
-    __tablename__ = "invitation_message_choices"
-    invitation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    language: Mapped[str] = mapped_column(String(2))
-    audience: Mapped[str] = mapped_column(String(10))
-    text: Mapped[str] = mapped_column(Text)

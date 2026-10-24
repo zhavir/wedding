@@ -1,4 +1,4 @@
-"""RFC 5545 all-day save-the-date: no unconfirmed ceremony time is invented."""
+"""RFC 5545 calendar event with the confirmed ceremony time."""
 
 import hashlib
 from datetime import UTC, datetime, timedelta
@@ -29,7 +29,9 @@ def fold_line(line: str) -> str:
 
 
 def wedding_calendar(wedding: dict, site_url: str) -> str:
-    day = datetime.fromisoformat(wedding["date"]).date()
+    start = datetime.fromisoformat(wedding["date"])
+    day = start.date()
+    end = start.replace(hour=0, minute=0, second=0) + timedelta(days=1)
     names = " & ".join(wedding["names"])
     # The same UID across languages and recipients avoids duplicate calendar events.
     identity = hashlib.sha256(f"{names}:{day}".encode()).hexdigest()[:32]
@@ -42,15 +44,15 @@ def wedding_calendar(wedding: dict, site_url: str) -> str:
         "BEGIN:VEVENT",
         f"UID:{identity}@wedding",
         f"DTSTAMP:{datetime.now(UTC):%Y%m%dT%H%M%SZ}",
-        f"DTSTART;VALUE=DATE:{day:%Y%m%d}",
-        f"DTEND;VALUE=DATE:{day + timedelta(days=1):%Y%m%d}",
+        f"DTSTART:{start.astimezone(UTC):%Y%m%dT%H%M%SZ}",
+        f"DTEND:{end.astimezone(UTC):%Y%m%dT%H%M%SZ}",
         f"SUMMARY:{escape_text(names)}",
         f"LOCATION:{escape_text(wedding['venue'] + ', ' + wedding['address'])}",
         f"DESCRIPTION:{escape_text(wedding['confirmationEmail']['calendarDescription'])}",
         f"URL:{site_url.rstrip('/')}/",
         "TRANSP:OPAQUE",
         "STATUS:CONFIRMED",
-        "SEQUENCE:0",
+        "SEQUENCE:1",
         "END:VEVENT",
         "END:VCALENDAR",
     ]

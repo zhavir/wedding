@@ -20,7 +20,7 @@ router = APIRouter()
 async def get_rsvp(invite: Guest, db: DB):
     return {
         "rsvp": await read_response(db, invite.id),
-        "prefill": {"email": invite.email, "name": invite.name},
+        "prefill": {"email": invite.email or "", "name": invite.name},
     }
 
 
@@ -47,7 +47,7 @@ async def save_rsvp(body: RSVP, invite: Guest, db: DB):
     if body.attending and (
         not previous or not previous["attending"] or previous["email"] != str(body.email)
     ):
-        confirmation = queue_confirmation(db, invite, body)
+        confirmation = await queue_confirmation(db, invite, body)
     notification = queue_notification(db, invite, body)
     await db.commit()
     deliveries: list[Awaitable[object]] = [send_invitation(identity) for identity in additional_ids]

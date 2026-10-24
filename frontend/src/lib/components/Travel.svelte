@@ -1,4 +1,5 @@
 <script lang="ts">
+  import StaticPicture from './StaticPicture.svelte';
   import { wedding as w } from '#lib/wedding.ts';
   let showMap = $state(false);
 </script>
@@ -13,7 +14,7 @@
     <p>{w.address}</p>
   </div>
   <div class="venue-intro">
-    <img src={w.travel.image} alt={w.travel.imageAlt} width="1200" height="800" loading="lazy" />
+    <div class="venue-photo"><StaticPicture name="venue-garden" alt={w.travel.imageAlt} /></div>
     <div>
       <p class="lead">{w.travel.intro}</p>
       <a href={w.travel.website} target="_blank" rel="noreferrer">{w.travel.venueLink}</a>
@@ -42,10 +43,12 @@
       ></iframe>{:else}<p>{w.travel.mapNote}</p>
       <button class="button" onclick={() => (showMap = true)}>{w.travel.mapButton}</button>{/if}
   </div>
-  <article class="hotel-placeholder">
-    <p class="eyebrow">{w.travel.hotelEyebrow}</p>
-    <h3>{w.travel.hotelTitle}</h3>
-    <p>{w.travel.hotelText}</p>
-    <span class="badge">{w.travel.hotelStatus}</span>
-  </article>
 </section>
+
+<style>
+  .venue-photo {
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: 48% 48% 0 0;
+  }
+</style>

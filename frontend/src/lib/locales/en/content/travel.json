@@ -1,0 +1,21 @@
+{
+  "travel": {
+    "website": "https://www.villa-valentina.it/",
+    "trainUrl": "https://www.trenord.it/linee-e-orari/circolazione/le-nostre-linee/varese-saronno-milano/?code=R22",
+    "mapEmbed": "https://maps.google.com/maps?q=Villa%20Valentina%20Via%20Donizetti%2017%20Tradate&output=embed",
+    "eyebrow": "THE VILLA",
+    "title": "See you at Villa Valentina.",
+    "intro": "A beautiful picture, but we definitely won’t be arriving on horseback. Or in a fancy car, for that matter. No cringe-worthy entrances.",
+    "venueLink": "Explore the villa ↗",
+    "carTitle": "By car",
+    "carText": "Set your navigation to Villa Valentina, Via Donizetti 17, Tradate (VA). Follow the directions and park right at the villa.",
+    "directions": "Get driving directions ↗",
+    "trainTitle": "By public transport",
+    "trainText": "The Trenord Milano Cadorna–Saronno–Varese line, when it is behaving, stops at Tradate. Let us know in advance if you need a lift from the station.",
+    "trains": "Plan your train journey ↗",
+    "mapTitle": "Where is Villa Valentina?",
+    "mapButton": "Show interactive map",
+    "mapNote": "Right here.",
+    "imageAlt": "A horse-drawn carriage in front of Villa Valentina"
+  }
+}

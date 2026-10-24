@@ -26,7 +26,7 @@ test('Italian browser defaults to Italian and reduced motion disables animations
   await page.goto(process.env.WEB_URL || 'http://localhost:5173');
   await expect(page.locator('html')).toHaveAttribute('lang', 'it');
   await expect(page.getByRole('button', { name: 'Italiano', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('.curtain').first()).toHaveCSS('display', 'none');
+  await expect(page.locator('.envelope').first()).toHaveCSS('display', 'none');
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
   await page.screenshot({ path: testInfo.outputPath('landing-italian-mobile.png'), fullPage: true });
   await context.close();
@@ -54,15 +54,15 @@ test('venue, travel, Akamaru and hero never overlap on a narrow screen', async (
   await expect(page.getByRole('heading', { name: 'Andrea & Sara', exact: true }).first()).toBeVisible();
   await expect(page.locator('.hero-date')).toContainText('20 maggio 2027');
   await page.evaluate(() => document.documentElement.style.fontSize = '22px');
-  await page.getByRole('button', { name: 'Aprite il nostro invito' }).click();
-  await expect.poll(() => page.locator('.opening-scene').evaluate(el => Number(getComputedStyle(el).getPropertyValue('--opening')))).toBe(1);
+  await page.getByRole('button', { name: 'Salta l’animazione' }).click();
+  await expect.poll(() => page.locator('.envelope-scene').evaluate(el => Number(getComputedStyle(el).getPropertyValue('--page-reveal')))).toBe(1);
   const button = await page.locator('.hero .invitation-link').boundingBox();
   expect(button!.height).toBeGreaterThanOrEqual(44);
-  await expect(page.locator('.curtain-cue')).toBeHidden();
+  await expect(page.locator('.skip-opening')).toHaveAttribute('inert', '');
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 375);
   await expect(page.locator('#travel')).toContainText('Via Donizetti 17');
-  await expect(page.locator('#travel')).toContainText('Hotel convenzionato');
-  await expect(page.locator('#akamaru img')).toHaveAttribute('src', '/images/akamaru-placeholder.svg');
+
+  await expect(page.locator('#akamaru img').first()).toHaveAttribute('src', '/images/akamaru.webp');
   await expect(page.locator('#travel iframe')).toHaveCount(0);
   await page.route('https://maps.google.com/**', route => route.fulfill({ contentType: 'text/html', body: '<p>Map embed requested</p>' }));
   await page.getByRole('button', { name: 'Mostra la mappa interattiva' }).click();

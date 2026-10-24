@@ -1,0 +1,11 @@
+{
+  "names": ["Andrea", "Sara"],
+  "date": "2027-05-20T16:30:00+02:00",
+  "venue": "Villa Valentina",
+  "address": "Via Donizetti 17, 21049 Tradate (VA), Italy",
+  "mapUrl": "https://www.google.com/maps/dir/?api=1&destination=Villa+Valentina+Via+Donizetti+17+Tradate",
+  "contactEmail": "hello@example.com",
+  "dateLabel": "20 maggio 2027",
+  "location": "Tradate, Varese · Italia",
+  "rsvpBy": "30 aprile 2027"
+}

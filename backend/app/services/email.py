@@ -1,11 +1,10 @@
 import asyncio
-import json
-from functools import lru_cache
-from importlib.resources import files
+from copy import deepcopy
 
 from botocore.exceptions import BotoCoreError, ClientError
 from jinja2 import Environment, PackageLoader, select_autoescape
 from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import cipher
@@ -13,6 +12,7 @@ from app.db.models import Invitation
 from app.db.session import sessions
 from app.services.access import ensure_access
 from app.services.aws import ses
+from app.services.email_content import CONTENT
 from app.services.invitations import invitation_link
 from app.services.messages import invitation_message, render_message
 
@@ -21,20 +21,18 @@ templates = Environment(
 )
 
 
-@lru_cache
-def content(language: str = "en") -> dict:
-    locale = "it" if language == "it" else "en"
-    return json.loads(files("app").joinpath(f"locales/{locale}.json").read_text())
+async def content(language: str = "en", db: AsyncSession | None = None) -> dict:
+    return deepcopy(CONTENT["it" if language == "it" else "en"])
 
 
 def render_email(
     invite: Invitation,
     short_code: str = "",
     *,
+    wedding: dict,
     link: str | None = None,
     message_template: str | None = None,
 ) -> dict[str, str]:
-    wedding = content(invite.language or "en")
     if invite.is_witness:
         wedding = {**wedding, "email": wedding["witnessEmail"]}
     if message_template:
@@ -48,7 +46,9 @@ def render_email(
     url = link or invitation_link(invite)
     return {
         "subject": wedding["email"]["subject"],
-        "html": templates.get_template("invitation.html").render(
+        "html": templates.get_template(
+            f"invitation_{'it' if invite.language == 'it' else 'en'}.html"
+        ).render(
             w=wedding,
             guest=invite,
             link=url,
@@ -78,7 +78,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
         if not claimed:
             return {"id": invitation_id, "status": "skipped"}
         invite = await db.get(Invitation, invitation_id)
-        if invite is None:
+        if invite is None or not invite.email:
             return {"id": invitation_id, "status": "skipped"}
         access = await ensure_access(db, invite.id)
         selected_message = await invitation_message(db, invite)
@@ -87,6 +87,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
             invite,
             cipher().decrypt(access.encrypted_code.encode()).decode(),
             message_template=selected_message,
+            wedding=await content(invite.language or "en", db),
         )
         try:
             result = await asyncio.to_thread(deliver_email, invite.email, message)

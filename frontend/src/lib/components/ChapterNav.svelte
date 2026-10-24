@@ -5,7 +5,7 @@
     ['home', 'The beginning'],
     ['story', 'Our story'],
     ['details', 'The day'],
-    ['menu', 'At the table'],
+    ['ceremony-visions', 'Our ceremony dreams'],
     ['travel', 'Getting there'],
     ['rsvp', 'RSVP'],
     ['memories', 'Gallery']
@@ -153,25 +153,6 @@
     display: block;
   }
 
-  .chapter-preview {
-    display: block;
-    font-size: 0.72rem;
-    line-height: 1.35;
-    letter-spacing: 0.065em;
-    opacity: 0.62;
-    transform: translateY(3px);
-    transition:
-      opacity 220ms ease,
-      transform 220ms ease;
-  }
-
-  .expanded .chapter-preview,
-  .chapter-nav a:hover .chapter-preview,
-  .chapter-nav a:focus-visible .chapter-preview {
-    opacity: 0.8;
-    transform: translateY(0);
-  }
-
   .chapter-arrow {
     flex-shrink: 0;
   }
@@ -180,15 +161,8 @@
     .chapter-nav a {
       gap: 10px;
     }
-    .chapter-preview {
-      font-size: 0.65rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .chapter-preview {
-      transition: none;
-      transform: none;
-    }
   }
 </style>

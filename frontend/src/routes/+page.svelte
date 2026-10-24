@@ -4,14 +4,15 @@
   import SiteHeader from '#lib/components/SiteHeader.svelte';
   import BotanicalFrame from '#lib/components/BotanicalFrame.svelte';
   import CelebrationDetails from '#lib/components/CelebrationDetails.svelte';
-  import Menu from '#lib/components/Menu.svelte';
+  import CeremonyVisions from '#lib/components/CeremonyVisions.svelte';
+  import MemoriesCarousel from '#lib/components/MemoriesCarousel.svelte';
   import { reveal } from '#lib/reveal.ts';
   import { onMount } from 'svelte';
   import { wedding as w } from '#lib/wedding.ts';
   import { restoreSession } from '#lib/session.svelte.ts';
   import Travel from '#lib/components/Travel.svelte';
   import Akamaru from '#lib/components/Akamaru.svelte';
-  import Opening from '#lib/components/Opening.svelte';
+  import EnvelopeOpening from '#lib/components/EnvelopeOpening.svelte';
   import ChapterNav from '#lib/components/ChapterNav.svelte';
   import OurStory from '#lib/components/OurStory.svelte';
   import Countdown from '#lib/components/Countdown.svelte';
@@ -33,16 +34,16 @@
     content="noindex, nofollow"
   /><meta name="referrer" content="no-referrer" /></svelte:head
 >
-<a class="skip" href="#main">{t('Skip to content')}</a>
 <BotanicalFrame /><SiteHeader />
 <ChapterNav />
 <main id="main" use:reveal>
-  <Opening /><OurStory /><CelebrationDetails /><Countdown /><EventDetails /><Menu /><Travel
-  /><Akamaru /><Rsvp />
+  <EnvelopeOpening /><OurStory /><CelebrationDetails /><Countdown /><EventDetails /><CeremonyVisions
+  /><Travel /><Akamaru /><Rsvp />
   <section class="section memory-link" id="memories">
     <p class="eyebrow">{t('04 / THROUGH YOUR EYES')}</p>
     <h2>{t('Share a little happiness.')}</h2>
     <p>{t('Your photos, our favourite memories. Upload them in our private gallery.')}</p>
+    <MemoriesCarousel />
     <a class="button" href={resolve('/gallery#upload')}>{t('Upload your photos ↗')}</a>
   </section>
 </main>

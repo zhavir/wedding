@@ -3,14 +3,14 @@ import time
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import select, update
+from sqlalchemy import exists, or_, select, update
 
 from app.core.config import settings
 from app.core.security import DB, Guest
-from app.db.models import Invitation, Photo
+from app.db.models import Invitation, Photo, PhotoGuest
 from app.schemas import FinishUpload, Upload
 from app.services.aws import s3
-from app.services.photos import media_key, photo_view, process_photo
+from app.services.photos import media_key, photo_preview, photo_view, process_photo
 from app.services.uploads import finish_targets, part_url, start_target
 
 router = APIRouter(prefix="/photos")
@@ -44,7 +44,7 @@ async def begin_upload(body: Upload, invite: Guest, db: DB):
         size=body.size,
         motion_size=body.motion_size,
         motion_content_type=body.motion_content_type,
-        published=False,
+        gallery_visible=False,
         content_type=body.content_type,
         caption=body.caption,
         status="pending",
@@ -95,13 +95,41 @@ async def complete(photo_id: str, invite: Guest, db: DB, body: FinishUpload | No
     return {"id": photo_id}
 
 
+def visible_to(invite: Invitation):
+    targeted = exists().where(PhotoGuest.photo_id == Photo.id)
+    allowed = exists().where(
+        PhotoGuest.photo_id == Photo.id, PhotoGuest.guest_id == invite.guest_id
+    )
+    return or_(~targeted, allowed)
+
+
+@router.get("/random")
+@router.get("/carousel")
+async def carousel_photos(invite: Guest, db: DB):
+    """Return every eligible signed preview in one authenticated request."""
+    rows = list(
+        await db.scalars(
+            select(Photo)
+            .where(
+                Photo.status == "complete",
+                Photo.carousel_visible.is_(True),
+                Photo.content_type.like("image/%"),
+                visible_to(invite),
+            )
+            .order_by(Photo.id)
+        )
+    )
+    items = await asyncio.gather(*(asyncio.to_thread(photo_preview, row) for row in rows))
+    return {"items": items}
+
+
 @router.get("")
 async def gallery(
     invite: Guest, db: DB, cursor: str | None = None, limit: int = Query(12, ge=1, le=24)
 ):
     query = (
         select(Photo)
-        .where(Photo.status == "complete", Photo.published.is_(True))
+        .where(Photo.status == "complete", Photo.gallery_visible.is_(True), visible_to(invite))
         .order_by(Photo.id.desc())
         .limit(limit + 1)
     )

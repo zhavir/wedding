@@ -110,3 +110,65 @@ def test_offline_migration_uses_configured_dialect(monkeypatch, dsql):
     assert "CREATE TABLE alembic_version" in sql
     assert "CREATE TABLE IF NOT EXISTS invitations" in sql
     assert "INSERT INTO alembic_version" in sql
+    assert "CREATE TABLE guests" in sql
+    assert "CREATE TABLE photo_guests" in sql
+    assert "DROP TABLE email_copy" in sql
+    assert "DROP TABLE rsvp_responses" in sql
+    assert "default-it-+1" in sql and "default-en-+1" in sql
+    assert "ADD COLUMN guest_id VARCHAR(64)" in sql
+    if dsql:
+        assert "CREATE UNIQUE INDEX ASYNC uq_invitation_email" in sql
+        assert "CREATE UNIQUE INDEX ASYNC uq_invitation_guest" in sql
+        assert "sys.wait_for_job" in sql
+        added_columns = [line for line in sql.splitlines() if "ADD COLUMN" in line]
+        assert all("DEFAULT" not in line and "NOT NULL" not in line for line in added_columns)
+
+
+def test_guest_migration_rejects_duplicates_before_changing_schema(tmp_path):
+    from sqlalchemy import create_engine, inspect, text
+
+    db = create_engine(f"sqlite:///{tmp_path / 'duplicates.db'}")
+    config = Config("alembic.ini")
+    with db.connect() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "0003_carousel_visibility")
+        connection.execute(text("UPDATE invitations SET email='SAME@example.test'"))
+        connection.commit()
+        with pytest.raises(RuntimeError, match="duplicate groups"):
+            command.upgrade(config, "head")
+        assert "guests" not in inspect(connection).get_table_names()
+        assert "guest_id" not in {c["name"] for c in inspect(connection).get_columns("invitations")}
+    db.dispose()
+
+
+@pytest.mark.parametrize("failure_step", ["index", "drop"])
+def test_guest_migration_resumes_after_committed_ddl(tmp_path, monkeypatch, failure_step):
+    from alembic.operations import Operations
+    from sqlalchemy import create_engine, text
+
+    db = create_engine(f"sqlite:///{tmp_path / 'resume.db'}")
+    config = Config("alembic.ini")
+    method = "create_index" if failure_step == "index" else "drop_table"
+    original = getattr(Operations, method)
+
+    def interrupt(self, name, *args, **kwargs):
+        if name == ("uq_invitation_email" if failure_step == "index" else "rsvp_responses"):
+            raise RuntimeError("simulated interruption")
+        return original(self, name, *args, **kwargs)
+
+    with db.connect() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "0003_carousel_visibility")
+        with monkeypatch.context() as patch:
+            patch.setattr(Operations, method, interrupt)
+            with pytest.raises(RuntimeError, match="simulated interruption"):
+                command.upgrade(config, "head")
+        connection.rollback()
+        command.upgrade(config, "head")
+        assert connection.scalar(text("SELECT count(*) FROM guests")) == 2
+        assert (
+            connection.scalar(text("SELECT count(*) FROM invitations WHERE guest_id IS NULL")) == 0
+        )
+        assert connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 16
+        command.upgrade(config, "head")
+    db.dispose()

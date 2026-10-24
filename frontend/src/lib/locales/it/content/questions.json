@@ -1,0 +1,32 @@
+{
+  "faqs": [
+    {
+      "question": "Come mi vesto?",
+      "answer": "Come vi pare! Basta che poi non vi lamentiate se avete freddo o se si rovinano le scarpe in giardino."
+    },
+    {
+      "question": "Come arrivo?",
+      "answer": "Qui sotto trovate tutte le indicazioni per raggiungere la villa. Se avete dubbi o vi serve una mano con l'organizzazione del viaggio, scriveteci pure!"
+    },
+    {
+      "question": "Posso portare il mio cane?",
+      "answer": "Ci dispiace, ma Akamaru sarà l’unico amico a quattro zampe presente al matrimonio. Vi chiediamo quindi di lasciare a casa i vostri pelosetti."
+    },
+    {
+      "question": "Cosa vi regalo?",
+      "answer": "A dire il vero, a noi piacerebbe ribaltare la domanda: cosa possiamo regalare noi a voi, per tutti gli sforzi che farete per essere qui con noi? Per questo non aspettatevi liste di nozze, IBAN o scatole per le buste. Noi siamo a posto così, grazie! Sappiamo che per alcuni di voi esserci significherà organizzare un viaggio, prendere ferie e fare qualche sacrificio. Il regalo più bello che possiate farci è condividere questa giornata con noi. Non mancate!"
+    },
+    {
+      "question": "Dove parcheggio la macchina?",
+      "answer": "Villa Valentina dispone di un parcheggio interno custodito, quindi potete lasciare la macchina in villa e godervi la giornata in tranquillità."
+    },
+    {
+      "question": "Dove resto per la notte?",
+      "answer": "Non conoscendo bene la zona, non abbiamo ancora una lista di posti da consigliarvi. Le strutture nei dintorni di Tradate non sono moltissime, se avete bisogno di una mano a cercare una sistemazione, scriveteci!"
+    },
+    {
+      "question": "Posso dare da mangiare ad Akamaru?",
+      "answer": "NO."
+    }
+  ]
+}

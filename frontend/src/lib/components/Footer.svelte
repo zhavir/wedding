@@ -22,7 +22,7 @@
   <div class="footer-ribbon"><Flourish untied={tied ? 0 : 1} /></div>
   <p class="handwritten">{t('Tied together, always.')}</p>
   <p class="eyebrow">{t('THE BEST IS YET TO COME')}</p>
-  <h2>{w.names[0]} <em>&</em> {w.names[1]}</h2>
+  <h2><span>{w.names[0]}</span> <em>&</em> <span>{w.names[1]}</span></h2>
   <p>{w.dateLabel} · {w.location}</p>
   <div class="footer-bottom">
     <span>{t('Made with love, for the people we love.')}</span><a href={`mailto:${w.contactEmail}`}
@@ -45,3 +45,22 @@
     </div>
   </div>
 </footer>
+
+<style>
+  @media (max-width: 760px) {
+    h2 {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      font-size: clamp(4rem, 16vw, 6.5rem);
+      line-height: 0.95;
+      font-weight: 300;
+    }
+    h2 em {
+      margin: 0.1em 0;
+      font-size: 0.58em;
+      color: var(--gold);
+    }
+  }
+</style>

@@ -121,7 +121,7 @@ async def approve_test_media():
         await db.execute(
             update(Photo)
             .where(Photo.caption.like("Integration memory %"), Photo.status == "complete")
-            .values(published=True)
+            .values(gallery_visible=True)
         )
         await db.commit()
     await engine().dispose()

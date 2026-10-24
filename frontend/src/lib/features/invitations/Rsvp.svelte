@@ -99,7 +99,11 @@
       <h2>{t('It wouldn’t be')}<br />{t('the same')}<br /> <em>{t('without you.')}</em></h2>
       <p>
         {t('Please let us know by')}
-        {w.rsvpBy}.<br />{t('We’ve saved a little space just for you.')}
+        {w.rsvpBy}.<br
+        /><!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- External video. -->
+        <a href="https://youtu.be/uxnbkagUzrU?t=3" target="_blank" rel="noreferrer"
+          >{t('E dic sì, nda fess i sort!')}</a
+        >
       </p>
       <span class="rsvp-flower" aria-hidden="true">✳</span>
     </div>

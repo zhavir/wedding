@@ -290,7 +290,7 @@ def test_original_bytes_and_preview(client, aws):
             assert (photo.width, photo.height) == (1800, 1200)
             assert photo.sha256 == hashlib.sha256(original).hexdigest()
             assert photo.codec.lower() == "jpeg"
-            photo.published = value
+            photo.gallery_visible = value
             await db.commit()
 
     client.portal.call(publish, True)
@@ -323,7 +323,7 @@ def test_other_guest_cannot_complete_upload(client, aws):
     assert client.post(f"/api/photos/{photo['id']}/complete").status_code == 404
 
 
-def test_invalid_image_not_published(client, aws):
+def test_invalid_image_not_gallery_visible(client, aws):
     storage, _ = aws
     login(client)
     photo = client.post(
@@ -404,10 +404,27 @@ def test_sqladmin_create_review_send_and_replay(client, aws):
         return match.group(1)
 
     admin_login(client)
+    assert (
+        client.post(
+            "/api/admin/guest/create",
+            data={"name": "Admin created guest", "audience": "guest", "save": "Save"},
+        ).status_code
+        == 200
+    )
+
+    async def find_guest():
+        from app.db.models import Guest
+        from sqlalchemy import select
+
+        async with sessions()() as db:
+            return await db.scalar(select(Guest.id).where(Guest.name == "Admin created guest"))
+
+    guest_id = client.portal.call(find_guest)
     response = client.post(
         "/api/admin/invitation/create",
         data={
-            "name": "Admin created guest",
+            "guest": guest_id,
+            "language": "en",
             "email": "created@example.com",
             "max_guests": "2",
             "active": "y",
@@ -704,7 +721,7 @@ def test_link_only_invitation_and_italian_email(client, aws):
 
 
 def test_structured_rsvp_and_notification_failure_preserve_response(client, aws, monkeypatch):
-    from app.db.models import RSVPGuest, RSVPNotification, RSVPResponse
+    from app.db.models import Invitation, RSVPNotification
     from botocore.exceptions import ClientError
     from sqlalchemy import select
 
@@ -723,8 +740,9 @@ def test_structured_rsvp_and_notification_failure_preserve_response(client, aws,
 
     async def inspect_rows():
         async with sessions()() as db:
-            response = await db.scalar(select(RSVPResponse))
-            guest = await db.scalar(select(RSVPGuest).where(RSVPGuest.active.is_(True)))
+            response = await db.scalar(select(Invitation).where(Invitation.has_rsvp.is_(True)))
+            assert response is not None
+            guest = response.guest
             notification = await db.scalar(select(RSVPNotification))
             assert response and response.attending and response.consent
             assert guest and guest.name == "Guest"
@@ -743,9 +761,9 @@ def test_structured_rsvp_and_notification_failure_preserve_response(client, aws,
 
     async def inspect_decline():
         async with sessions()() as db:
-            assert not list(await db.scalars(select(RSVPGuest).where(RSVPGuest.active.is_(True))))
-            guest = await db.scalar(select(RSVPGuest))
-            assert guest and guest.name == guest.dietary == ""
+            invite = await db.scalar(select(Invitation).where(Invitation.has_rsvp.is_(True)))
+            assert invite and invite.attending is False and invite.response_guests == "[]"
+            assert invite.guest.name == "Guest"
             assert await db.scalar(
                 select(RSVPNotification).where(RSVPNotification.status == "sent")
             )
@@ -765,9 +783,9 @@ def test_alembic_migrations_are_idempotent_and_match_models(client):
         async with engine().connect() as connection:
             assert (
                 await connection.scalar(text("SELECT version_num FROM alembic_version"))
-                == "0001_initial"
+                == "0004_guests_and_invitations"
             )
-            assert await connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 10
+            assert await connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 16
             differences = await connection.run_sync(
                 lambda sync: compare_metadata(MigrationContext.configure(sync), Base.metadata)
             )
@@ -828,8 +846,8 @@ def test_confirmation_calendar_and_delivery_failure(client, aws):
     payload = attachment.get_payload(decode=True)
     assert isinstance(payload, bytes)
     calendar = payload.decode()
-    assert "DTSTART;VALUE=DATE:20270520\r\n" in calendar
-    assert "DTEND;VALUE=DATE:20270521\r\n" in calendar
+    assert "DTSTART:20270520T143000Z\r\n" in calendar
+    assert "DTEND:20270520T220000Z\r\n" in calendar
     assert "#invite=" not in calendar
     assert all(len(line.encode()) <= 75 for line in calendar.split("\r\n"))
     assert client.put("/api/rsvp", json=body(message="Updated details")).status_code == 200
@@ -861,33 +879,29 @@ def test_calendar_folding_preserves_unicode():
 
 def test_message_selection_language_stability_and_validation(client, monkeypatch, aws):
     import pytest
-    from app.db.models import InvitationMessage, InvitationMessageChoice
+    from app.db.models import InvitationMessage
     from app.services.messages import validate_message
     from sqlalchemy import select
 
     for text in ["{name.__class__}", "{name!r}", "{unknown}", "{name:>5}", "broken {"]:
         with pytest.raises(ValueError):
             validate_message(text)
-    monkeypatch.setattr("app.services.messages.secrets.choice", lambda pool: pool[-1])
     login(client, "ADMIN-CODE-123")
     invite = client.post(
         "/api/admin/invitations",
         json={
             "invitations": [
-                {"name": "<script>Guest</script>", "language": "it", "email": "guest@example.com"}
+                {"name": "<script>Guest</script>", "language": "it", "email": "italian@example.com"}
             ]
         },
     ).json()["items"][0]
     preview = client.get(f"/api/admin/invitations/{invite['id']}/preview").json()
-    assert "tieni un posto" in preview["text"]
+    assert "<script>Guest</script>" in preview["text"]
     assert "<script>" not in preview["html"]
-    monkeypatch.setattr("app.services.messages.secrets.choice", lambda pool: pool[0])
     assert client.get(f"/api/admin/invitations/{invite['id']}/preview").json() == preview
 
     async def check_selection():
         async with sessions()() as db:
-            choice = await db.get(InvitationMessageChoice, invite["id"])
-            assert choice and choice.language == "it" and choice.audience == "guest"
             rows = list(await db.scalars(select(InvitationMessage)))
             assert {row.language for row in rows} == {"it", "en"}
 
@@ -1069,12 +1083,12 @@ def test_additional_guest_invitation_lifecycle(client, aws):
     login(client)
     assert client.put("/api/rsvp", json=party).status_code == 200
     records = client.portal.call(children)
-    assert len(records) == 2 and sum(row["active"] for row in records) == 1
+    assert len(records) == 1 and records[0]["id"] == child["id"] and records[0]["active"]
     party["guests"][1]["email"] = "new-alex@example.com"
     assert client.put("/api/rsvp", json=party).status_code == 200
     records = client.portal.call(children)
     active = [row for row in records if row["active"]]
-    assert len(records) == 3 and len(active) == 1
+    assert len(records) == 2 and len(active) == 1
     assert active[0]["email"] == "new-alex@example.com"
     login(client, active[0]["code"])
     assert (
@@ -1083,7 +1097,7 @@ def test_additional_guest_invitation_lifecycle(client, aws):
         ).status_code
         == 200
     )
-    assert all(not row["active"] for row in client.portal.call(children))
+    assert any(row["active"] for row in client.portal.call(children))
     login(client)
     # Removing only the additional attendee also expires their invitation.
     assert client.put("/api/rsvp", json=body()).status_code == 200
@@ -1118,7 +1132,7 @@ def test_media_admin_preview_uploader_filter_and_bulk_approval(client):
                         content_type="image/jpeg",
                         size=100,
                         status=status,
-                        published=False,
+                        gallery_visible=False,
                         expires=0,
                     )
                 )
@@ -1136,11 +1150,15 @@ def test_media_admin_preview_uploader_filter_and_bulk_approval(client):
     result = client.get("/api/admin/photo/action/approve-media?pks=media-0,media-1,media-2")
     assert result.status_code == 200
 
-    async def published():
+    async def gallery_visible():
         async with sessions()() as db:
-            return {row.id: row.published for row in (await db.scalars(select(Photo))).all()}
+            return {row.id: row.gallery_visible for row in (await db.scalars(select(Photo))).all()}
 
-    assert client.portal.call(published) == {"media-0": True, "media-1": True, "media-2": False}
+    assert client.portal.call(gallery_visible) == {
+        "media-0": True,
+        "media-1": True,
+        "media-2": False,
+    }
 
 
 @pytest.mark.parametrize("content_type", ["image/jpeg", "video/mp4"])
@@ -1257,12 +1275,178 @@ def test_public_calendar_download_matches_confirmation_attachment(client):
         assert response.headers["content-type"].startswith("text/calendar")
         assert 'filename="andrea-sara-wedding.ics"' in response.headers["content-disposition"]
         calendar = response.text
-        assert "DTSTART;VALUE=DATE:20270520\r\n" in calendar
-        assert "DTEND;VALUE=DATE:20270521\r\n" in calendar
+        assert "DTSTART:20270520T143000Z\r\n" in calendar
+        assert "DTEND:20270520T220000Z\r\n" in calendar
         assert "Villa Valentina" in calendar
         assert "#invite=" not in calendar
         uid = next(line for line in calendar.splitlines() if line.startswith("UID:"))
-        assert uid in wedding_calendar(content(locale), settings().site_url)
+        assert uid in wedding_calendar(client.portal.call(content, locale), settings().site_url)
         uids.append(uid)
     assert uids[0] == uids[1]
     assert client.get("/api/calendar.ics?locale=unknown").status_code == 422
+
+
+def test_authenticated_carousel_only_signs_approved_completed_still_previews(client, aws):
+    from app.db.models import Photo
+
+    storage, _ = aws
+    assert client.get("/api/photos/random").status_code == 401
+    storage.generate_presigned_url.assert_not_called()
+    login(client)
+
+    async def seed():
+        async with sessions()() as db:
+            for i in range(30):
+                db.add(
+                    Photo(
+                        id=f"approved-{i:02}",
+                        owner="guest",
+                        size=100,
+                        content_type="image/jpeg",
+                        caption="A happy moment",
+                        status="complete",
+                        carousel_visible=True,
+                        expires=0,
+                    )
+                )
+            for name, status, carousel_visible, content_type in [
+                ("pending", "pending", True, "image/jpeg"),
+                ("unapproved", "complete", False, "image/jpeg"),
+                ("video", "complete", True, "video/mp4"),
+                ("not-an-image", "complete", True, "application/pdf"),
+            ]:
+                db.add(
+                    Photo(
+                        id=name,
+                        owner="guest",
+                        size=100,
+                        content_type=content_type,
+                        caption="Hidden",
+                        status=status,
+                        carousel_visible=carousel_visible,
+                        expires=0,
+                    )
+                )
+            await db.commit()
+
+    client.portal.call(seed)
+    response = client.get("/api/photos/carousel")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    items = response.json()["items"]
+    assert len(items) == len({item["id"] for item in items}) == 30
+    assert all(item["id"].startswith("approved-") for item in items)
+    assert all(set(item) == {"id", "caption", "preview"} for item in items)
+    calls = storage.generate_presigned_url.call_args_list
+    assert len(calls) == 30
+    assert all(call.args == ("get_object",) for call in calls)
+    assert all(call.kwargs["Params"]["Key"].startswith("previews/") for call in calls)
+    assert all(call.kwargs["ExpiresIn"] == 3600 for call in calls)
+    assert client.get("/api/photos").json()["items"] == []
+
+
+def test_authenticated_carousel_empty_and_unpublish(client, aws):
+    from app.db.models import Photo
+
+    login(client)
+    assert client.get("/api/photos/random").json() == {"items": []}
+
+    async def change(carousel_visible):
+        async with sessions()() as db:
+            photo = await db.get(Photo, "one")
+            if photo is None:
+                photo = Photo(
+                    id="one",
+                    owner="guest",
+                    size=100,
+                    content_type="image/jpeg",
+                    caption="One",
+                    status="complete",
+                    expires=0,
+                )
+                db.add(photo)
+            photo.carousel_visible = carousel_visible
+            await db.commit()
+
+    client.portal.call(change, True)
+    assert len(client.get("/api/photos/random").json()["items"]) == 1
+    client.portal.call(change, False)
+    assert client.get("/api/photos/random").json() == {"items": []}
+
+
+def test_gallery_and_carousel_visibility_are_independent(client, aws):
+    from app.db.models import Photo
+
+    login(client)
+
+    async def seed():
+        async with sessions()() as db:
+            for gallery, carousel in [(False, False), (True, False), (False, True), (True, True)]:
+                db.add(
+                    Photo(
+                        id=f"visibility-{int(gallery)}{int(carousel)}",
+                        owner="guest",
+                        size=100,
+                        content_type="image/jpeg",
+                        caption="Moment",
+                        status="complete",
+                        expires=0,
+                        gallery_visible=gallery,
+                        carousel_visible=carousel,
+                    )
+                )
+            await db.commit()
+
+    client.portal.call(seed)
+    assert {item["id"] for item in client.get("/api/photos").json()["items"]} == {
+        "visibility-10",
+        "visibility-11",
+    }
+    assert {item["id"] for item in client.get("/api/photos/random").json()["items"]} == {
+        "visibility-01",
+        "visibility-11",
+    }
+    client.delete("/api/session")
+    aws[0].generate_presigned_url.reset_mock()
+    assert client.get("/api/photos").status_code == 401
+    assert client.get("/api/photos/random").status_code == 401
+    aws[0].generate_presigned_url.assert_not_called()
+
+
+def test_admin_edits_gallery_and_carousel_flags_independently(client):
+    from app.db.models import Photo
+
+    async def seed():
+        async with sessions()() as db:
+            db.add(
+                Photo(
+                    id="moderated-photo",
+                    owner="guest",
+                    size=100,
+                    content_type="image/jpeg",
+                    caption="Moment",
+                    status="complete",
+                    expires=0,
+                )
+            )
+            await db.commit()
+
+    async def flags():
+        async with sessions()() as db:
+            photo = await db.get(Photo, "moderated-photo")
+            assert photo is not None
+            return photo.gallery_visible, photo.carousel_visible
+
+    client.portal.call(seed)
+    admin_login(client)
+    form = client.get("/api/admin/photo/edit/moderated-photo")
+    assert "Visible in gallery" in form.text and "Visible in carousel" in form.text
+    for gallery, carousel in [(True, False), (False, True), (True, True), (False, False)]:
+        data = {"caption": "Moment", "save": "Save"}
+        if gallery:
+            data["gallery_visible"] = "y"
+        if carousel:
+            data["carousel_visible"] = "y"
+        response = client.post("/api/admin/photo/edit/moderated-photo", data=data)
+        assert response.status_code == 200, response.text
+        assert client.portal.call(flags) == (gallery, carousel)

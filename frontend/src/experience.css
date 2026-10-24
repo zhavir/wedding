@@ -29,8 +29,7 @@ main {
 h1,
 h2,
 h3,
-.handwritten,
-.photo-note {
+.handwritten {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 300;
 }
@@ -250,37 +249,7 @@ p {
     italic 1rem 'Cormorant Garamond',
     serif;
 }
-/* Fabric covers the invitation until the guest opens it. */
-.opening-scene {
-  position: relative;
-  min-height: calc(var(--stage-height, 100svh) + 115svh);
-  background: radial-gradient(circle at 50% 23%, #ead5ce6b, transparent 23rem), var(--paper);
-}
-.opening-stage {
-  position: sticky;
-  top: 0;
-  overflow: hidden;
-  isolation: isolate;
-}
-/* The free hems sweep ahead of the hanging tops; pleats follow that curved edge. */
-.curtain {
-  position: absolute;
-  z-index: 4;
-  top: -1%;
-  height: 102%;
-  width: 50.4%;
-  overflow: visible;
-  pointer-events: none;
-  filter: drop-shadow(5px 4px 9px #40301f24);
-}
-.curtain-left {
-  left: 0;
-}
-.curtain-right {
-  right: 0;
-  transform: scaleX(-1);
-}
-.opening-stage .hero {
+.letter-sheet .hero {
   position: relative;
   z-index: 3;
   min-height: 100svh;
@@ -304,7 +273,7 @@ p {
   border: 1px solid #b89a6133;
   border-radius: 50%;
   inset: auto;
-  transform: scale(calc(0.82 + var(--opening) * 0.18));
+
   pointer-events: none;
 }
 .hero::after {
@@ -316,8 +285,7 @@ p {
 .hero-eyebrow {
   margin-bottom: 36px;
 }
-.hero-monogram,
-.curtain-monogram {
+.hero-monogram {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -336,20 +304,20 @@ p {
   color: var(--gold);
   font-size: 0.8rem;
 }
-.opening-stage .hero h1 {
+.letter-sheet .hero h1 {
   font:
     300 clamp(4.1rem, 10vw, 9.5rem)/0.85 'Cormorant Garamond',
     serif;
   letter-spacing: -0.055em;
   margin: 0;
 }
-.opening-stage .hero h1 em {
+.letter-sheet .hero h1 em {
   color: var(--gold);
   font-size: 0.58em;
   display: inline-block;
   transform: translateY(-0.12em);
 }
-.opening-stage .hero-date {
+.letter-sheet .hero-date {
   display: block;
   margin: 35px 0 22px;
   font:
@@ -370,7 +338,7 @@ p {
     sans-serif;
   color: var(--moss);
 }
-.opening-stage .light-button {
+.letter-sheet .light-button {
   margin-top: 22px;
   padding: 10px 0;
   min-height: 44px;
@@ -524,35 +492,6 @@ p {
   color: var(--gold);
   font-size: 1.7rem;
 }
-.story-image {
-  width: 100%;
-  justify-self: end;
-}
-.story-image::before,
-.story-image::after {
-  content: none;
-}
-.story-image img {
-  width: 100%;
-  height: 560px;
-  border-radius: 0;
-  object-fit: cover;
-  box-shadow: inset 0 0 0 10px #fbf8f220;
-  filter: saturate(0.75) sepia(0.08);
-  /* The picture stays attached to its paper frame. */
-  transform: none;
-}
-.story-image .photo-note {
-  position: static;
-  display: block;
-  padding-top: 15px;
-  background: transparent;
-  color: var(--moss);
-  transform: none;
-  font-size: 1.1rem;
-  box-shadow: none;
-}
-.story-image .flower,
 .rsvp-flower {
   display: none;
 }
@@ -724,18 +663,6 @@ p {
 .section-heading p {
   font-size: 0.85rem;
 }
-.ribbon-timeline {
-  position: relative;
-  margin-top: 70px;
-}
-.timeline-thread {
-  position: absolute;
-  left: 38%;
-  width: 24%;
-  top: 0;
-  height: 100%;
-  overflow: visible;
-}
 .thread-base {
   stroke: #c7c9b7;
   stroke-width: 1;
@@ -744,171 +671,9 @@ p {
   stroke: var(--gold);
   stroke-width: 2;
 }
-.timeline-bead {
-  position: absolute;
-  left: calc(38% + var(--cursor-x, 50) * 0.24%);
-  z-index: 2;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: var(--paper);
-  background: var(--gold);
-  box-shadow: 0 0 0 7px #b99c651a;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-.timeline-event {
-  min-height: 310px;
-  display: grid;
-  grid-template-columns: 1fr 24% 1fr;
-  align-items: center;
-  padding-block: 30px;
-  position: relative;
-}
-.event-copy {
-  grid-column: 1;
-  padding: 24px 35px 24px 0;
-  border-bottom: 1px solid #25352b20;
-}
-.timeline-event:nth-of-type(even) .event-copy {
-  grid-column: 3;
-  padding: 24px 0 24px 35px;
-}
-.event-copy h3 {
-  font-size: clamp(2rem, 3vw, 3rem);
-  margin: 12px 0;
-}
-.event-copy p:last-child {
-  font-size: 0.88rem;
-  color: #5f6a59;
-}
-.event-number {
-  font:
-    italic 1.1rem 'Cormorant Garamond',
-    serif;
-  color: var(--gold);
-  margin-bottom: 18px;
-}
-.event-keepsake {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 125px;
-  height: 125px;
-  border: 1px solid #b89a6170;
-  border-radius: 50%;
-  color: var(--gold);
-  font:
-    3rem 'Cormorant Garamond',
-    serif;
-  transform: rotate(12deg) scale(0.85);
-  opacity: 0.3;
-  transition:
-    transform 0.8s,
-    opacity 0.8s;
-}
-.event-keepsake span {
-  font:
-    400 0.6rem 'DM Sans',
-    sans-serif;
-  letter-spacing: 0.2em;
-  margin-top: 8px;
-}
-.timeline-event:nth-of-type(even) .event-keepsake {
-  grid-column: 1;
-}
-.timeline-event.arrived .event-keepsake {
-  opacity: 1;
-  transform: rotate(-5deg) scale(1);
-}
-.timeline-event:hover .event-keepsake {
-  transform: rotate(15deg) scale(1.08);
-}
 .good-to-know {
   border-top: 1px solid #25352b24;
   padding-top: 55px;
-}
-/* The menu is deliberately provisional, laid out like a place setting. */
-.menu-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10vw;
-  align-items: center;
-  background: #f1e7df;
-  min-height: 95svh;
-}
-.menu-intro h2 {
-  margin: 24px 0;
-}
-.menu-intro > p:last-of-type {
-  font-size: 0.88rem;
-  max-width: 420px;
-  color: var(--moss);
-}
-.menu-intro .flourish {
-  margin-block: 30px;
-}
-.menu-place-setting {
-  width: 240px;
-  max-width: 100%;
-  margin-top: 30px;
-  color: #8c997c;
-  stroke-width: 1;
-}
-.menu-sprig {
-  stroke: var(--moss);
-  transform-origin: 50% 50%;
-  transition: transform 0.6s;
-}
-.menu-intro:hover .menu-sprig {
-  transform: rotate(12deg);
-}
-.menu-paper {
-  padding: 50px 40px;
-  text-align: center;
-  background: var(--paper);
-  outline: 1px solid #b89a6166;
-  outline-offset: -12px;
-  box-shadow: 0 12px 40px #604b2510;
-  transform: rotate(2deg);
-  transition: transform 0.6s;
-}
-.menu-paper:hover {
-  transform: rotate(-1deg);
-}
-.menu-word {
-  font:
-    italic 300 3.2rem 'Cormorant Garamond',
-    serif;
-  color: var(--gold);
-}
-.menu-paper article {
-  padding: 25px 0;
-}
-.menu-paper article + article {
-  border-top: 1px solid #b89a6133;
-}
-.menu-paper h3 {
-  font-size: 2rem;
-  margin: 8px 0;
-}
-.menu-paper article p {
-  font-size: 0.75rem;
-  line-height: 1.8;
-  color: var(--moss);
-}
-.menu-note {
-  font-size: 0.64rem;
-  line-height: 1.7;
-  color: var(--moss);
-  border-top: 1px solid #b89a6133;
-  padding-top: 22px;
 }
 .travel-section {
   background: var(--cream);
@@ -929,42 +694,8 @@ p {
   border: 1px solid #9eaa9850;
   background: #eeeee4;
 }
-.hotel-placeholder {
-  border-color: #b89a6170;
-}
 .dog-section {
   background: var(--paper);
-}
-.dog-portrait {
-  position: relative;
-}
-.dog-picture img {
-  transition: transform 0.6s;
-}
-.dog-secret {
-  position: absolute;
-  top: 10%;
-  left: 50%;
-  z-index: 1;
-  transform: translate(-50%, 15px) rotate(-8deg);
-  opacity: 0;
-  padding: 10px 16px;
-  border-radius: 100px;
-  background: var(--ink);
-  color: var(--paper);
-  font-size: 0.7rem;
-  white-space: nowrap;
-  transition:
-    opacity 0.3s,
-    transform 0.3s;
-  pointer-events: none;
-}
-.dog-portrait:hover .dog-secret {
-  opacity: 1;
-  transform: translate(-50%, 0) rotate(-8deg);
-}
-.dog-portrait:hover img {
-  transform: rotate(3deg);
 }
 .rsvp-section {
   background: #e9ecdf;
@@ -1147,7 +878,7 @@ footer .handwritten {
   body:has(input:focus, select:focus, textarea:focus) .chapter-picker {
     visibility: hidden;
   }
-  .opening-stage .hero {
+  .letter-sheet .hero {
     min-height: 100svh;
     padding: 110px 28px 120px;
   }
@@ -1160,18 +891,18 @@ footer .handwritten {
     height: 70px;
     margin-bottom: 28px;
   }
-  .opening-stage .hero h1 {
+  .letter-sheet .hero h1 {
     max-width: 7ch;
     font-size: clamp(4rem, 16vw, 6.5rem);
   }
-  .opening-stage .hero h1 em {
+  .letter-sheet .hero h1 em {
     display: block;
     margin: 0.1em 0;
   }
   .hero::before {
     width: 105vw;
   }
-  .opening-stage .hero-date {
+  .letter-sheet .hero-date {
     max-width: 250px;
     font-size: 1.05rem;
     margin: 25px 0 20px;
@@ -1210,12 +941,6 @@ footer .handwritten {
     grid-template-columns: 1fr;
     min-height: auto;
     gap: 50px;
-  }
-  .story-image {
-    width: 85%;
-  }
-  .story-image img {
-    height: 400px;
   }
   .celebration-details {
     min-height: 100svh;
@@ -1278,62 +1003,6 @@ footer .handwritten {
     margin-top: 30px;
     max-width: 100%;
   }
-  .timeline-thread {
-    left: 0;
-    width: 16%;
-  }
-  .timeline-bead {
-    left: calc(var(--cursor-x, 50) * 0.16%);
-    width: 22px;
-    height: 22px;
-    font-size: 0.7rem;
-  }
-  .timeline-event {
-    min-height: 300px;
-    display: block;
-    padding: 25px 0 25px 24%;
-  }
-  .event-copy,
-  .timeline-event:nth-of-type(even) .event-copy {
-    padding: 0 0 22px;
-  }
-  .event-copy .eyebrow {
-    max-width: calc(100% - 30px);
-    font-size: 0.5rem;
-  }
-  .event-copy h3 {
-    font-size: 2rem;
-  }
-  .event-keepsake,
-  .timeline-event:nth-of-type(even) .event-keepsake {
-    position: absolute;
-    top: 16px;
-    right: 0;
-    width: 32px;
-    height: 32px;
-    font-size: 1.3rem;
-  }
-  .event-keepsake span {
-    display: none;
-  }
-  .ribbon-timeline {
-    margin-top: 40px;
-  }
-  .menu-section {
-    grid-template-columns: 1fr;
-    gap: 30px;
-  }
-  .menu-place-setting {
-    width: 170px;
-    display: block;
-    margin: 25px auto 0;
-  }
-  .menu-paper {
-    padding: 40px 30px;
-  }
-  .menu-paper article {
-    padding: 22px 0;
-  }
   .travel-cards {
     gap: 20px;
   }
@@ -1345,23 +1014,7 @@ footer .handwritten {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .opening-scene {
-    min-height: auto;
-  }
-  .opening-stage {
-    position: relative;
-    top: 0;
-  }
-  .curtain,
-  .curtain-seam,
-  .timeline-bead {
-    display: none;
-  }
   .hero-monogram {
-    transform: none;
-  }
-  .event-keepsake {
-    opacity: 1;
     transform: none;
   }
   .lace {
@@ -1564,7 +1217,7 @@ footer > .handwritten {
 .header-actions {
   gap: 26px;
 }
-.opening-stage .hero {
+.letter-sheet .hero {
   padding: 130px 30px 120px;
 }
 .hero > .invitation-venue {
@@ -1577,7 +1230,7 @@ footer > .handwritten {
   filter: saturate(0.65);
   pointer-events: none;
 }
-.opening-stage .hero::after {
+.letter-sheet .hero::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1590,7 +1243,7 @@ footer > .handwritten {
   );
   pointer-events: none;
 }
-.opening-stage .hero::before {
+.letter-sheet .hero::before {
   display: none;
 }
 .hero > :not(.invitation-venue) {
@@ -1634,42 +1287,6 @@ footer > .handwritten {
   text-decoration: underline;
   text-underline-offset: 7px;
 }
-.curtain-cue {
-  position: absolute;
-  z-index: 6;
-  top: calc(100svh - 220px);
-  bottom: auto;
-  left: 50%;
-  transform: translateX(-50%);
-  width: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  color: #473f31;
-  background: none;
-  border: 0;
-  padding: 14px;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  opacity: 1;
-  transition:
-    opacity 0.2s,
-    visibility 0.2s;
-}
-.curtain-cue span {
-  font-size: inherit;
-  margin: 0;
-}
-.curtain-cue.departed {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-.dog-portrait img {
-  pointer-events: none;
-}
 @media (max-width: 760px) {
   .site-header {
     gap: 10px;
@@ -1698,13 +1315,13 @@ footer > .handwritten {
     font-size: 21px;
     line-height: 1;
   }
-  .opening-stage .hero {
+  .letter-sheet .hero {
     padding: 120px 28px;
   }
   .hero-eyebrow {
     margin-bottom: 30px;
   }
-  .opening-stage .hero::after {
+  .letter-sheet .hero::after {
     background: linear-gradient(180deg, #fbf8f28a, #fbf8f2f5 25%, #fbf8f2f5 73%, #fbf8f2a6);
   }
   .gallery-header .header-actions {
@@ -1713,26 +1330,15 @@ footer > .handwritten {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .curtain-cue {
-    display: none;
-  }
 }
-
-.curtain-cue {
-  pointer-events: auto;
-  right: auto;
-}
-.curtain-cue.departed {
-  pointer-events: none;
-}
-body:has(.opening-scene:not(.opened)) .header-date {
+body:has(.envelope-scene:not(.opened)) .header-date {
   opacity: 0;
 }
 .header-date {
   transition: opacity 0.5s;
 }
 @media (prefers-reduced-motion: reduce) {
-  body:has(.opening-scene) .header-date {
+  body:has(.envelope-scene) .header-date {
     opacity: 1;
   }
 }
@@ -1943,7 +1549,7 @@ body:has(.opening-scene:not(.opened)) .header-date {
   transform: translateX(0);
 }
 /* While the fabric is closed, keep the header closed too. */
-body:has(.opening-scene:not(.opened)) .site-header .header-date {
+body:has(.envelope-scene:not(.opened)) .site-header .header-date {
   max-width: 0;
   opacity: 0;
 }
@@ -2098,7 +1704,7 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
       max-width 0ms linear 760ms,
       opacity 350ms ease 760ms;
   }
-  body:has(.opening-scene:not(.opened)) .site-header.identity-revealed .header-date {
+  body:has(.envelope-scene:not(.opened)) .site-header.identity-revealed .header-date {
     max-width: 170px;
     opacity: 1;
   }
@@ -2133,8 +1739,6 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
   display: none;
 }
 /* BotanicalFrame now owns a fixed falling-petal layer, not footer florals. */
-
-/* Header: follow opening curtain scroll exactly; reverse before fully opened. */
 @media (min-width: 761px) {
   .site-header .header-identity,
   .site-header.identity-revealed .header-identity {
@@ -2163,7 +1767,7 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
   }
   .site-header .header-date,
   .site-header.identity-revealed .header-date,
-  body:has(.opening-scene:not(.opened)) .site-header.identity-revealed .header-date {
+  body:has(.envelope-scene:not(.opened)) .site-header.identity-revealed .header-date {
     position: absolute;
     left: calc(14px + var(--logo-width, 40px) + 16px);
     top: 50%;
@@ -2179,7 +1783,7 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
     pointer-events: none;
   }
   .site-header.identity-revealed .header-date,
-  body:has(.opening-scene:not(.opened)) .site-header.identity-revealed .header-date {
+  body:has(.envelope-scene:not(.opened)) .site-header.identity-revealed .header-date {
     opacity: 1;
     visibility: visible;
   }
@@ -2211,7 +1815,7 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
   .celebration-details,
   .countdown,
   .details,
-  .menu-section,
+  .visions,
   .travel,
   .rsvp-section,
   .dog-section,
@@ -2225,7 +1829,7 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
     .celebration-details,
     .countdown,
     .details,
-    .menu-section,
+    .visions,
     .travel,
     .rsvp-section,
     .dog-section,
@@ -2310,35 +1914,6 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
   display: none !important;
 }
 
-/* One paper photograph: the whole frame, image, caption and border move together.
-   Override the original rotation from app.css. */
-.story-image {
-  transform: rotate(0deg);
-  transform-origin: center center;
-  transition: transform 600ms cubic-bezier(0.2, 0.7, 0.3, 1);
-  will-change: transform;
-}
-.story-image img {
-  transform: none;
-  transition: none;
-}
-@media (hover: hover) and (pointer: fine) {
-  .story-image:hover {
-    transform: translateY(-6px) rotate(3deg);
-  }
-  .story-image:hover img {
-    transform: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .story-image {
-    transition: none !important;
-  }
-  .story-image:hover {
-    transform: none !important;
-  }
-}
-
 /* The text ink isn't optically centered in the anchor's box (tight S).
    The initial capsule is wider, and a 3px left correction fades as it opens.
    The fully opened position and scroll/lock logic remain unchanged. */
@@ -2371,29 +1946,75 @@ body:has(.opening-scene:not(.opened)) .site-header .header-date {
     display: block;
   }
 }
-/* Hover on computers; tap toggles the same state on touch screens. */
-@media (hover: hover) and (pointer: fine) {
-  .menu-paper:hover {
-    transform: rotate(-1deg) translateY(-6px);
-  }
+
+/* Shared chapter rhythm: readable measure and equal gutters at every breakpoint. */
+:root {
+  --chapter-title: clamp(2.6rem, 4.8vw, 4.6rem);
+  --chapter-subtitle: clamp(1.8rem, 2.6vw, 2.4rem);
+  --chapter-body: clamp(0.95rem, 1.15vw, 1.05rem);
+  --chapter-space: clamp(4rem, 7vw, 7rem);
+  --chapter-gutter: max(clamp(1.4rem, 5vw, 4rem), calc((100vw - 1160px) / 2));
 }
-@media (hover: none) {
-  .menu-paper:hover {
-    transform: rotate(2deg);
-  }
-  .menu-paper.touch-activated {
-    transform: rotate(-1deg) translateY(-6px);
-  }
-  .story-image:hover {
-    transform: rotate(0deg);
-  }
-  .story-image.touch-activated {
-    transform: translateY(-6px) rotate(3deg);
-  }
+main
+  > :is(
+    .section,
+    .intro,
+    .celebration-details,
+    .countdown,
+    .rsvp-section,
+    .dog-section,
+    .travel-section
+  ) {
+  width: 100%;
+  max-width: none;
+  min-height: auto;
+  margin-inline: 0;
+  padding: var(--chapter-space) var(--chapter-gutter);
 }
-@media (prefers-reduced-motion: reduce) {
-  .menu-paper.touch-activated,
-  .story-image.touch-activated {
-    transform: none;
+main
+  > :is(
+    .section,
+    .intro,
+    .celebration-details,
+    .countdown,
+    .rsvp-section,
+    .dog-section,
+    .travel-section
+  )
+  h2 {
+  font-size: var(--chapter-title);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  margin-block: 0.8rem 1.5rem;
+}
+main
+  > :is(
+    .section,
+    .intro,
+    .celebration-details,
+    .countdown,
+    .rsvp-section,
+    .dog-section,
+    .travel-section
+  )
+  > p:not(.eyebrow) {
+  font-size: var(--chapter-body);
+  line-height: 1.8;
+}
+.intro .intro-copy {
+  width: 100%;
+}
+.site-header .header-identity .monogram {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  letter-spacing: normal;
+}
+@media (max-width: 600px) {
+  .story-keepsakes figcaption {
+    font-size: 0.7rem;
+  }
+  .story-keepsakes .polaroid {
+    padding: 0.4rem 0.4rem 0.8rem;
   }
 }

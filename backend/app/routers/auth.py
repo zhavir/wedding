@@ -12,7 +12,7 @@ from app.core.security import COOKIE_NAME, DB, Guest, cipher, digest, set_sessio
 from app.db.models import Invitation, InvitationAccess, InvitationLink, Session
 from app.schemas import Login, RecoverInvitation
 from app.services.access import code_hash, ensure_access, new_code, throttle
-from app.services.email import deliver_email, render_email
+from app.services.email import content, deliver_email, render_email
 
 router = APIRouter()
 
@@ -92,6 +92,8 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
         )
     )
     for invite in invites:
+        if not invite.email:
+            continue
         await ensure_access(db, invite.id)
         now = int(time.time())
         code, token = new_code(), secrets.token_urlsafe(32)
@@ -115,7 +117,10 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
         if not claimed:
             continue
         message = render_email(
-            invite, code, link=f"{settings().site_url.rstrip('/')}/#invite={token}"
+            invite,
+            code,
+            link=f"{settings().site_url.rstrip('/')}/#invite={token}",
+            wedding=await content(invite.language or "en", db),
         )
         message["subject"] = "Your replacement invitation / Il tuo nuovo invito"
         message["text"] += (

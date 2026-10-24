@@ -5,13 +5,13 @@
   import { wedding as w } from '#lib/wedding.ts';
   import { session, signOut } from '#lib/session.svelte.ts';
   import LanguageSwitch from './LanguageSwitch.svelte';
+  import Monogram from './Monogram.svelte';
   let { gallery = false }: { gallery?: boolean } = $props();
   let scrolled = $state(false);
   let revealProgress = $state(0);
   let identityGrowth = $state(135);
   let identityBase = $state(76);
   let logoWidth = $state(40);
-  let revealLocked = $state(false);
   let monogramElement: HTMLAnchorElement;
   let dateElement: HTMLSpanElement;
   let signingOut = $state(false);
@@ -29,17 +29,13 @@
   onMount(() => {
     const update = () => {
       scrolled = scrollY > 50;
-      // Match Opening.svelte: progress is controlled by scroll, not elapsed time.
-      // Once fully revealed, keep the identity open when scrolling back upward.
-      const scene = document.querySelector('.opening-scene');
-      const distance = innerHeight * 0.65;
-      const amount = scene
-        ? Math.max(0, -scene.getBoundingClientRect().top / distance)
-        : scrollY / distance;
-      const position = Math.max(0, Math.min(1, amount));
-      // Reverse with scroll until fully open; only then latch permanently.
-      if (position >= 0.995) revealLocked = true;
-      revealProgress = revealLocked ? 1 : position;
+      const scene = document.querySelector<HTMLElement>('.envelope-scene');
+      const distance = scene ? Math.max(1, scene.offsetHeight - innerHeight) : innerHeight;
+      const amount = scene ? -scene.getBoundingClientRect().top / distance : 1;
+      const value = Math.max(0, Math.min(1, (amount - 0.62) / 0.38));
+      revealProgress = matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 1
+        : value * value * (3 - 2 * value);
     };
     const measure = () => {
       // The expanded capsule fits the actual date, without trailing empty space.
@@ -66,7 +62,7 @@
   class="site-header"
   class:gallery-header={gallery}
   class:scrolled={scrolled || gallery}
-  class:identity-revealed={revealLocked || gallery}
+  class:identity-revealed={gallery || revealProgress >= 0.995}
 >
   <div
     class="header-identity"
@@ -76,7 +72,7 @@
       bind:this={monogramElement}
       class="monogram"
       href={gallery ? resolve('/') : '#home'}
-      aria-label={w.names.join(' & ')}>{w.names[0][0]}<em>&</em>{w.names[1][0]}</a
+      aria-label={w.names.join(' & ')}><Monogram /></a
     >
     <span bind:this={dateElement} class="header-date">{w.dateLabel}</span>
   </div>
@@ -109,6 +105,8 @@
 <style>
   .monogram {
     flex-shrink: 0;
+    width: 44px;
+    height: 44px;
   }
   @media (prefers-reduced-motion: reduce) {
     .header-identity,
