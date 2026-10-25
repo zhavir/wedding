@@ -187,7 +187,10 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     column_formatters = {
         Invitation.updated_at: lambda model, attr: datetime.fromtimestamp(
             model.updated_at, UTC
-        ).strftime(DATE_FORMAT)
+        ).strftime(DATE_FORMAT),
+        Invitation.created_at: lambda model, attr: datetime.fromtimestamp(
+            model.created_at, UTC
+        ).strftime(DATE_FORMAT),
     }
     column_formatters_detail = {
         Invitation.id: lambda model, attr: invitation_link(model),
@@ -196,6 +199,9 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
             if model.updated_at
             else "Not answered"
         ),
+        Invitation.created_at: lambda model, attr: datetime.fromtimestamp(
+            model.created_at, UTC
+        ).strftime(DATE_FORMAT),
         Invitation.response_guests: lambda model, attr: "; ".join(
             person["name"] + (": " + person["dietary"] if person.get("dietary") else "")
             for person in json.loads(model.response_guests or "[]")
