@@ -20,29 +20,40 @@ from app.services.email import content, templates
 from app.services.email_content import participant_copy
 
 
-async def queue_confirmation(db: AsyncSession, invite: Invitation, body: RSVP) -> str:
+async def render_confirmation(
+    invite: Invitation, participant_count: int, db: AsyncSession | None = None
+) -> dict[str, str]:
     wedding = await content(invite.guest.language or "en", db)
-    wedding = participant_copy(wedding, invite.guest.language, len(body.guests))
+    wedding = participant_copy(wedding, invite.guest.language, participant_count)
     copy = wedding["confirmationEmail"]
     intro = copy["intro"]
-    key = uuid.uuid7().hex
     text = f"{invite.name},\n\n{intro}\n\n{wedding['dateLabel']}\n{wedding['venue']}\n{wedding['address']}\n\n{copy['calendarHelp']}\n{settings().site_url.rstrip('/')}/\n"
+    return {
+        "subject": copy["subject"],
+        "text": text,
+        "html": templates.get_template("confirmation.html").render(
+            w=wedding,
+            copy=copy,
+            intro=intro,
+            guest=invite,
+            language=invite.guest.language or "en",
+            site_url=settings().site_url,
+            logo_url=f"{settings().site_url.rstrip('/')}/monogram.png",
+        ),
+    }
+
+
+async def queue_confirmation(db: AsyncSession, invite: Invitation, body: RSVP) -> str:
+    message = await render_confirmation(invite, len(body.guests), db)
+    key = uuid.uuid7().hex
     db.add(
         ConfirmationEmail(
             id=key,
             invitation_id=invite.id,
             recipient=str(body.email),
-            subject=copy["subject"],
-            text_body=text,
-            html_body=templates.get_template("confirmation.html").render(
-                w=wedding,
-                copy=copy,
-                intro=intro,
-                guest=invite,
-                language=invite.guest.language or "en",
-                site_url=settings().site_url,
-                logo_url=f"{settings().site_url.rstrip('/')}/monogram.png",
-            ),
+            subject=message["subject"],
+            text_body=message["text"],
+            html_body=message["html"],
             status="pending",
             created_at=int(time.time()),
         )

@@ -350,3 +350,40 @@ def test_plus_one_reuses_guest_email_before_an_invitation_exists(client, aws):
             assert invitations[0].email_status == "sent"
 
     client.portal.call(inspect)
+
+
+def test_admin_confirmation_preview_is_read_only_and_uses_rsvp_party(client, aws):
+    from app.db.models import ConfirmationEmail
+    from app.services.confirmations import render_confirmation
+
+    login(client)
+    invitation_id = client.get("/api/session").json()["id"]
+    url = f"/api/admin/invitation/action/preview-confirmation-email?pks={invitation_id}"
+    assert client.get(url, follow_redirects=False).status_code in (302, 303)
+    admin_login(client)
+
+    async def prepare(attending):
+        async with sessions()() as db:
+            invite = await db.get(Invitation, invitation_id)
+            invite.guest.language = "it"
+            invite.max_guests = 2
+            invite.attending = attending
+            invite.response_guests = '[{"name":"Guest"}]'
+            await db.commit()
+            return (await render_confirmation(invite, 1 if attending else 2, db))["html"]
+
+    for attending in (False, True):
+        expected = client.portal.call(prepare, attending)
+        response = client.get(url)
+        assert response.status_code == 200
+        assert response.text == expected
+        assert ("grazie per il tuo sì" if attending else "grazie per il vostro sì") in response.text
+        assert "sandbox" in response.headers["content-security-policy"]
+
+    async def check_no_queue():
+        async with sessions()() as db:
+            assert not list(await db.scalars(select(ConfirmationEmail)))
+
+    client.portal.call(check_no_queue)
+    aws[1].send_raw_email.assert_not_called()
+    assert client.get(url.replace(invitation_id, "missing")).status_code == 404

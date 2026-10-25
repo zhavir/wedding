@@ -24,6 +24,7 @@ from app.db.models import Guest, Invitation, InvitationMessage, Photo
 from app.db.session import sessions
 from app.schemas import InvitationCreate
 from app.services.access import ensure_access
+from app.services.confirmations import render_confirmation
 from app.services.email import content, render_email, send_invitation
 from app.services.invitations import create_invitation, invitation_link
 from app.services.messages import invitation_message, validate_message
@@ -362,6 +363,29 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
                     message_template=selected_message,
                     wedding=await content(invite.guest.language or "en", db),
                 )["html"],
+                headers={
+                    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; sandbox allow-popups"
+                },
+            )
+
+    @action(
+        name="preview-confirmation-email",
+        label="Preview confirmation email",
+        add_in_list=False,
+    )
+    async def preview_confirmation_email(self, request: Request):
+        async with sessions()() as db:
+            invite = await db.get(Invitation, request.query_params.get("pks", ""))
+            if not invite or invite.is_admin:
+                raise HTTPException(404, "Invitation not found")
+            count = (
+                len(json.loads(invite.response_guests or "[]"))
+                if invite.attending
+                else invite.max_guests
+            )
+            message = await render_confirmation(invite, count, db)
+            return HTMLResponse(
+                message["html"],
                 headers={
                     "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; sandbox allow-popups"
                 },

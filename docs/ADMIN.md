@@ -2,6 +2,9 @@
 
 The administration interface is **SQLAdmin**, mounted inside FastAPI at `/api/admin/`. It provides searchable, sortable invitation records, create/edit forms, record details, email previews and a send action. `/admin` redirects there for convenience.
 
+To preview the RSVP confirmation email, open **Invitations**, open an invitation’s details, and choose **Preview confirmation email** from the actions menu. The preview uses the guest’s language and accepted RSVP party size, or the invitation’s maximum guest count before acceptance. It renders the same HTML as delivery without sending or queuing an email. The calendar attachment is included only in the delivered email.
+
+
 ## Create your credentials locally
 
 Start the application and let the database bootstrap finish:
