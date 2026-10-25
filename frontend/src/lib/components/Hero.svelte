@@ -9,7 +9,7 @@
 
 <section class="hero" id="home" aria-labelledby="hero-title">
   <div class="invitation-venue">
-    <StaticPicture name="venue-exterior" alt={t('Ceremony flowers at Villa Valentina')} eager />
+    <StaticPicture name="hero-picture" alt={t('Hero picture')} eager />
   </div>
   <p class="eyebrow hero-eyebrow">{t('Together with our families')}</p>
   <h1 id="hero-title">{w.names[0]} <em>&</em> {w.names[1]}</h1>
