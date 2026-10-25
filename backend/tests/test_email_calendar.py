@@ -168,3 +168,14 @@ def test_email_attachment_is_exactly_the_frontend_download(language):
 
     frontend = Path(__file__).resolve().parents[2] / "frontend" / "static" / "calendar"
     assert calendar_attachment(language) == (frontend / f"wedding-{language}.ics").read_bytes()
+
+
+@pytest.mark.parametrize("language", ["en", "it"])
+def test_email_contact_uses_ses_sender(monkeypatch, language):
+    monkeypatch.setenv("EMAIL_FROM", "wedding@our-domain.test")
+    wedding = asyncio.run(content(language))
+    invite = Invitation(name="Alex", guest=Guest(language=language), max_guests=1, is_witness=False)
+    message = render_email(invite, wedding=wedding, link="https://example.test/#invite=private")
+    assert wedding["contactEmail"] == "wedding@our-domain.test"
+    assert 'href="mailto:wedding@our-domain.test"' in message["html"]
+    assert "hello@example.com" not in message["html"]

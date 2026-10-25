@@ -50,7 +50,7 @@ Follow [production updates and initial setup](PUBLISH.md) for registration, GitH
 
 Set `SITE_DOMAIN=example.com` in the GitHub `production` environment. The `setup-dns` operation creates the public hosted zone and SES verification/DKIM/DMARC records in the protected `production-dns` SST stage. After delegation, `deploy` creates the application in the separate protected `production` stage. SST creates a free non-exportable ACM certificate, validation records, CloudFront aliases and the `www` redirect. HTTP redirects to HTTPS. Keep both stages and their resource names stable.
 
-`EMAIL_FROM` must belong to this domain unless you explicitly set `SES_IDENTITY_ARN` for a different verified sender. No SES ARN secret is needed for the managed domain identity. The runtime role retains its scoped SES permissions. Mailbox hosting and SES production-access approval are separate from DNS setup.
+`EMAIL_FROM` must belong to this domain unless you explicitly set `SES_IDENTITY_ARN` for a different verified sender. No SES ARN secret is needed for the managed domain identity. The runtime role retains its scoped SES permissions. Mailbox hosting and SES production-access approval are separate from DNS setup. `EMAIL_FROM` also supplies the contact address in backend email templates and the frontend footer (via the build-time `PUBLIC_CONTACT_EMAIL` variable). For local frontend development, set `PUBLIC_CONTACT_EMAIL` to match the backend sender. Incoming mail forwarding to the bride and groom must be configured separately; the application currently provisions outgoing SES delivery only.
 
 ## Release
 

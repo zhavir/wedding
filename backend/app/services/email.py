@@ -22,7 +22,9 @@ templates = Environment(
 
 
 async def content(language: str = "en", db: AsyncSession | None = None) -> dict:
-    return deepcopy(CONTENT["it" if language == "it" else "en"])
+    wedding = deepcopy(CONTENT["it" if language == "it" else "en"])
+    wedding["contactEmail"] = settings().email_from
+    return wedding
 
 
 def render_email(

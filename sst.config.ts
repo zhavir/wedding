@@ -165,6 +165,7 @@ export default $config({
       },
       environment: {
         PUBLIC_API_URL: "/api",
+        PUBLIC_CONTACT_EMAIL: emailFrom,
         PUBLIC_ASSET_URL: $interpolate`https://${landingImages.domain}`,
       },
     });

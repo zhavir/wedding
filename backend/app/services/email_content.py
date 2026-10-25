@@ -6,7 +6,6 @@ CONTENT = {
         "date": "2027-05-20T16:30:00+02:00",
         "venue": "Villa Valentina",
         "address": "Via Donizetti 17, 21049 Tradate (VA), Italy",
-        "contactEmail": "hello@example.com",
         "email": {
             "subject": "You’re invited to our wedding",
             "heading": "It wouldn’t be the same without you.",
@@ -50,7 +49,6 @@ CONTENT = {
         "date": "2027-05-20T16:30:00+02:00",
         "venue": "Villa Valentina",
         "address": "Via Donizetti 17, 21049 Tradate (VA), Italy",
-        "contactEmail": "hello@example.com",
         "email": {
             "subject": "Sei invitato al nostro matrimonio",
             "heading": "Non sarebbe lo stesso senza di te.",

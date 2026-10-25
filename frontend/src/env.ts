@@ -1,6 +1,11 @@
 import { defineEnvVars } from '@sveltejs/kit/env';
 
 export const variables = defineEnvVars({
+  PUBLIC_CONTACT_EMAIL: {
+    public: true,
+    static: true,
+    schema: (value) => value || 'wedding@example.com'
+  },
   PUBLIC_ASSET_URL: {
     public: true,
     static: true,

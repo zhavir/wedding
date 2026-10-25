@@ -13,6 +13,7 @@
     observer.observe(footer);
     return () => observer.disconnect();
   });
+  import { PUBLIC_CONTACT_EMAIL } from '$app/env/public';
   import { resolve } from '$app/paths';
   import { t } from '#lib/i18n.svelte.ts';
   import { wedding as w } from '#lib/wedding.ts';
@@ -25,7 +26,8 @@
   <h2><span>{w.names[0]}</span> <em>&</em> <span>{w.names[1]}</span></h2>
   <p>{w.dateLabel} · {w.location}</p>
   <div class="footer-bottom">
-    <span>{t('Made with love, for the people we love.')}</span><a href={`mailto:${w.contactEmail}`}
+    <span>{t('Made with love, for the people we love.')}</span><a
+      href={`mailto:${PUBLIC_CONTACT_EMAIL}`}
       >{t('A question? Say hello ↗').replace('↗', '').trim()}
       <svg
         class="inline-arrow"
