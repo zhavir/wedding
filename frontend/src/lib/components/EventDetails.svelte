@@ -7,7 +7,7 @@
 <section class="section details" id="details">
   <div class="section-heading">
     <div>
-      <p class="eyebrow">{t('02 / THE CELEBRATION')}</p>
+      <p class="eyebrow">{t('THE CELEBRATION')}</p>
       <h2>{t('A beautiful day.')}<br /><em>{t('Even better company.')}</em></h2>
     </div>
     <p>

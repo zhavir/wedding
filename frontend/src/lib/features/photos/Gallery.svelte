@@ -329,7 +329,7 @@
 <section class="section memories" id="memories">
   <div class="section-heading">
     <div>
-      <p class="eyebrow">{t('04 / THROUGH YOUR EYES')}</p>
+      <p class="eyebrow">{t('THROUGH YOUR EYES')}</p>
       <h2>{t('The moments')}<br /><em>{t('we’ll keep forever.')}</em></h2>
     </div>
     <p>{t('Share the happy tears, the dancing,')}<br />{t('and the little moments in between.')}</p>

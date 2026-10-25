@@ -40,7 +40,7 @@
   <EnvelopeOpening /><OurStory /><CelebrationDetails /><Countdown /><EventDetails /><CeremonyVisions
   /><Travel /><Akamaru /><Rsvp />
   <section class="section memory-link" id="memories">
-    <p class="eyebrow">{t('04 / THROUGH YOUR EYES')}</p>
+    <p class="eyebrow">{t('THROUGH YOUR EYES')}</p>
     <h2>{t('Share your photos and videos with us.')}</h2>
     <p>{t('Your photos, our favourite memories. Upload them in our private gallery.')}</p>
     <MemoriesCarousel />

@@ -6,7 +6,7 @@
 
 <section class="section intro" id="story">
   <div class="intro-copy">
-    <p class="eyebrow">{t('01 OUR STORY')}</p>
+    <p class="eyebrow">{t('OUR STORY')}</p>
     <h2><span>{t('Some things are')} {t('just')}</span><em>{t('meant to be.')}</em></h2>
   </div>
   <div class="story-chapters mx-auto grid max-w-[1100px] gap-[clamp(3rem,7vw,6rem)]">

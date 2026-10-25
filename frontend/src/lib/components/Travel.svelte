@@ -10,13 +10,13 @@
     <div>
       <p class="eyebrow">{w.travel.eyebrow}</p>
       <h2>{w.travel.title}</h2>
+      <p>{w.address}</p>
     </div>
-    <p>{w.address}</p>
   </div>
   <div class="venue-intro">
-    <div class="venue-photo"><StaticPicture name="venue-garden" alt={w.travel.imageAlt} /></div>
+    <div class="venue-photo"><StaticPicture name="venue-photo-1" alt={w.travel.imageAlt} /></div>
+    <div class="venue-photo"><StaticPicture name="venue-photo-2" alt={w.travel.imageAlt} /></div>
     <div>
-      <p class="lead">{w.travel.intro}</p>
       <a href={w.travel.website} target="_blank" rel="noreferrer">{w.travel.venueLink}</a>
     </div>
   </div>

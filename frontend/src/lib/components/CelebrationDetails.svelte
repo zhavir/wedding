@@ -5,7 +5,6 @@
 </script>
 
 <section class="celebration-details" aria-labelledby="save-date-title">
-  <p class="eyebrow">{t('The celebration')}</p>
   <h2 id="save-date-title">{t('Save the date')}</h2>
   <Flourish />
   <div class="celebration-grid">
