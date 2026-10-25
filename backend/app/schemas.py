@@ -71,7 +71,7 @@ class Upload(Model):
 class InvitationCreate(Model):
     name: str = Field(min_length=1, max_length=100)
     email: NormalizedEmail | None = None
-    language: Literal["en", "it"] = "en"
+    language: Literal["en", "it"] = "it"
     is_witness: bool = False
     max_guests: int = Field(default=2, ge=1, le=12)
 

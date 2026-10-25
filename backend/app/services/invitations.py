@@ -34,6 +34,7 @@ async def create_invitation(
             guest = Guest(
                 id=uuid.uuid7().hex,
                 name=data.name,
+                language=data.language,
                 email=email,
                 audience="witness" if data.is_witness else "guest",
             )
@@ -43,7 +44,6 @@ async def create_invitation(
         id=uuid.uuid7().hex,
         name=guest.name,
         guest=guest,
-        language=data.language,
         is_witness=guest.audience == "witness",
         max_guests=data.max_guests,
         active=True,
@@ -71,7 +71,7 @@ def invitation_view(invite: Invitation) -> dict[str, object]:
         "id": invite.id,
         "name": invite.name,
         "email": invite.guest.email or "",
-        "language": invite.language,
+        "language": invite.guest.language,
         "is_witness": invite.is_witness,
         "max_guests": invite.max_guests,
         "active": invite.active,

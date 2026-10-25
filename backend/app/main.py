@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.admin.views import setup_admin
 from app.core.config import settings
 from app.db.session import get_db
-from app.routers import admin, auth, calendar, photos, rsvps
+from app.routers import admin, auth, photos, rsvps
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ async def lifespan(app):
 app = FastAPI(
     lifespan=lifespan, title="Our wedding", docs_url=None, redoc_url=None, openapi_url=None
 )
-for router in [auth.router, rsvps.router, photos.router, admin.router, calendar.router]:
+for router in [auth.router, rsvps.router, photos.router, admin.router]:
     app.include_router(router, prefix="/api")
 
 

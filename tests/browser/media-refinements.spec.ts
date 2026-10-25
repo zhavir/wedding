@@ -14,7 +14,7 @@ for (const seats of [1, 2]) {
       body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect width="600" height="900" fill="#9eaa98"/></svg>'
     }));
     await page.route('**/api/session', route => route.fulfill({ json: {
-      id: 'guest', name: 'Guest', max_guests: seats, is_admin: false, is_witness: false
+      id: 'guest', name: 'Guest', max_guests: seats, is_admin: false, is_witness: false, language: 'en'
     } }));
     await page.route('**/api/rsvp', route => route.fulfill({ status: 404, json: {} }));
     await page.route('**/api/photos/carousel', route => route.fulfill({ json: { items: images.map(image => ({

@@ -9,7 +9,7 @@ test('static content renders while the authenticated carousel request is pending
     await pending;
     await route.fulfill({ json: { items: [{ id: 'one', caption: 'Our happy moment', preview: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="360" height="450"><rect width="360" height="450" fill="%239eaa98"/></svg>' }] } });
   });
-  await page.route('**/api/session', route => route.fulfill({ json: { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false } }));
+  await page.route('**/api/session', route => route.fulfill({ json: { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false, language: 'en' } }));
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#story')).toContainText('Zhavir and Saraerys.');
   await expect(page.locator('.story-keepsakes .polaroid')).toHaveCount(6);

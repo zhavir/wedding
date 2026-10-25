@@ -8,6 +8,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 COPY backend/pyproject.toml backend/pyproject.toml
 COPY backend/app backend/app
+COPY frontend/static/calendar backend/app/assets
 RUN if [ ! -f uv.lock ]; then uv lock; fi \
     && uv sync --frozen --package wedding-api --no-dev --no-editable
 COPY scripts scripts
@@ -21,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /v
 RUN uv sync --frozen --all-packages --all-groups --no-editable
 COPY .github/rulesets .github/rulesets
 COPY backend/tests backend/tests
+COPY frontend/static/calendar frontend/static/calendar
 CMD ["pytest", "backend/tests", "-q"]
 
 FROM base AS lambda

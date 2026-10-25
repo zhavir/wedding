@@ -71,7 +71,7 @@ async def preview(invitation_id: str, admin: Admin, db: DB):
         invite,
         cipher().decrypt(access.encrypted_code.encode()).decode(),
         message_template=selected_message,
-        wedding=await content(invite.language or "en", db),
+        wedding=await content(invite.guest.language or "en", db),
     )
 
 

@@ -20,11 +20,11 @@ test('SQLAdmin credentials, record creation and sending action', async ({ page, 
   const email = `browser-admin-${Date.now()}@example.com`;
   await page.goto('/api/admin/guest/create');
   await page.getByLabel('Name', { exact: true }).fill(name);
+  await page.getByLabel('Language', { exact: true }).selectOption('it');
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.goto('/api/admin/invitation/create');
   await page.getByLabel('Guest', { exact: true }).selectOption({ label: name });
-  await page.getByLabel('Email language').selectOption('it');
   await page.getByLabel('Reserved places', { exact: true }).fill('2');
   await page.getByLabel('Active', { exact: true }).check();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -41,6 +41,7 @@ test('SQLAdmin credentials, record creation and sending action', async ({ page, 
   await guestPage.goto('/#rsvp');
   await guestPage.getByLabel('Your invitation code').fill(code!);
   await guestPage.getByRole('button', { name: 'Open my invitation ↗' }).click();
+  await guestPage.getByRole('button', { name: 'English', exact: true }).click();
   await expect(guestPage.getByLabel('Email address', { exact: true })).toHaveValue(email);
   await expect(guestPage.getByLabel('Full name').first()).toHaveValue(name);
   await guestPage.getByRole('link', { name: 'Upload your photos/videos ↗' }).click();
@@ -70,10 +71,10 @@ test('admin creates a link-only invitation without sending email', async ({ page
   const name = `Link only ${Date.now()}`;
   await page.goto('/api/admin/guest/create');
   await page.getByLabel('Name', { exact: true }).fill(name);
+  await page.getByLabel('Language', { exact: true }).selectOption('it');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.goto('/api/admin/invitation/create');
   await page.getByLabel('Guest', { exact: true }).selectOption({ label: name });
-  await page.getByLabel('Email language').selectOption('it');
   await page.getByLabel('Active', { exact: true }).check();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   const row = page.getByRole('row').filter({ hasText: name });

@@ -1,4 +1,4 @@
-"""Code-owned stationery and event labels; invitation messages are database-owned."""
+"""Code-owned stationery; invitation messages are database-owned."""
 
 CONTENT = {
     "en": {
@@ -18,9 +18,9 @@ CONTENT = {
         "witnessEmail": {
             "subject": "Will you be our witness?",
             "heading": "By our side, for our next chapter.",
-            "intro": "We would love you to stand beside us as our wedding witness. "
-            "Open your personal invitation to confirm your role, attendance "
-            "and guest details.",
+            "intro": "We would love you to stand beside us as our wedding "
+            "witness. Open your personal invitation to confirm your "
+            "role, attendance and guest details.",
             "button": "Open your witness invitation",
             "footer": "This personal link signs you in. Please keep it private.",
         },
@@ -28,15 +28,9 @@ CONTENT = {
             "subject": "Thank you — save our wedding date!",
             "eyebrow": "SAVE THE DATE · THANK YOU",
             "intro": "thank you for saying yes! We cannot wait to celebrate our wedding with you.",
-            "witnessIntro": "thank you for being our witness. Having you by our "
-            "side makes this day even more special.",
-            "calendarHelp": "Open the attached .ics file to add our wedding to "
-            "your calendar. Arrive at 16:00; the ceremony begins "
-            "at 16:30.",
-            "calendarDescription": "Andrea and Sara’s wedding. Arrival at 16:00, "
-            "ceremony at 16:30, aperitivo at 17:00, "
-            "dinner at 19:00, cake at 21:00 and goodbyes "
-            "by midnight.",
+            "calendarHelp": "Open the attached .ics file to add our wedding "
+            "to your calendar. Arrive at 16:00; the "
+            "ceremony begins at 16:30.",
             "button": "Visit our wedding website",
         },
         "dateLabel": "20 May 2027",
@@ -58,48 +52,74 @@ CONTENT = {
         "address": "Via Donizetti 17, 21049 Tradate (VA), Italy",
         "contactEmail": "hello@example.com",
         "email": {
-            "subject": "Siete invitati al nostro matrimonio",
-            "heading": "Non sarebbe lo stesso senza di voi.",
-            "intro": "Saremmo felici di avervi con noi per il nostro nuovo capitolo. Aprite "
-            "il vostro invito per rispondere e condividere i ricordi.",
+            "subject": "Sei invitato al nostro matrimonio",
+            "heading": "Non sarebbe lo stesso senza di te.",
+            "intro": "Saremmo felici di averti con noi per il nostro nuovo capitolo. "
+            "Apri il tuo invito per rispondere e condividere i ricordi.",
             "button": "Apri il tuo invito",
-            "footer": "Questo link personale permette di accedere. Tenetelo privato.",
+            "footer": "Questo link personale permette di accedere. Tienilo privato.",
         },
         "witnessEmail": {
             "subject": "Vuoi essere al nostro fianco come testimone?",
             "heading": "Al nostro fianco, nel nostro nuovo capitolo.",
-            "intro": "Ci piacerebbe averti al nostro fianco come testimone di nozze. "
-            "Apri il tuo invito personale per confermare il ruolo, la "
-            "presenza e i dettagli degli ospiti.",
+            "intro": "Ci piacerebbe averti al nostro fianco come testimone di "
+            "nozze. Apri il tuo invito personale per confermare il "
+            "ruolo, la presenza e i dettagli degli ospiti.",
             "button": "Apri il tuo invito da testimone",
             "footer": "Questo link personale permette di accedere. Tienilo privato.",
         },
         "confirmationEmail": {
             "subject": "Grazie — segna la data del nostro matrimonio!",
             "eyebrow": "SEGNA LA DATA · GRAZIE",
-            "intro": "grazie per il tuo sì! Non vediamo l’ora di festeggiare il "
-            "nostro matrimonio insieme a te.",
-            "witnessIntro": "grazie per esserci come testimone. Averti al nostro "
-            "fianco rende questo giorno ancora più speciale.",
+            "intro": "grazie per il tuo sì! Non vediamo l’ora di "
+            "festeggiare il nostro matrimonio insieme a te.",
             "calendarHelp": "Apri il file .ics allegato per aggiungere il "
             "matrimonio al calendario. Arrivo alle 16:00; "
             "cerimonia alle 16:30.",
-            "calendarDescription": "Il matrimonio di Andrea e Sara. Arrivo alle "
-            "16:00, cerimonia alle 16:30, aperitivo alle "
-            "17:00, cena alle 19:00, torta alle 21:00 e "
-            "saluti entro mezzanotte.",
             "button": "Visita il sito del matrimonio",
         },
         "dateLabel": "20 maggio 2027",
         "location": "Tradate, Varese · Italia",
         "labels": {
-            "invited": "SIETE INVITATI",
+            "invited": "SEI INVITATO",
             "dear": "Ciao",
             "gallery": "Apri la galleria fotografica",
-            "codeHelp": "Oppure inserite questo codice sul sito per rispondere o caricare le foto.",
+            "codeHelp": "Oppure inserisci questo codice sul sito per rispondere o "
+            "caricare le foto.",
             "questions": "Domande?",
             "signature": "CON TUTTO IL NOSTRO AMORE",
             "chapter": "IL PROSSIMO CAPITOLO",
         },
     },
 }
+
+ITALIAN_PLURAL = {
+    "email": {
+        "subject": "Siete invitati al nostro matrimonio",
+        "heading": "Non sarebbe lo stesso senza di voi.",
+        "intro": "Saremmo felici di avervi con noi per il nostro nuovo capitolo. Aprite il vostro invito per rispondere e condividere i ricordi.",
+        "button": "Aprite il vostro invito",
+        "footer": "Questo link personale permette di accedere. Tenetelo privato.",
+    },
+    "labels": {
+        "invited": "SIETE INVITATI",
+        "gallery": "Aprite la galleria fotografica",
+        "codeHelp": "Oppure inserite questo codice sul sito per rispondere o caricare le foto.",
+    },
+    "confirmationEmail": {
+        "subject": "Grazie — segnate la data del nostro matrimonio!",
+        "intro": "grazie per il vostro sì! Non vediamo l’ora di festeggiare il nostro matrimonio insieme a voi.",
+        "calendarHelp": "Aprite il file .ics allegato per aggiungere il matrimonio al calendario. Arrivo alle 16:00; cerimonia alle 16:30.",
+        "button": "Visitate il sito del matrimonio",
+    },
+}
+
+
+def participant_copy(wedding: dict, language: str, count: int) -> dict:
+    from copy import deepcopy
+
+    result = deepcopy(wedding)
+    if language == "it" and count > 1:
+        for section, values in ITALIAN_PLURAL.items():
+            result[section].update(values)
+    return result

@@ -12,7 +12,7 @@ from app.db.models import Guest, Invitation
 from app.db.session import sessions
 from app.services.access import ensure_access
 from app.services.aws import ses
-from app.services.email_content import CONTENT
+from app.services.email_content import CONTENT, participant_copy
 from app.services.invitations import invitation_link
 from app.services.messages import invitation_message, render_message
 
@@ -33,6 +33,7 @@ def render_email(
     link: str | None = None,
     message_template: str | None = None,
 ) -> dict[str, str]:
+    wedding = participant_copy(wedding, invite.guest.language, invite.max_guests)
     if invite.is_witness:
         wedding = {**wedding, "email": wedding["witnessEmail"]}
     if message_template:
@@ -47,15 +48,16 @@ def render_email(
     return {
         "subject": wedding["email"]["subject"],
         "html": templates.get_template(
-            f"invitation_{'it' if invite.language == 'it' else 'en'}.html"
+            f"invitation_{'it' if invite.guest.language == 'it' else 'en'}.html"
         ).render(
             w=wedding,
             guest=invite,
             link=url,
             short_code=short_code,
-            language=invite.language or "en",
+            language=invite.guest.language or "en",
+            logo_url=f"{settings().site_url.rstrip('/')}/monogram.png",
         ),
-        "text": f"{'Ciao' if invite.language == 'it' else 'Dear'} {invite.name},\n\n{wedding['email']['intro']}\n\n{wedding['dateLabel']} · {wedding['venue']}\n\n{url}\n\nInvitation code / Codice invito: {short_code}\n\n{wedding['email']['footer']}",
+        "text": f"{'Ciao' if invite.guest.language == 'it' else 'Dear'} {invite.name},\n\n{wedding['email']['intro']}\n\n{wedding['dateLabel']} · {wedding['venue']}\n\n{url}\n\nInvitation code / Codice invito: {short_code}\n\n{wedding['email']['footer']}",
     }
 
 
@@ -87,7 +89,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
             invite,
             cipher().decrypt(access.encrypted_code.encode()).decode(),
             message_template=selected_message,
-            wedding=await content(invite.language or "en", db),
+            wedding=await content(invite.guest.language or "en", db),
         )
         try:
             result = await asyncio.to_thread(deliver_email, invite.guest.email, message)

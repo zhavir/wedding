@@ -37,3 +37,11 @@ export function restoreLanguage() {
         : 'en'
   );
 }
+
+export function tp(
+  key: string,
+  count: number,
+  values: Record<string, string | number> = {}
+): string {
+  return t(count === 1 ? key : `${key} (plural)`, values);
+}

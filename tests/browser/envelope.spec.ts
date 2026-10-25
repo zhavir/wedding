@@ -43,7 +43,7 @@ test('envelope grows, opens, releases the same invitation upward and reverses co
 
 test('private carousel waits for authentication and clears on logout', async ({ page }) => {
   let requests = 0;
-  await page.route('**/api/session', route => route.fulfill({ status: route.request().method() === 'GET' ? 401 : 200, json: route.request().method() === 'POST' ? { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false } : {} }));
+  await page.route('**/api/session', route => route.fulfill({ status: route.request().method() === 'GET' ? 401 : 200, json: route.request().method() === 'POST' ? { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false, language: 'en' } : {} }));
   await page.route('**/api/photos/carousel', route => { requests++; return route.fulfill({ json: { items: [{ id: 'one', caption: 'A happy moment', preview: previewImage }] } }); });
   await page.goto('/');
   await expect(page.locator('.chapter-trigger')).toBeEnabled();
@@ -65,7 +65,7 @@ test('private carousel waits for authentication and clears on logout', async ({ 
 });
 
 test('invitation email authenticates at the top; gallery email anchors uploads', async ({ page }) => {
-  await page.route('**/api/session', route => route.fulfill({ json: { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false } }));
+  await page.route('**/api/session', route => route.fulfill({ json: { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false, language: 'en' } }));
   await page.route('**/api/rsvp', route => route.fulfill({ json: { rsvp: null, prefill: { name: 'Guest', email: 'guest@example.test' } } }));
   await page.route('**/api/photos**', route => route.fulfill({ json: { items: [], next: null } }));
   await page.goto('/#invite=TEST');
@@ -81,7 +81,7 @@ test('gallery loads immediately after code authentication', async ({ page }) => 
   let requests = 0;
   await page.route('**/api/session', route => route.fulfill({
     status: route.request().method() === 'GET' ? 401 : 200,
-    json: { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false }
+    json: { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false, language: 'en' }
   }));
   await page.route('**/api/photos', route => {
     requests++;

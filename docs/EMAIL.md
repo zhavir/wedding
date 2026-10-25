@@ -109,7 +109,7 @@ AWS references: [verified identities](https://docs.aws.amazon.com/ses/latest/dg/
 
 Select **Witness** as the guest audience. The selected language is used for a dedicated witness email and the guest sees a witness-role confirmation in the RSVP form. Saved witness answers appear on the invitation.
 
-After accepting, the guest receives a thank-you email and `andrea-sara-wedding.ics`, with the confirmed ceremony start at 16:30 Europe/Rome and midnight finish. It uses the same event UID as the public calendar download. Edit static event details and confirmation wording in `backend/app/services/email_content.py`. `ses:SendRawEmail` is required for attachments. Delivery states remain in the internal confirmation-email table.
+After accepting, the guest receives a thank-you email and `andrea-sara-wedding.ics`, with the confirmed ceremony start at 16:30 Europe/Rome and midnight finish. It uses the same event UID as the public calendar download. Edit calendar event details in `frontend/static/calendar/wedding-{en,it}.ics` and confirmation wording in `backend/app/services/email_content.py`. `ses:SendRawEmail` is required for attachments. Delivery states remain in the internal confirmation-email table.
 
 Identical replies and dietary/message edits do not resend the confirmation. A new acceptance after declining, or an accepted reply using a different email, sends a new confirmation. Saving the RSVP succeeds even when mail delivery fails. The UI locks a saved form until a full page reload, including navigation away and back.
 
@@ -124,3 +124,30 @@ Invitation links authenticate the guest and open the landing page at the top. Ga
 The admin menu exposes **Invitation Email Template** with language, audience and mutable text. `invitation_en.html` and `invitation_it.html` are the code-owned Jinja layouts; shared stationery and static labels also live in code (`email_base.html`, `services/email_content.py`). The legacy `email_copy` table is removed by migration 0004. Template edits apply to subsequent previews and sends.
 
 A +1 requires a unique email and is automatically created/reused, activated and sent after the parent's RSVP commits. `RSVP_NOTIFICATION_EMAIL` receives the response notification. Reactivation reuses an already sent invitation without resending. SES delivery outcomes remain persisted; local mocked tests do not verify delivery to a real inbox.
+
+### Language, participants and shared assets
+
+Set Italian or English on the **Guest** record. Invitations, previews, recovery emails,
+confirmations and the guest's initial website language use that preference. Migration
+`0006_guest_language` preserves existing invitation languages and moves them to guests.
+
+Invitation wording uses the number of reserved places; confirmation and RSVP wording
+use the participating party size. Invitation Email Template has separate singular and
+plural message fields. An empty plural field uses the standard plural invitation.
+Witness acceptance remains a personal role; confirmation emails use the same template
+for all audiences.
+
+The website's `/monogram.svg` is the source of the email's `/monogram.png`. To regenerate
+the email-compatible raster after changing the logo:
+
+```sh
+convert -background none -density 288 frontend/static/monogram.svg -resize 360x360 frontend/static/monogram.png
+```
+
+The two static files in `frontend/static/calendar/wedding-{en,it}.ics` are the only calendar
+content. The website downloads them directly without an API. The backend image copies
+these exact files into its email package for confirmation attachments. Migration
+`0007_static_calendar` removes the redundant stored calendar payload from confirmation
+emails; their delivery records remain in use.
+Keep the event UID shared across languages; there are no guest-specific calendar fields
+or database-managed calendar translations.

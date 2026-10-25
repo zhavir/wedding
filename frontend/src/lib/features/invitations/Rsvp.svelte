@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { t } from '#lib/i18n.svelte.ts';
+  import { t, tp } from '#lib/i18n.svelte.ts';
   import { api, type Rsvp } from '#lib/api.ts';
   import Celebration from '#lib/components/Celebration.svelte';
   import InvitationGate from '#lib/components/InvitationGate.svelte';
@@ -27,6 +27,9 @@
   });
 
   let form = $state<Rsvp>(empty());
+  const participantCount = $derived(
+    form.attending ? Math.max(1, form.guests.length) : (session.guest?.max_guests ?? 1)
+  );
 
   $effect(() => {
     let cancelled = false;
@@ -100,12 +103,13 @@
         session.submittedInvitationIds.push(invitationId);
       }
 
+      session.guest.participant_count = participantCount;
       submitted = true;
       editing = false;
 
       status = form.attending
-        ? t('You’re on the list! We can’t wait to celebrate with you.')
-        : t('Thank you for letting us know. We’ll miss you!');
+        ? tp('You’re on the list! We can’t wait to celebrate with you.', participantCount)
+        : tp('Thank you for letting us know. We’ll miss you!', participantCount);
 
       celebrating = form.attending;
       celebration += 1;
@@ -131,16 +135,16 @@
 <section class="rsvp-section" id="rsvp">
   <div class="section rsvp-grid">
     <div>
-      <p class="eyebrow">{t('SAVE YOUR SEAT')}</p>
+      <p class="eyebrow">{tp('SAVE YOUR SEAT', participantCount)}</p>
 
       <h2>
         {t('It wouldn’t be')}<br />
         {t('the same')}<br />
-        <em>{t('without you.')}</em>
+        <em>{tp('without you.', participantCount)}</em>
       </h2>
 
       <p>
-        {t('Please let us know by')}
+        {tp('Please let us know by', participantCount)}
         {w.rsvpBy}.<br />
         <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- External video. -->
         <a href="https://youtu.be/uxnbkagUzrU?t=3" target="_blank" rel="noreferrer">
@@ -157,7 +161,7 @@
       {:else}
         <div class="flex items-center justify-between gap-4">
           <h3>
-            {session.guest.is_witness ? t('Our witness,') : t('Welcome,')}
+            {session.guest.is_witness ? t('Our witness,') : tp('Welcome,', participantCount)}
             {session.guest.name}.
           </h3>
 
@@ -173,7 +177,7 @@
         </p>
 
         {#if !editing && !loadingRsvp}
-          <p>{t('Your reply has been saved. Thank you!')}</p>
+          <p>{tp('Your reply has been saved. Thank you!', participantCount)}</p>
 
           <button
             type="button"
@@ -184,7 +188,7 @@
               status = '';
             }}
           >
-            {t('Edit your preferences')}
+            {tp('Edit your preferences', participantCount)}
           </button>
         {:else}
           <form
@@ -207,7 +211,7 @@
               </div>
 
               <label for="attendance">
-                {t('Will you be joining us?')}
+                {tp('Will you be joining us?', participantCount)}
               </label>
 
               <select
@@ -219,8 +223,8 @@
                   }
                 }}
               >
-                <option value={true}>{t('Joyfully accepts')}</option>
-                <option value={false}>{t('Regretfully declines')}</option>
+                <option value={true}>{tp('Joyfully accepts', participantCount)}</option>
+                <option value={false}>{tp('Regretfully declines', participantCount)}</option>
               </select>
 
               {#if session.guest.is_witness && form.attending}
@@ -325,8 +329,8 @@
                 {submitted
                   ? t('Reply saved')
                   : busy
-                    ? t('Saving your reply…')
-                    : t('Send our reply ↗')}
+                    ? tp('Saving your reply…', participantCount)
+                    : tp('Send our reply ↗', participantCount)}
               </button>
             </fieldset>
           </form>
@@ -335,12 +339,6 @@
 
       {#if session.guest}
         <p role="status">{status}</p>
-
-        {#if submitted}
-          <p>
-            {t('You can update your reply using Edit your preferences.')}
-          </p>
-        {/if}
       {/if}
 
       {#if session.guest && session.error}

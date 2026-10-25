@@ -1,4 +1,5 @@
 import asyncio
+import json
 import secrets
 import time
 from contextlib import suppress
@@ -23,6 +24,10 @@ def guest_view(invite: Invitation) -> dict[str, object]:
         "id": invite.id,
         "name": invite.name,
         "max_guests": invite.max_guests,
+        "participant_count": len(json.loads(invite.response_guests or "[]"))
+        if invite.attending
+        else invite.max_guests,
+        "language": invite.guest.language,
         "is_admin": invite.is_admin,
         "is_witness": bool(invite.is_witness),
     }
@@ -121,7 +126,7 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
             invite,
             code,
             link=f"{settings().site_url.rstrip('/')}/#invite={token}",
-            wedding=await content(invite.language or "en", db),
+            wedding=await content(invite.guest.language or "en", db),
         )
         message["subject"] = "Your replacement invitation / Il tuo nuovo invito"
         message["text"] += (

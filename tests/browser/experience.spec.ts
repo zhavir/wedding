@@ -141,6 +141,8 @@ test('save the date downloads the confirmed wedding event in both languages', as
   await expect(page.locator('.chapter-trigger')).toBeEnabled();
   for (const language of ['English', 'Italiano']) {
     await page.getByRole('button', {name: language, exact: true}).click();
+    const locale = language === 'English' ? 'en' : 'it';
+    await expect(page.locator('.save-date-link')).toHaveAttribute('href', `/calendar/wedding-${locale}.ics`);
     const pending = page.waitForEvent('download');
     await page.locator('.save-date-link').click();
     const download = await pending;

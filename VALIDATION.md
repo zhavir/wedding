@@ -107,3 +107,20 @@ Tests use local demo invitations and isolated administrator credentials. The loc
 No production deployment, real SES inbox delivery, live Aurora DSQL execution, or AWS IAM policy enforcement was tested. Floci simulates S3/SES and local PostgreSQL exercises SQL semantics; neither proves DSQL service compatibility. Verify live AWS behavior after the approved production deployment and before inviting guests. Native iOS Safari was not available; mobile tests use Chromium with iPhone viewport/touch emulation. MOV/HEVC playback is device-dependent; originals can always be downloaded.
 
 GitHub Actions were validated locally, not executed on GitHub. Repository settings were not changed remotely; synchronization workflows require explicit owner configuration and authorization. See [AWS deployment](docs/DEPLOYMENT.md), [GitHub settings](docs/GITHUB.md), [email setup](docs/EMAIL.md) and [media limitations](docs/MEDIA.md).
+
+## Email, calendar and guest-language changes (2026-10-25)
+
+- Frontend translation checks, Svelte/TypeScript checks, ESLint and production build passed. The existing MemoriesCarousel CSS line-clamp warning remains.
+- Focused email/calendar/language/migration regression run: 26 passed. Final stationery, confirmation, migration-preservation and session participant-count tests: 7 passed.
+- Broad backend run identified two video tests that cannot run without the missing `ffmpeg` executable. The other three failures from that run (old plural-copy expectation, old migration revision expectation, and DSQL ADD COLUMN constraints) were corrected and passed the focused rerun.
+- Ruff and diff whitespace checks passed. Browser fixtures were updated for guest-owned language and participant-aware labels; no full browser run or live email-client rendering was performed.
+- No production migration, deployment or real email delivery was performed. Apply migration `0006_guest_language` with the release.
+
+### Frontend-only calendar follow-up (2026-10-25)
+
+- Calendar downloads now use frontend static files directly; backend calendar router and service removed.
+- Migration `0007_static_calendar` removes the unused confirmation-email calendar payload while retaining pending delivery records. The email image packages the exact frontend-owned calendar files.
+- 20 focused calendar, confirmation and migration tests passed, including SQLite migration preservation and offline DSQL SQL checks.
+- Frontend check, lint and production build passed; existing carousel CSS warning remains.
+- Calendar download browser checks passed on desktop and mobile, each in English and Italian, against a local frontend preview with no backend server.
+- Ruff and diff checks passed. Production migration/deployment and live email delivery remain unverified.

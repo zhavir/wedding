@@ -1,8 +1,11 @@
+import { setLanguage, type Locale } from '#lib/i18n.svelte.ts';
 import { api, ApiError } from '#lib/api.ts';
 export type Guest = {
   id: string;
   name: string;
   max_guests: number;
+  participant_count: number;
+  language: Locale;
   is_admin: boolean;
   is_witness: boolean;
 };
@@ -25,6 +28,7 @@ export const session = $state<{
 export async function signIn(code: string, entry: 'link' | 'code' = 'code') {
   session.entry = entry;
   session.guest = await api<Guest>('/session', 'POST', { code });
+  setLanguage(session.guest.language);
   session.error = '';
   session.ready = true;
   session.revision++;
@@ -53,6 +57,7 @@ export async function restoreSession() {
       await signIn(code, 'link');
     } else {
       session.guest = await api<Guest>('/session');
+      setLanguage(session.guest.language);
     }
   } catch (error) {
     session.guest = null;

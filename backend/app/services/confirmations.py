@@ -1,10 +1,11 @@
-"""Persist acceptance emails before delivery, including their calendar attachment."""
+"""Persist acceptance emails before delivery, with a static calendar attachment."""
 
 import asyncio
 import time
 import uuid
 from email.message import EmailMessage
 from email.policy import SMTP
+from pathlib import Path
 
 from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import update
@@ -15,14 +16,15 @@ from app.db.models import ConfirmationEmail, Invitation
 from app.db.session import sessions
 from app.schemas import RSVP
 from app.services.aws import ses
-from app.services.calendar import wedding_calendar
 from app.services.email import content, templates
+from app.services.email_content import participant_copy
 
 
 async def queue_confirmation(db: AsyncSession, invite: Invitation, body: RSVP) -> str:
-    wedding = await content(invite.language or "en", db)
+    wedding = await content(invite.guest.language or "en", db)
+    wedding = participant_copy(wedding, invite.guest.language, len(body.guests))
     copy = wedding["confirmationEmail"]
-    intro = copy["witnessIntro"] if invite.is_witness else copy["intro"]
+    intro = copy["intro"]
     key = uuid.uuid7().hex
     text = f"{invite.name},\n\n{intro}\n\n{wedding['dateLabel']}\n{wedding['venue']}\n{wedding['address']}\n\n{copy['calendarHelp']}\n{settings().site_url.rstrip('/')}/\n"
     db.add(
@@ -37,10 +39,10 @@ async def queue_confirmation(db: AsyncSession, invite: Invitation, body: RSVP) -
                 copy=copy,
                 intro=intro,
                 guest=invite,
-                language=invite.language or "en",
+                language=invite.guest.language or "en",
                 site_url=settings().site_url,
+                logo_url=f"{settings().site_url.rstrip('/')}/monogram.png",
             ),
-            calendar=wedding_calendar(wedding, settings().site_url),
             status="pending",
             created_at=int(time.time()),
         )
@@ -48,7 +50,15 @@ async def queue_confirmation(db: AsyncSession, invite: Invitation, body: RSVP) -
     return key
 
 
-def deliver_confirmation(item: ConfirmationEmail):
+def calendar_attachment(language: str) -> bytes:
+    # Production packages receive these frontend-owned files during the image build.
+    assets = Path(__file__).resolve().parents[1] / "assets"
+    if not assets.is_dir():
+        assets = Path(__file__).resolve().parents[3] / "frontend" / "static" / "calendar"
+    return (assets / f"wedding-{'it' if language == 'it' else 'en'}.ics").read_bytes()
+
+
+def deliver_confirmation(item: ConfirmationEmail, language: str):
     message = EmailMessage(policy=SMTP)
     message["From"] = settings().email_from
     message["To"] = item.recipient
@@ -56,7 +66,7 @@ def deliver_confirmation(item: ConfirmationEmail):
     message.set_content(item.text_body)
     message.add_alternative(item.html_body, subtype="html")
     message.add_attachment(
-        item.calendar.encode("utf-8"),
+        calendar_attachment(language),
         maintype="text",
         subtype="calendar",
         filename="andrea-sara-wedding.ics",
@@ -83,7 +93,9 @@ async def send_confirmation(key: str) -> None:
         item = await db.get(ConfirmationEmail, key)
         assert item is not None
         try:
-            result = await asyncio.to_thread(deliver_confirmation, item)
+            invite = await db.get(Invitation, item.invitation_id)
+            assert invite is not None
+            result = await asyncio.to_thread(deliver_confirmation, item, invite.guest.language)
             item.status, item.message_id = "sent", result["MessageId"]
         except ClientError as exc:
             item.status = "failed"

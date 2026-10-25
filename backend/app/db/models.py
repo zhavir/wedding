@@ -1,4 +1,6 @@
-from sqlalchemy import BigInteger, Boolean, Index, Integer, String, Text
+from typing import Literal
+
+from sqlalchemy import BigInteger, Boolean, Index, Integer, String, Text, false
 from sqlalchemy.orm import DeclarativeBase, Mapped, foreign, mapped_column, relationship
 
 
@@ -12,6 +14,9 @@ class Guest(Base):
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     __table_args__ = (Index("uq_guest_email", "email", unique=True),)
+    language: Mapped[Literal["en", "it"]] = mapped_column(
+        String(2), default="it", server_default="it", nullable=True
+    )
     audience: Mapped[str] = mapped_column(String(10), default="guest", server_default="guest")
 
     def __str__(self):
@@ -28,15 +33,14 @@ class Invitation(Base):
     __tablename__ = "invitations"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
-    language: Mapped[str] = mapped_column(String(2), default="en", server_default="en")
     max_guests: Mapped[int] = mapped_column(Integer)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_witness: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    is_witness: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     encrypted_token: Mapped[str] = mapped_column(Text)
     uploads: Mapped[int] = mapped_column(Integer, default=0)
     parent_invitation_id: Mapped[str] = mapped_column(String(64), default="", server_default="")
-    has_rsvp: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    has_rsvp: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     email_status: Mapped[str] = mapped_column(String(20), default="draft")
     email_message_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     email_error: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -56,10 +60,10 @@ class Invitation(Base):
         Text, default="[]", server_default="[]", nullable=True
     )
     consent: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="false", nullable=True
+        Boolean, default=False, server_default=false(), nullable=True
     )
     witness_acceptance: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="false", nullable=True
+        Boolean, default=False, server_default=false(), nullable=True
     )
     updated_at: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=True)
     __table_args__ = (Index("uq_invitation_guest", "guest_id", unique=True),)
@@ -92,10 +96,10 @@ class Photo(Base):
     codec: Mapped[str] = mapped_column(String(40), default="", server_default="")
     sha256: Mapped[str] = mapped_column(String(64), default="", server_default="")
     gallery_visible: Mapped[bool] = mapped_column(
-        "published", Boolean, default=False, server_default="false"
+        "published", Boolean, default=False, server_default=false()
     )
     carousel_visible: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="false", nullable=True
+        Boolean, default=False, server_default=false(), nullable=True
     )
     motion_size: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     motion_content_type: Mapped[str] = mapped_column(String(50), default="", server_default="")
@@ -118,7 +122,7 @@ class Photo(Base):
 
 class AdminUser(Base):
     totp_secret: Mapped[str] = mapped_column(Text, default="", server_default="")
-    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     totp_last_step: Mapped[int] = mapped_column(Integer, default=-1, server_default="-1")
     __tablename__ = "admin_users"
     username: Mapped[str] = mapped_column(String(100), primary_key=True)
@@ -169,7 +173,6 @@ class ConfirmationEmail(Base):
     subject: Mapped[str] = mapped_column(String(200))
     text_body: Mapped[str] = mapped_column(Text)
     html_body: Mapped[str] = mapped_column(Text)
-    calendar: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="pending")
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     message_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
@@ -182,4 +185,5 @@ class InvitationMessage(Base):
     language: Mapped[str] = mapped_column(String(2))
     audience: Mapped[str] = mapped_column(String(10), default="guest")
     text: Mapped[str] = mapped_column(Text)
+    plural_text: Mapped[str] = mapped_column(Text, default="", server_default="", nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)

@@ -30,7 +30,8 @@ All landing photographs load from `PUBLIC_ASSET_URL` (the existing LandingImages
 
 | Object key | Placement |
 | --- | --- |
-| `venue-garden.webp` | Venue photograph |
+| `venue-photo-1.webp` | Venue photograph |
+| `venue-photo-2.webp` | Venue photograph |
 | `ceremony-bride.webp` | Bride's imagined ceremony |
 | `ceremony-groom.webp` | Groom's imagined ceremony |
 | `akamaru-1.webp` | Our dog in the comparison slider |

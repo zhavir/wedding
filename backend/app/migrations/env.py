@@ -6,6 +6,7 @@ from alembic import context
 from alembic.ddl.postgresql import PostgresqlImpl
 from app.db.models import Base
 from app.db.session import database_url, engine
+from app.migrations.schema import compare_server_default
 from sqlalchemy import Connection
 
 
@@ -23,6 +24,7 @@ def migrate(connection: Connection) -> None:
         transactional_ddl=False,
         transaction_per_migration=True,
         compare_type=True,
+        compare_server_default=compare_server_default,
     )
     with context.begin_transaction():
         context.run_migrations()

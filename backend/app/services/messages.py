@@ -30,13 +30,18 @@ async def invitation_message(db: AsyncSession, invite: Invitation) -> str | None
             select(InvitationMessage)
             .where(
                 InvitationMessage.active.is_(True),
-                InvitationMessage.language == (invite.language or "en"),
+                InvitationMessage.language == (invite.guest.language or "en"),
                 InvitationMessage.audience == audience,
             )
             .order_by(InvitationMessage.id)
         )
     )
-    return pool[0].text if pool else None
+    if not pool:
+        return None
+    message = pool[0]
+    if invite.max_guests > 1:
+        return message.plural_text or None
+    return message.text
 
 
 def render_message(template: str, invite: Invitation, wedding: dict) -> str:

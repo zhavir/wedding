@@ -206,3 +206,87 @@ def test_guest_email_migration_preserves_addresses_and_invitation_ids(tmp_path):
         )
         command.upgrade(config, "head")
     db.dispose()
+
+
+@pytest.mark.parametrize(
+    "revision",
+    [
+        "base",
+        "0001_initial",
+        "0002_email_copy",
+        "0003_carousel_visibility",
+        "0004_guests_and_invitations",
+        "0005_guest_email",
+        "0006_guest_language",
+        "0007_static_calendar",
+    ],
+)
+def test_every_existing_revision_upgrades_to_current_models(tmp_path, revision):
+    from alembic.autogenerate import compare_metadata
+    from alembic.migration import MigrationContext
+    from alembic.script import ScriptDirectory
+    from app.db.models import Base
+    from app.migrations.schema import compare_server_default
+    from sqlalchemy import create_engine
+
+    database = create_engine(f"sqlite:///{tmp_path / 'alignment.db'}")
+    config = Config("alembic.ini")
+    with database.connect() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, revision)
+        command.upgrade(config, "head")
+        command.upgrade(config, "head")
+        context = MigrationContext.configure(
+            connection, opts={"compare_server_default": compare_server_default}
+        )
+        assert context.get_current_heads() == tuple(ScriptDirectory.from_config(config).get_heads())
+        assert compare_metadata(context, Base.metadata) == []
+    database.dispose()
+
+
+def test_alignment_preserves_existing_languages_and_custom_plural_messages(tmp_path):
+    from sqlalchemy import create_engine, text
+
+    database = create_engine(f"sqlite:///{tmp_path / 'defaults.db'}")
+    config = Config("alembic.ini")
+    with database.connect() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "0007_static_calendar")
+        connection.execute(text("UPDATE guests SET language='en'"))
+        connection.execute(text("UPDATE invitation_messages SET plural_text='Custom message'"))
+        connection.commit()
+        command.upgrade(config, "head")
+        assert connection.execute(text("SELECT DISTINCT language FROM guests")).scalars().all() == [
+            "en"
+        ]
+        assert connection.execute(
+            text("SELECT DISTINCT plural_text FROM invitation_messages")
+        ).scalars().all() == ["Custom message"]
+        connection.execute(text("INSERT INTO guests (id, name) VALUES ('new-guest', 'New guest')"))
+        assert connection.scalar(text("SELECT language FROM guests WHERE id='new-guest'")) == "it"
+    database.dispose()
+
+
+def test_schema_comparison_detects_default_drift():
+    from alembic.autogenerate import compare_metadata
+    from alembic.migration import MigrationContext
+    from app.migrations.schema import compare_server_default
+    from sqlalchemy import MetaData, String, Table, create_engine
+
+    database = create_engine("sqlite://")
+    metadata = MetaData()
+    table = Table(
+        "example",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("language", String(2), server_default="en"),
+    )
+    with database.connect() as connection:
+        metadata.create_all(connection)
+        table.c.language.server_default.arg = "it"  # ty: ignore[invalid-assignment]
+        context = MigrationContext.configure(
+            connection, opts={"compare_server_default": compare_server_default}
+        )
+        differences = compare_metadata(context, metadata)
+        assert differences and differences[0][0][0] == "modify_default"
+    database.dispose()

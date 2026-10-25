@@ -40,6 +40,9 @@ AUDIENCES = [
 class GuestForm(Form):
     name = StringField("Name", validators=[DataRequired()])
     email = StringField("Email", validators=[Optional(), Email()])
+    language = SelectField(
+        "Language", choices=[("en", "English"), ("it", "Italiano")], default="en"
+    )
     audience = SelectField("Audience", choices=AUDIENCES, default="guest")
 
 
@@ -48,12 +51,14 @@ class GuestAdmin(ModelView, model=Guest):
     icon = "fa-solid fa-users"
     form = GuestForm
     can_delete = can_export = False
-    column_list = [Guest.name, Guest.email, Guest.audience]
+    column_list = [Guest.name, Guest.email, Guest.language, Guest.audience]
     column_searchable_list = [Guest.name, Guest.email]
     column_filters = [AllUniqueStringValuesFilter(Guest.audience)]
-    column_sortable_list = [Guest.name, Guest.email, Guest.audience]
+    column_sortable_list = [Guest.name, Guest.email, Guest.language, Guest.audience]
 
     async def on_model_change(self, data, model, is_created, request):
+        if data["language"] not in {"en", "it"}:
+            raise ValueError("Choose a supported language.")
         if data["audience"] not in dict(AUDIENCES):
             raise ValueError("Choose a supported audience.")
         data["email"] = (data.get("email") or "").strip().casefold() or None
@@ -74,6 +79,7 @@ class GuestAdmin(ModelView, model=Guest):
             values = {"name": data["name"], "is_witness": data["audience"] == "witness"}
             if guest.email != email:
                 values.update(email_status="draft", email_error=None, email_message_id=None)
+            guest.language = data["language"]
             guest.name, guest.email, guest.audience = data["name"], email, data["audience"]
             await db.execute(update(Invitation).where(Invitation.guest_id == pk).values(**values))
             await db.commit()
@@ -134,7 +140,6 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     can_export = False
     column_list = [
         Invitation.guest,
-        Invitation.language,
         Invitation.active,
         Invitation.email_status,
         Invitation.attending,
@@ -144,7 +149,6 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     column_default_sort = (Invitation.created_at, True)
     column_details_list = [
         Invitation.guest,
-        Invitation.language,
         Invitation.id,
         Invitation.active,
         Invitation.email_status,
@@ -161,7 +165,6 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     ]
     column_sortable_list = [
         Invitation.guest,
-        Invitation.language,
         Invitation.active,
         Invitation.email_status,
         Invitation.attending,
@@ -173,7 +176,6 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
         Invitation.updated_at: "Responded at",
         Invitation.response_guests: "Party response details",
         Invitation.max_guests: "Reserved places",
-        Invitation.language: "Email language",
         Invitation.is_witness: "Witness",
         Invitation.id: "Personal invitation link",
         Invitation.has_rsvp: "RSVP response",
@@ -199,13 +201,10 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     ]
     form_columns = [
         Invitation.guest,
-        Invitation.language,
         Invitation.max_guests,
         Invitation.active,
     ]
-    form_overrides = {"language": SelectField}
     form_args = {
-        "language": {"choices": [("en", "English"), ("it", "Italiano")]},
         "max_guests": {"default": 2, "validators": [NumberRange(min=1, max=12)]},
     }
 
@@ -232,7 +231,7 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
                 db,
                 InvitationCreate(
                     name=guest.name,
-                    language=data["language"],
+                    language=guest.language,
                     max_guests=data["max_guests"],
                 ),
                 guest=guest,
@@ -250,10 +249,10 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
                 raise ValueError("An invitation stays linked to its original guest.")
             values = InvitationCreate(
                 name=invite.guest.name,
-                language=data["language"],
+                language=invite.guest.language,
                 max_guests=data["max_guests"],
             )
-            invite.language, invite.max_guests = values.language, values.max_guests
+            invite.max_guests = values.max_guests
             invite.active = bool(data.get("active"))
             await db.commit()
             return invite
@@ -354,7 +353,7 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
                     invite,
                     code,
                     message_template=selected_message,
-                    wedding=await content(invite.language or "en", db),
+                    wedding=await content(invite.guest.language or "en", db),
                 )["html"],
                 headers={
                     "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; sandbox allow-popups"
@@ -548,12 +547,18 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
 
 
 class MessageForm(Form):
-    language = SelectField("Language", choices=[("en", "English"), ("it", "Italiano")])
+    language = SelectField(
+        "Language", choices=[("en", "English"), ("it", "Italiano")], default="en"
+    )
     audience = SelectField("Invitation type", choices=AUDIENCES)
     text = TextAreaField(
         "Message",
         validators=[DataRequired()],
         description="Plain text. Optional placeholders: {name}, {couple}, {date}, {venue}.",
+    )
+    plural_text = TextAreaField(
+        "Message for multiple participants",
+        description="Optional. Uses the standard plural invitation when empty. Same placeholders as above.",
     )
     active = BooleanField("Active", default=True)
 
@@ -580,6 +585,9 @@ class MessageAdmin(ModelView, model=InvitationMessage):
         import uuid
 
         data["text"] = validate_message(data["text"])
+        data["plural_text"] = (
+            validate_message(data["plural_text"]) if data.get("plural_text") else ""
+        )
         if data["language"] not in {"en", "it"} or data["audience"] not in dict(AUDIENCES):
             raise ValueError("Choose a supported language and invitation type.")
         if is_created:

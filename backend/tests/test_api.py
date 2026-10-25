@@ -711,7 +711,7 @@ def test_link_only_invitation_and_italian_email(client, aws):
     preview = client.get(f"/api/admin/invitations/{invite['id']}/preview").json()
     assert '<html lang="it">' in preview["html"]
     assert "Siete invitati" in preview["subject"]
-    assert "Apri la galleria fotografica" in preview["html"]
+    assert "Aprite la galleria fotografica" in preview["html"]
     assert "YOU’RE INVITED" not in preview["html"]
     assert (
         client.post("/api/admin/invitations/send", json={"ids": [invite["id"]]}).json()["results"][
@@ -780,6 +780,7 @@ def test_alembic_migrations_are_idempotent_and_match_models(client):
     from alembic.autogenerate import compare_metadata
     from alembic.migration import MigrationContext
     from app.db.models import Base
+    from app.migrations.schema import compare_server_default
     from sqlalchemy import text
 
     async def check():
@@ -788,11 +789,16 @@ def test_alembic_migrations_are_idempotent_and_match_models(client):
         async with engine().connect() as connection:
             assert (
                 await connection.scalar(text("SELECT version_num FROM alembic_version"))
-                == "0005_guest_email"
+                == "0008_align_schema_defaults"
             )
             assert await connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 16
             differences = await connection.run_sync(
-                lambda sync: compare_metadata(MigrationContext.configure(sync), Base.metadata)
+                lambda sync: compare_metadata(
+                    MigrationContext.configure(
+                        sync, opts={"compare_server_default": compare_server_default}
+                    ),
+                    Base.metadata,
+                )
             )
             assert differences == []
 
@@ -850,6 +856,9 @@ def test_confirmation_calendar_and_delivery_failure(client, aws):
     assert attachment.get_content_type() == "text/calendar"
     payload = attachment.get_payload(decode=True)
     assert isinstance(payload, bytes)
+    from app.services.confirmations import calendar_attachment
+
+    assert payload == calendar_attachment("en")
     calendar = payload.decode()
     assert "DTSTART:20270520T143000Z\r\n" in calendar
     assert "DTEND:20270520T220000Z\r\n" in calendar
@@ -873,13 +882,13 @@ def test_confirmation_calendar_and_delivery_failure(client, aws):
     client.portal.call(inspect_failure)
 
 
-def test_calendar_folding_preserves_unicode():
-    from app.services.calendar import escape_text, fold_line
+def test_calendar_assets_preserve_unicode_and_line_limits():
+    from app.services.confirmations import calendar_attachment
 
-    line = "DESCRIPTION:" + "È bellissimo, sì; " * 30
-    folded = fold_line(escape_text(line))
-    assert folded.replace("\r\n ", "") == escape_text(line)
-    assert all(len(part.encode()) <= 75 for part in folded.split("\r\n"))
+    for language in ("en", "it"):
+        calendar = calendar_attachment(language).decode("utf-8")
+        assert "BEGIN:VCALENDAR\r\n" in calendar
+        assert all(len(line.encode()) <= 75 for line in calendar.split("\r\n"))
 
 
 def test_message_selection_language_stability_and_validation(client, monkeypatch, aws):
@@ -1016,10 +1025,16 @@ def test_invitation_message_witness_language_and_empty_pool(client, monkeypatch)
 
     async def check():
         async with sessions()() as db:
-            invite = Invitation(id="test-message", name="Guest", language="en", is_witness=True)
+            invite = Invitation(
+                id="test-message",
+                name="Guest",
+                guest=Guest(name="Guest", language="en", audience="witness"),
+                max_guests=1,
+                is_witness=True,
+            )
             selected = await invitation_message(db, invite)
             assert selected and "witness" in selected
-            invite.language = "it"
+            invite.guest.language = "it"
             selected = await invitation_message(db, invite)
             assert selected and "testimone" in selected
             await db.execute(update(InvitationMessage).values(active=False))
@@ -1269,26 +1284,8 @@ def test_video_longer_than_three_minutes_is_valid(monkeypatch):
     assert metadata["duration_ms"] == 7200000
 
 
-def test_public_calendar_download_matches_confirmation_attachment(client):
-    from app.services.calendar import wedding_calendar
-    from app.services.email import content
-
-    uids = []
-    for locale in ("en", "it"):
-        response = client.get(f"/api/calendar.ics?locale={locale}")
-        assert response.status_code == 200
-        assert response.headers["content-type"].startswith("text/calendar")
-        assert 'filename="andrea-sara-wedding.ics"' in response.headers["content-disposition"]
-        calendar = response.text
-        assert "DTSTART:20270520T143000Z\r\n" in calendar
-        assert "DTEND:20270520T220000Z\r\n" in calendar
-        assert "Villa Valentina" in calendar
-        assert "#invite=" not in calendar
-        uid = next(line for line in calendar.splitlines() if line.startswith("UID:"))
-        assert uid in wedding_calendar(client.portal.call(content, locale), settings().site_url)
-        uids.append(uid)
-    assert uids[0] == uids[1]
-    assert client.get("/api/calendar.ics?locale=unknown").status_code == 422
+def test_calendar_has_no_backend_route(client):
+    assert client.get("/api/calendar.ics?locale=en").status_code == 404
 
 
 def test_authenticated_carousel_only_signs_approved_completed_still_previews(client, aws):
