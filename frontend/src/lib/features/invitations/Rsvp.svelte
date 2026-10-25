@@ -207,11 +207,6 @@
               <label for="message">{t('A little note for us')} <span>{t('(optional)')}</span></label
               ><textarea id="message" bind:value={form.message} maxlength="1000" rows="3"
               ></textarea>
-              <p class="privacy-note">
-                {t(
-                  'By sending your reply, you agree that your details are stored to organise the wedding. Dietary information is shared only with the hosts and caterer as needed.'
-                )}
-              </p>
               <button
                 class="button"
                 class:working={busy}

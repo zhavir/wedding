@@ -1,12 +1,15 @@
 /* Adapted from the supplied Animated Wedding UI: paper, botanical edges and fine gold lines. */
 :root {
-  --ink: #25352b;
-  --moss: #5a6e5d;
-  --sage: #9eaa98;
-  --blush: #ead5ce;
-  --cream: #f7f2e9;
-  --paper: #fbf8f2;
-  --gold: #b89a61;
+  --ink: #496a55; /* primary green */
+  --moss: #496a55;
+  --sage: #a8b9a3;
+  --blush: #e9c8c8;
+  --cream: #f9f7f2;
+  --paper: #f9f7f2;
+  --gold: #d6b77a;
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-heading-serif: 'Cormorant Garamond', serif;
+  --font-body: 'DM Sans', sans-serif;
   font-family: 'DM Sans', sans-serif;
   font-size: 18px;
   color: var(--ink);
@@ -23,14 +26,14 @@ main {
   overflow: clip;
 }
 ::selection {
-  background: #d8c8aa;
+  background: #e9c8c8;
   color: var(--ink);
 }
 h1,
 h2,
 h3,
 .handwritten {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-heading);
   font-weight: 300;
 }
 h2 {
@@ -45,9 +48,7 @@ p {
   line-height: 1.9;
 }
 .eyebrow {
-  font:
-    400 0.6rem/1.6 'DM Sans',
-    sans-serif;
+  font: 400 0.6rem/1.6 var(--font-body);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--moss);
@@ -97,18 +98,16 @@ p {
     border-color 0.4s;
 }
 .site-header.scrolled {
-  background: #fbf8f2f2;
-  border-color: #b8b49b50;
-  box-shadow: 0 5px 25px #25352b08;
+  background: #f9f7f2f2;
+  border-color: #a8b9a350;
+  box-shadow: 0 5px 25px #496a5508;
   backdrop-filter: blur(14px);
 }
 .site-header .monogram {
   display: flex;
   align-items: center;
   gap: 3px;
-  font:
-    300 24px 'Cormorant Garamond',
-    serif;
+  font: 300 24px var(--font-heading-serif);
   letter-spacing: -1px;
   flex-shrink: 0;
   transition: transform 0.5s;
@@ -121,9 +120,7 @@ p {
   transform: rotate(-8deg);
 }
 .header-date {
-  font:
-    italic 300 1rem 'Cormorant Garamond',
-    serif;
+  font: italic 300 1rem var(--font-heading-serif);
   color: var(--moss);
   margin-right: auto;
 }
@@ -162,10 +159,10 @@ p {
   gap: 16px;
   align-items: center;
   padding: 10px 12px 10px 18px;
-  background: #fbf8f2f5;
-  border: 1px solid #a6aa9360;
+  background: #f9f7f2f5;
+  border: 1px solid #a8b9a360;
   border-radius: 100px;
-  box-shadow: 0 5px 35px #25352b12;
+  box-shadow: 0 5px 35px #496a5512;
   backdrop-filter: blur(16px);
   cursor: pointer;
 }
@@ -174,9 +171,7 @@ p {
 }
 .picker-star {
   color: var(--gold);
-  font:
-    30px 'Cormorant Garamond',
-    serif;
+  font: 30px var(--font-heading-serif);
   transition: transform 0.8s;
 }
 .chapter-picker[open] .picker-star {
@@ -215,9 +210,9 @@ p {
   padding: 24px;
   display: block;
   background: var(--paper);
-  border: 1px solid #b7b79f70;
+  border: 1px solid #a8b9a370;
   border-radius: 18px;
-  box-shadow: 0 15px 70px #25352b20;
+  box-shadow: 0 15px 70px #496a5520;
   max-height: calc(100svh - 180px);
   overflow: auto;
 }
@@ -230,7 +225,7 @@ p {
   align-items: center;
   gap: 16px;
   padding: 10px 6px;
-  border-top: 1px solid #25352b12;
+  border-top: 1px solid #496a5512;
   text-decoration: none;
   font-size: 0.8rem;
   letter-spacing: 0;
@@ -244,10 +239,8 @@ p {
   color: var(--gold);
 }
 .chapter-number {
-  color: #849078;
-  font:
-    italic 1rem 'Cormorant Garamond',
-    serif;
+  color: #a8b9a3;
+  font: italic 1rem var(--font-heading-serif);
 }
 .letter-sheet .hero {
   position: relative;
@@ -270,7 +263,7 @@ p {
   position: absolute;
   width: min(72vw, 56rem);
   aspect-ratio: 1;
-  border: 1px solid #b89a6133;
+  border: 1px solid #d6b77a33;
   border-radius: 50%;
   inset: auto;
 
@@ -295,9 +288,7 @@ p {
   margin-bottom: 36px;
   border: 1px solid var(--gold);
   border-radius: 50%;
-  font:
-    300 1.05rem/1.05 'Cormorant Garamond',
-    serif;
+  font: 300 1.05rem/1.05 var(--font-heading-serif);
   transform: rotate(var(--turn, 0deg));
 }
 .hero-monogram em {
@@ -305,9 +296,7 @@ p {
   font-size: 0.8rem;
 }
 .letter-sheet .hero h1 {
-  font:
-    300 clamp(4.1rem, 10vw, 9.5rem)/0.85 'Cormorant Garamond',
-    serif;
+  font: 300 clamp(4.1rem, 10vw, 9.5rem)/0.85 var(--font-heading-serif);
   letter-spacing: -0.055em;
   margin: 0;
 }
@@ -320,9 +309,7 @@ p {
 .letter-sheet .hero-date {
   display: block;
   margin: 35px 0 22px;
-  font:
-    italic 300 clamp(1.1rem, 2vw, 1.45rem)/1.4 'Cormorant Garamond',
-    serif;
+  font: italic 300 clamp(1.1rem, 2vw, 1.45rem)/1.4 var(--font-heading-serif);
   text-transform: none;
   letter-spacing: 0.035em;
   color: var(--ink);
@@ -333,9 +320,7 @@ p {
 .hero-sub {
   max-width: 500px;
   margin: 22px 0 0;
-  font:
-    300 0.75rem/1.7 'DM Sans',
-    sans-serif;
+  font: 300 0.75rem/1.7 var(--font-body);
   color: var(--moss);
 }
 .letter-sheet .light-button {
@@ -344,7 +329,7 @@ p {
   min-height: 44px;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #b89a6180;
+  border-bottom: 1px solid #d6b77a80;
   border-radius: 0;
   color: var(--ink);
   font-size: 0.65rem;
@@ -375,7 +360,7 @@ p {
   width: 1px;
   height: 32px;
   overflow: hidden;
-  background: #25352b30;
+  background: #496a5530;
 }
 .scroll-cue i::after {
   content: '';
@@ -430,13 +415,13 @@ p {
   overflow: visible;
 }
 .cherry-petal path {
-  fill: #e9b5c1;
-  stroke: #d69aaa;
+  fill: #e9c8c8;
+  stroke: #d5a6af;
   stroke-width: 0.55;
 }
 .cherry-petal .petal-vein {
   fill: none;
-  stroke: #f9e5e8;
+  stroke: #f9f0f1;
   stroke-width: 0.8;
 }
 .footer-botanicals {
@@ -481,12 +466,12 @@ p {
 }
 .intro-copy .lead {
   font-size: 1rem;
-  color: #25352bb0;
+  color: #496a55b0;
   line-height: 1.9;
 }
 .intro-copy p:not(.eyebrow) {
   font-size: 0.88rem;
-  color: #25352bb0;
+  color: #496a55b0;
 }
 .handwritten {
   color: var(--gold);
@@ -514,7 +499,7 @@ p {
   position: absolute;
   width: 430px;
   height: 430px;
-  border: 1px solid #b89a6121;
+  border: 1px solid #d6b77a21;
   border-radius: 50%;
   pointer-events: none;
 }
@@ -544,7 +529,7 @@ p {
   margin-top: 65px;
 }
 .celebration-grid article {
-  border-block: 1px solid #f7f2e929;
+  border-block: 1px solid #f9f7f229;
   padding: 40px 15px;
 }
 .celebration-grid h3 {
@@ -552,10 +537,8 @@ p {
   margin: 20px 0 10px;
 }
 .celebration-grid p {
-  font:
-    italic 300 1.1rem/1.5 'Cormorant Garamond',
-    serif;
-  color: #f7f2e9b0;
+  font: italic 300 1.1rem/1.5 var(--font-heading-serif);
+  color: #f9f7f2b0;
 }
 .details-seal {
   width: 95px;
@@ -566,9 +549,7 @@ p {
   justify-content: center;
   border: 1px solid var(--gold);
   border-radius: 50%;
-  font:
-    300 1.1rem/1 'Cormorant Garamond',
-    serif;
+  font: 300 1.1rem/1 var(--font-heading-serif);
   color: var(--gold);
 }
 .details-seal i {
@@ -581,7 +562,7 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at center, #ead5ce85, transparent 28rem), var(--paper);
+  background: radial-gradient(circle at center, #e9c8c885, transparent 28rem), var(--paper);
 }
 .countdown h2 {
   font-size: clamp(3.5rem, 7vw, 6.8rem);
@@ -602,7 +583,7 @@ p {
   border-radius: 50%;
   box-shadow:
     inset 2px 1px 2px #ffffffcc,
-    2px 5px 11px #604b2524;
+    2px 5px 11px #496a5524;
   /* The transform follows scroll position; a CSS transition causes lag/snapping. */
   transition: none;
 }
@@ -624,32 +605,28 @@ p {
   height: 56px;
   transform: translateX(-50%);
   clip-path: polygon(50% 0, 100% 32%, 78% 100%, 22% 100%, 0 32%);
-  background: linear-gradient(135deg, #fff, #d9e1df 42%, #fff 43%, #c7d0ce 72%, #fff);
+  background: linear-gradient(135deg, #fff, #dfe8e2 42%, #fff 43%, #c5d5cc 72%, #fff);
 }
 .clock {
   width: min(100%, 680px);
   margin: 0 0 30px;
   padding: 0;
   gap: 0;
-  border-block: 1px solid #25352b2e;
+  border-block: 1px solid #496a552e;
 }
 .clock > div {
   margin: 0;
   padding: 24px 12px;
-  border-left: 1px solid #25352b20;
+  border-left: 1px solid #496a5520;
 }
 .clock > div:first-child {
   border-left: 0;
 }
 .clock span {
-  font:
-    300 clamp(2.3rem, 5vw, 4.3rem)/1 'Cormorant Garamond',
-    serif;
+  font: 300 clamp(2.3rem, 5vw, 4.3rem)/1 var(--font-heading-serif);
 }
 .clock small {
-  font:
-    400 0.52rem 'DM Sans',
-    sans-serif;
+  font: 400 0.52rem var(--font-body);
   letter-spacing: 0.2em;
   margin-top: 12px;
 }
@@ -664,7 +641,7 @@ p {
   font-size: 0.85rem;
 }
 .thread-base {
-  stroke: #c7c9b7;
+  stroke: #a8b9a3;
   stroke-width: 1;
 }
 .thread-progress {
@@ -672,7 +649,7 @@ p {
   stroke-width: 2;
 }
 .good-to-know {
-  border-top: 1px solid #25352b24;
+  border-top: 1px solid #496a5524;
   padding-top: 55px;
 }
 .travel-section {
@@ -684,21 +661,21 @@ p {
 }
 .travel-cards article {
   background: transparent;
-  border-top: 1px solid #9eaa9870;
+  border-top: 1px solid #a8b9a370;
   padding: 30px 0;
 }
 .travel-cards {
   gap: 60px;
 }
 .venue-map {
-  border: 1px solid #9eaa9850;
-  background: #eeeee4;
+  border: 1px solid #a8b9a350;
+  background: #eff3eb;
 }
 .dog-section {
   background: var(--paper);
 }
 .rsvp-section {
-  background: #e9ecdf;
+  background: #e5ebe2;
   padding: 110px clamp(28px, 10vw, 160px);
 }
 .rsvp-grid {
@@ -708,10 +685,10 @@ p {
 .rsvp-card,
 .locked-gallery,
 .upload-box {
-  border: 1px solid #9eaa9850;
-  background: #fffdf8;
+  border: 1px solid #a8b9a350;
+  background: #f9f7f2;
   border-radius: 3px;
-  box-shadow: 0 15px 50px #25352b08;
+  box-shadow: 0 15px 50px #496a5508;
 }
 .rsvp-grid p:not(.eyebrow) {
   font-size: 0.88rem;
@@ -746,7 +723,7 @@ p {
 .button:hover:not(:disabled),
 .light-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 9px 22px #25352b15;
+  box-shadow: 0 9px 22px #496a5515;
 }
 .button:hover::after,
 .button:focus-visible::after,
@@ -774,15 +751,13 @@ p {
 }
 .memory-link .button {
   background: transparent;
-  border: 1px solid #b89a6180;
+  border: 1px solid #d6b77a80;
   color: var(--paper);
 }
 .memory-link::before {
   content: '✧';
   display: block;
-  font:
-    3rem 'Cormorant Garamond',
-    serif;
+  font: 3rem var(--font-heading-serif);
   color: var(--gold);
   margin-bottom: 25px;
   transition: transform 0.8s;
@@ -802,7 +777,7 @@ footer {
 }
 footer h2 {
   font-size: clamp(3.8rem, 8vw, 8rem);
-  line-height: 0.9;
+  line-height: 1.12;
 }
 footer .eyebrow {
   color: var(--gold);
@@ -817,7 +792,7 @@ footer .handwritten {
 .footer-bottom {
   position: relative;
   z-index: 1;
-  border-color: #25352b25;
+  border-color: #496a5525;
   color: var(--moss);
   font-size: 0.65rem;
 }
@@ -827,10 +802,8 @@ footer .handwritten {
   left: 0;
   right: 0;
   overflow: hidden;
-  color: #25352b0c;
-  font:
-    300 clamp(4rem, 9vw, 8rem)/1 'Cormorant Garamond',
-    serif;
+  color: #496a550c;
+  font: 300 clamp(4rem, 9vw, 8rem)/1 var(--font-heading-serif);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -1024,10 +997,10 @@ footer .handwritten {
 
 /* The dock expands as one connected surface; FAQ summary rules cannot affect it. */
 .chapter-picker {
-  background: #fbf8f2f5;
-  border: 1px solid #a6aa9360;
+  background: #f9f7f2f5;
+  border: 1px solid #a8b9a360;
   border-radius: 32px;
-  box-shadow: 0 5px 35px #25352b12;
+  box-shadow: 0 5px 35px #496a5512;
   backdrop-filter: blur(16px);
   overflow: hidden;
   transition:
@@ -1102,12 +1075,10 @@ footer .handwritten {
   white-space: nowrap;
 }
 footer h2 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-heading);
 }
 footer > .handwritten {
-  font:
-    italic 300 1.35rem 'Cormorant Garamond',
-    serif;
+  font: italic 300 1.35rem var(--font-heading-serif);
   letter-spacing: 0;
 }
 .marquee .marquee-track {
@@ -1158,7 +1129,7 @@ footer > .handwritten {
   width: 100vw;
   margin: 32px calc(50% - 50vw) 0;
   padding-block: 12px;
-  color: #64705b;
+  color: #496a55;
   font-size: clamp(1.25rem, 2.4vw, 2rem);
   line-height: 1.4;
   font-style: italic;
@@ -1204,10 +1175,10 @@ footer > .handwritten {
   gap: 22px;
   height: 100%;
   padding: 10px 24px;
-  border: 1px solid #b8b49b55;
+  border: 1px solid #a8b9a355;
   border-radius: 100px;
-  background: #fbf8f2ed;
-  box-shadow: 0 4px 22px #25352b08;
+  background: #f9f7f2ed;
+  box-shadow: 0 4px 22px #496a5508;
   backdrop-filter: blur(12px);
   pointer-events: auto;
 }
@@ -1236,10 +1207,10 @@ footer > .handwritten {
   inset: 0;
   background: radial-gradient(
     ellipse at 50% 48%,
-    #fbf8f2fa 0%,
-    #fbf8f2ed 30%,
-    #fbf8f2b8 60%,
-    #fbf8f24d 100%
+    #f9f7f2fa 0%,
+    #f9f7f2ed 30%,
+    #f9f7f2b8 60%,
+    #f9f7f24d 100%
   );
   pointer-events: none;
 }
@@ -1322,7 +1293,7 @@ footer > .handwritten {
     margin-bottom: 30px;
   }
   .letter-sheet .hero::after {
-    background: linear-gradient(180deg, #fbf8f28a, #fbf8f2f5 25%, #fbf8f2f5 73%, #fbf8f2a6);
+    background: linear-gradient(180deg, #f9f7f28a, #f9f7f2f5 25%, #f9f7f2f5 73%, #f9f7f2a6);
   }
   .gallery-header .header-actions {
     gap: 10px;
@@ -1412,11 +1383,11 @@ body:has(.envelope-scene:not(.opened)) .header-date {
   width: 52px;
   min-height: 52px;
   padding: 12px;
-  border: 1px solid #b89a6160;
+  border: 1px solid #d6b77a60;
   border-radius: 50%;
   background: var(--ink);
   color: var(--paper);
-  box-shadow: 0 5px 24px #25352b25;
+  box-shadow: 0 5px 24px #496a5525;
 }
 .menu-toggle-icon {
   width: 26px;
@@ -1474,11 +1445,11 @@ body:has(.envelope-scene:not(.opened)) .header-date {
 .chapter-nav a {
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid #b89a6140;
+  border: 1px solid #d6b77a40;
   border-radius: 12px;
-  background: #25352bf2;
+  background: #496a55f2;
   color: var(--paper);
-  box-shadow: 0 3px 12px #25352b18;
+  box-shadow: 0 3px 12px #496a5518;
   transform: translateX(12px);
   transition: transform 0.35s;
 }
@@ -1584,12 +1555,12 @@ body:has(.envelope-scene:not(.opened)) .site-header .header-date {
 .chapter-picker .chapter-nav a {
   width: 100%;
   min-height: 62px;
-  border: 1px solid #b8b49b55;
+  border: 1px solid #a8b9a355;
   border-radius: 18px;
   padding: 10px 14px;
-  background: #fbf8f2f5;
+  background: #f9f7f2f5;
   color: var(--ink);
-  box-shadow: 0 4px 22px #25352b10;
+  box-shadow: 0 4px 22px #496a5510;
   backdrop-filter: blur(12px);
   text-align: left;
 }
@@ -1597,7 +1568,7 @@ body:has(.envelope-scene:not(.opened)) .site-header .header-date {
 .chapter-picker .chapter-nav a:hover,
 .chapter-picker .chapter-nav a:focus-visible {
   color: var(--ink);
-  border-color: #b89a61aa;
+  border-color: #d6b77aaa;
   background: var(--paper);
 }
 .chapter-picker .chapter-number,
@@ -1608,12 +1579,12 @@ body:has(.envelope-scene:not(.opened)) .site-header .header-date {
   align-items: flex-start;
 }
 .chapter-picker .chapter-title {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 1.15rem;
   line-height: 1.1;
 }
 .chapter-picker .chapter-preview {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   color: var(--moss);
   font-size: 0.59rem;
   line-height: 1.45;
@@ -1865,13 +1836,13 @@ body:has(.envelope-scene:not(.opened)) .site-header .header-date {
   overflow: visible;
 }
 .chapter-petal path:first-child {
-  fill: #e9b5c1;
-  stroke: #d69aaa;
+  fill: #e9c8c8;
+  stroke: #d5a6af;
   stroke-width: 0.55;
 }
 .chapter-petal path:last-child {
   fill: none;
-  stroke: #f9e5e8;
+  stroke: #f9f0f1;
   stroke-width: 0.8;
 }
 /* Continuous fall: constant lateral drift, no stop on chapter entry.
@@ -1940,7 +1911,7 @@ body:has(.envelope-scene:not(.opened)) .site-header .header-date {
     border: 0;
   }
   .celebration-grid > article:first-child {
-    border-bottom: 1px solid #f7f2e929;
+    border-bottom: 1px solid #f9f7f229;
   }
   /* Both translations retain their original strings; the emphasized phrase starts a new line. */
   .countdown h2 em {

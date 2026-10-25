@@ -1,12 +1,15 @@
 @import 'tailwindcss';
 @theme {
-  --color-olive: #354b3d;
-  --color-cream: #f7f5ef;
+  --color-olive: #496a55;
+  --color-sage: #a8b9a3;
+  --color-champagne: #d6b77a;
+  --color-blush: #e9c8c8;
+  --color-cream: #f9f7f2;
 }
 :root {
   font-family: Arial, Helvetica, sans-serif;
-  color: #354b3d;
-  background: #f7f5ef;
+  color: #496a55;
+  background: #f9f7f2;
   font-synthesis: none;
 }
 * {
@@ -49,7 +52,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 3px solid #ba865c;
+  outline: 3px solid #d6b77a;
   outline-offset: 5px;
 }
 h1,
@@ -85,11 +88,11 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f7f5ef;
+  background: #f9f7f2;
   position: sticky;
   top: 0;
   z-index: 20;
-  border-bottom: 1px solid #354b3d12;
+  border-bottom: 1px solid #496a5512;
 }
 .monogram {
   font:
@@ -114,7 +117,7 @@ nav a {
   text-decoration: none;
 }
 .nav-rsvp {
-  border: 1px solid #354b3d55;
+  border: 1px solid #496a5555;
   padding: 12px 22px;
 }
 .nav-rsvp span {
@@ -129,7 +132,7 @@ nav a {
   display: grid;
   place-items: center;
   text-align: center;
-  background: #4b655b;
+  background: #496a55;
 }
 .hero-photo,
 .hero-shade {
@@ -140,7 +143,7 @@ nav a {
   object-fit: cover;
 }
 .hero-shade {
-  background: linear-gradient(180deg, #102c2b30, #102c2b66 45%, #102c2ba0);
+  background: linear-gradient(180deg, #213e3030, #213e3066 45%, #213e30a0);
 }
 .hero-copy {
   position: relative;
@@ -161,7 +164,7 @@ nav a {
 }
 .hero h1 em {
   font-size: 0.75em;
-  color: #e4dfca;
+  color: #e9c8c8;
 }
 .hero-sub {
   font-family: Georgia, serif;
@@ -196,11 +199,11 @@ nav a {
   border: 0;
 }
 .light-button {
-  background: #f7f5ef;
-  color: #354b3d;
+  background: #f9f7f2;
+  color: #496a55;
 }
 .button {
-  background: #354b3d;
+  background: #496a55;
   color: #fff;
 }
 .scroll-cue {
@@ -233,12 +236,12 @@ nav a {
 }
 .intro-copy > p:not(.eyebrow) {
   font-size: 14px;
-  color: #667064;
+  color: #627968;
   margin-bottom: 22px;
 }
 .intro-copy .lead {
   font-size: 17px !important;
-  color: #354b3d !important;
+  color: #496a55 !important;
 }
 .handwritten {
   font:
@@ -251,11 +254,11 @@ nav a {
   left: -42px;
   bottom: 40px;
   font-size: 110px;
-  color: #aa7451;
+  color: #d6b77a;
 }
 .countdown {
   text-align: center;
-  background: #e9ece2;
+  background: #e6ece3;
   padding: 80px 20px;
 }
 .countdown h2 {
@@ -305,7 +308,7 @@ nav a {
 }
 .section-heading > p {
   font-size: 13px;
-  color: #667064;
+  color: #627968;
   max-width: 340px;
 }
 .section-heading a {
@@ -319,7 +322,7 @@ nav a {
   margin-top: 70px;
 }
 .schedule article {
-  border-top: 1px solid #354b3d40;
+  border-top: 1px solid #496a5540;
   padding-top: 24px;
   position: relative;
 }
@@ -330,14 +333,14 @@ nav a {
   font:
     italic 35px Georgia,
     serif;
-  color: #bcc0b0;
+  color: #a8b9a3;
 }
 .schedule h3 {
   margin: 22px 0 15px;
 }
 .schedule article > p:last-child {
   font-size: 13px;
-  color: #667064;
+  color: #627968;
 }
 .good-to-know {
   margin-top: 80px;
@@ -349,7 +352,7 @@ nav a {
   font-style: italic;
 }
 details {
-  border-bottom: 1px solid #354b3d30;
+  border-bottom: 1px solid #496a5530;
   padding: 18px 0;
 }
 details:first-child {
@@ -372,10 +375,10 @@ summary::-webkit-details-marker {
 details p {
   font-size: 13px;
   margin-top: 16px;
-  color: #667064;
+  color: #627968;
 }
 .rsvp-section {
-  background: #e8e4d9;
+  background: #f2e6e3;
 }
 .rsvp-grid {
   display: grid;
@@ -388,23 +391,23 @@ details p {
 }
 .rsvp-grid > div > p:not(.eyebrow) {
   font-size: 13px;
-  color: #667064;
+  color: #627968;
 }
 .rsvp-flower {
   display: block;
   font-size: 150px;
   line-height: 1.4;
-  color: #a57959;
+  color: #d6b77a;
   margin-left: 30px;
 }
 .rsvp-card {
-  background: #faf8f2;
+  background: #fffcf9;
   padding: 38px;
 }
 .rsvp-card p {
   font-size: 13px;
   margin: 18px 0;
-  color: #667064;
+  color: #627968;
 }
 label {
   display: block;
@@ -412,23 +415,23 @@ label {
   margin: 20px 0 8px;
 }
 label span {
-  color: #70776d;
+  color: #627968;
 }
 input:not([type='checkbox']),
 select,
 textarea {
   display: block;
   width: 100%;
-  border: 1px solid #354b3d40;
+  border: 1px solid #496a5540;
   background: transparent;
   border-radius: 0;
   padding: 13px;
-  color: #354b3d;
+  color: #496a55;
   min-width: 0;
 }
 input::placeholder,
 textarea::placeholder {
-  color: #7a8178;
+  color: #627968;
   font-size: 12px;
 }
 form > .button {
@@ -439,7 +442,7 @@ small {
   font-size: 11px;
 }
 fieldset {
-  border: 1px solid #354b3d25;
+  border: 1px solid #496a5525;
   padding: 14px;
   margin: 24px 0;
 }
@@ -458,7 +461,7 @@ fieldset label:first-of-type {
   line-height: 1.6;
 }
 .checkbox input {
-  accent-color: #354b3d;
+  accent-color: #496a55;
   margin-top: 3px;
   flex-shrink: 0;
   width: 16px;
@@ -469,16 +472,16 @@ fieldset label:first-of-type {
   border: 0;
   text-decoration: underline;
   text-underline-offset: 5px;
-  color: #354b3d;
+  color: #496a55;
   font-size: 12px;
   padding: 12px 0;
 }
 .locked-gallery {
   margin-top: 55px;
-  border: 1px solid #354b3d30;
+  border: 1px solid #496a5530;
   padding: 55px 20px;
   text-align: center;
-  background: #f0eee5;
+  background: #f3ebe4;
 }
 .locked-gallery > span {
   display: block;
@@ -495,7 +498,7 @@ fieldset label:first-of-type {
   max-width: 700px;
   margin: 50px auto;
   padding: 35px;
-  background: #e9ece2;
+  background: #e6ece3;
 }
 .upload-box p {
   font-size: 12px;
@@ -512,7 +515,7 @@ fieldset label:first-of-type {
   border: 0;
   color: inherit;
   text-decoration: none;
-  background: #eee9de;
+  background: #f2ebe7;
   padding: 10px 10px 15px;
 }
 .gallery img {
@@ -550,10 +553,10 @@ fieldset label:first-of-type {
   clear: both;
 }
 footer {
-  background: #f7f5ef;
-  color: #354b3d;
+  background: #f9f7f2;
+  color: #496a55;
   font-family: Arial, Helvetica, sans-serif;
-  border-top: 1px solid #354b3d12;
+  border-top: 1px solid #496a5512;
   text-align: center;
   padding: 65px 6% 25px;
 }
@@ -570,7 +573,7 @@ footer > p:not(.eyebrow) {
   display: flex;
   justify-content: space-between;
   gap: 25px;
-  border-top: 1px solid #354b3d22;
+  border-top: 1px solid #496a5522;
   margin-top: 55px;
   padding-top: 25px;
   font-size: 10px;
@@ -703,7 +706,7 @@ footer > p:not(.eyebrow) {
 .admin-card {
   padding: 25px;
   background: #fff;
-  border: 1px solid #354b3d30;
+  border: 1px solid #496a5530;
   min-width: 0;
 }
 .admin-card p {
@@ -735,17 +738,17 @@ footer > p:not(.eyebrow) {
 .email-preview {
   width: 100%;
   height: 650px;
-  border: 1px solid #ddd;
+  border: 1px solid #a8b9a3;
   margin-top: 20px;
 }
 .badge {
   display: inline-block;
   padding: 4px 12px;
-  background: #e9ece2;
+  background: #e6ece3;
 }
 .send-confirm {
   padding: 15px;
-  border: 1px solid #354b3d55;
+  border: 1px solid #496a5555;
   margin-top: 25px;
 }
 .admin button {
@@ -766,11 +769,15 @@ footer > p:not(.eyebrow) {
 
 /* Editorial details. Keep colours here and photography/text in frontend/src/lib/locales/. */
 :root {
-  --accent: #a97554;
-  --paper: #fcfaf4;
+  --accent: #b08b4f; /* readable champagne-gold accent on ivory */
+  --color-primary: #496a55;
+  --color-secondary: #a8b9a3;
+  --color-gold: #d6b77a;
+  --color-pink: #e9c8c8;
+  --paper: #f9f7f2;
 }
 header {
-  background: #f7f5eff2;
+  background: #f9f7f2f2;
   backdrop-filter: blur(14px);
   gap: 24px;
 }
@@ -788,10 +795,10 @@ header nav {
   min-height: 44px;
   border: 0;
   background: transparent;
-  color: #72796d;
+  color: #627968;
 }
 .language-switch button[aria-pressed='true'] {
-  color: #354b3d;
+  color: #496a55;
   text-decoration: underline;
   text-underline-offset: 7px;
   font-weight: 700;
@@ -805,7 +812,7 @@ header nav {
   animation: photo-arrive 2s cubic-bezier(0.2, 0.65, 0.3, 1) both;
 }
 .hero-shade {
-  background: linear-gradient(180deg, #112e3045 0%, #152d3080 55%, #132c2bd9 100%);
+  background: linear-gradient(180deg, #213e3045 0%, #213e3080 55%, #213e30d9 100%);
 }
 .hero::after {
   content: '';
@@ -842,18 +849,18 @@ header nav {
   font-size: clamp(5rem, 11vw, 10rem);
   line-height: 1.05;
   margin: 25px 0;
-  text-shadow: 0 4px 36px #15302f40;
+  text-shadow: 0 4px 36px #213e3040;
 }
 .hero-ornament {
   font-size: 38px;
-  color: #f0dfba;
+  color: #d6b77a;
   margin-bottom: 24px;
 }
 .hero-kicker {
   font-size: 11px;
   letter-spacing: 0.06em;
   margin-top: 14px;
-  color: #f5efdf;
+  color: #f9f7f2;
 }
 .hero-corner {
   position: absolute;
@@ -886,7 +893,7 @@ header nav {
   justify-content: center;
   gap: 28px;
   padding: 32px 20px;
-  border-bottom: 1px solid #354b3d20;
+  border-bottom: 1px solid #496a5520;
   color: var(--accent);
 }
 .love-note p {
@@ -908,12 +915,12 @@ header nav {
   color: var(--accent);
 }
 .countdown {
-  background: radial-gradient(ellipse at 50% 0, #f4f4e9, #e6eadf);
+  background: radial-gradient(ellipse at 50% 0, #f9f7f2, #e6ece3);
   position: relative;
-  border-block: 1px solid #354b3d15;
+  border-block: 1px solid #496a5515;
 }
 .clock > div {
-  border-inline-start: 1px solid #354b3d22;
+  border-inline-start: 1px solid #496a5522;
   padding-left: clamp(15px, 3vw, 40px);
 }
 .clock > div:first-child {
@@ -922,14 +929,14 @@ header nav {
 }
 .schedule article {
   padding: 30px 20px 25px;
-  background: #efece250;
-  border-top: 1px solid #aa745180;
+  background: #e9c8c850;
+  border-top: 1px solid #d6b77a80;
 }
 .schedule .event-number {
   right: 20px;
 }
 .rsvp-card {
-  box-shadow: 0 20px 60px #354b3d0d;
+  box-shadow: 0 20px 60px #496a550d;
   border: 1px solid #fff9;
 }
 .locked-gallery {
@@ -939,7 +946,7 @@ header nav {
   padding-top: 65px;
 }
 footer {
-  background: #f7f5eff2;
+  background: #f9f7f2f2;
 }
 a,
 button,
@@ -952,17 +959,17 @@ summary span {
 }
 @media (hover: hover) {
   .button:hover {
-    background: #49634f;
+    background: #3d5947;
     transform: translateY(-2px);
-    box-shadow: 0 7px 20px #354b3d20;
+    box-shadow: 0 7px 20px #496a5520;
   }
   .light-button:hover {
     background: #fff;
     transform: translateY(-3px);
-    box-shadow: 0 7px 24px #102c2b30;
+    box-shadow: 0 7px 24px #213e3030;
   }
   nav a:hover {
-    color: #a97554;
+    color: #b08b4f;
   }
   .gallery .photo-card {
     transition:
@@ -971,7 +978,7 @@ summary span {
   }
   .gallery .photo-card:hover {
     transform: translateY(-5px) rotate(-1deg);
-    box-shadow: 0 15px 30px #354b3d18;
+    box-shadow: 0 15px 30px #496a5518;
   }
 }
 @keyframes photo-arrive {
@@ -1204,7 +1211,7 @@ footer > p:not(.eyebrow) {
   gap: 24px;
 }
 .travel-cards article {
-  background: #eeeade;
+  background: #f0e9e3;
   padding: 30px;
 }
 .travel-cards h3 {
@@ -1215,7 +1222,7 @@ footer > p:not(.eyebrow) {
   font-size: 0.95rem;
 }
 .venue-map {
-  background: #e6eadf;
+  background: #e6ece3;
   text-align: center;
   padding: 30px;
   margin-block: 30px;
@@ -1310,7 +1317,7 @@ footer > p:not(.eyebrow) {
 }
 .memory-link {
   max-width: none;
-  background: #e8ede5;
+  background: #e6ece3;
   text-align: center;
 }
 .memory-link > p:not(.eyebrow) {
@@ -1339,7 +1346,7 @@ footer > p:not(.eyebrow) {
 }
 .recovery-form {
   margin-block: 15px;
-  border-top: 1px solid #354b3d40;
+  border-top: 1px solid #496a5540;
   padding-top: 10px;
 }
 

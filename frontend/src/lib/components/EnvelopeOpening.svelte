@@ -88,12 +88,12 @@
       <svg class="envelope-paper" viewBox={`0 0 ${renderWidth} ${renderHeight}`}>
         <defs>
           <linearGradient id="pocket-paper" x2="0" y2="1">
-            <stop stop-color="#f4ead8" /><stop offset="1" stop-color="#e6d8bf" />
+            <stop stop-color="#E5D1A4" /><stop offset="1" stop-color="#C4A363" />
           </linearGradient>
         </defs>
-        <path fill="#ddceb6" d={`M0 0L${renderWidth / 2} ${renderHeight / 2}L0 ${renderHeight}Z`} />
+        <path fill="#C9AA70" d={`M0 0L${renderWidth / 2} ${renderHeight / 2}L0 ${renderHeight}Z`} />
         <path
-          fill="#e9dcc5"
+          fill="#D1B57F"
           d={`M${renderWidth} 0L${renderWidth / 2} ${renderHeight / 2}L${renderWidth} ${renderHeight}Z`}
         />
         <path
@@ -120,7 +120,7 @@
     >
       <svg class="envelope-paper" viewBox={`0 0 ${renderWidth} ${renderHeight}`}>
         <path
-          fill={opening < 0.5 ? '#f1e5cf' : '#d8c6a9'}
+          fill={opening < 0.5 ? '#D6B77A' : '#C4A363'}
           d={`M0 0H${renderWidth}L${renderWidth / 2} ${flapTip}Z`}
         />
         <path class="paper-edge" d={`M0 0L${renderWidth / 2} ${flapTip}L${renderWidth} 0`} />
@@ -147,7 +147,7 @@
   .envelope-scene {
     position: relative;
     height: 400svh;
-    background: #f5f0e7;
+    background: #f9f7f2;
   }
   .envelope-stage {
     position: sticky;
@@ -155,7 +155,7 @@
     height: 100svh;
     overflow: hidden;
     isolation: isolate;
-    background: radial-gradient(ellipse at center, #fffdf7, #e8dfd0);
+    background: radial-gradient(ellipse at center, #f9f7f2, #e9efe7);
   }
   .envelope,
   .envelope-back,
@@ -174,15 +174,15 @@
   }
   .envelope-back {
     z-index: 0;
-    background: #c9b8a0;
-    box-shadow: 0 25px 65px #55473735;
+    background: #b49356;
+    box-shadow: 0 25px 65px #496a5535;
     border-radius: 5px;
   }
   .letter-sheet {
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: #fbf8f2;
+    background: #f9f7f2;
     transform-origin: center;
   }
   .letter-sheet :global(.hero) {
@@ -202,7 +202,7 @@
   }
   .paper-edge {
     fill: none;
-    stroke: #82765e;
+    stroke: #977945;
     stroke-width: 1.2;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
@@ -225,7 +225,7 @@
     padding: 0.6rem 1rem;
     border: 0;
     background: none;
-    color: #45634e;
+    color: #496a55;
     font:
       400 0.6rem/1.5 'DM Sans',
       sans-serif;
@@ -237,14 +237,14 @@
     position: relative;
     width: 1px;
     height: 48px;
-    background: #45634e25;
+    background: #496a5525;
     overflow: hidden;
   }
   .scroll-line::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: #45634e;
+    background: #496a55;
     animation: scroll-cue 2.2s ease-in-out infinite;
   }
   @keyframes scroll-cue {
