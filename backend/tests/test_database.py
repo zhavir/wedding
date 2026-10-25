@@ -234,6 +234,9 @@ def test_every_existing_revision_upgrades_to_current_models(tmp_path, revision):
     with database.connect() as connection:
         config.attributes["connection"] = connection
         command.upgrade(config, revision)
+        # A no-op upgrade to base leaves SQLite's schema inspection transaction open.
+        # End this invocation before the next migration uses autocommit blocks.
+        connection.commit()
         command.upgrade(config, "head")
         command.upgrade(config, "head")
         context = MigrationContext.configure(

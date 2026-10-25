@@ -41,7 +41,7 @@ for (const seats of [1, 2]) {
       expect(sources.some(src => src.includes('/images/'))).toBe(false);
     } else {
       // Local previews without PUBLIC_ASSET_URL deliberately show placeholders.
-      await expect(page.locator('.picture-placeholder')).toHaveCount(12);
+      await expect(page.locator('.hero .picture-placeholder, .story-keepsakes .picture-placeholder, .dream .picture-placeholder, .comparison .picture-placeholder, .venue-photo .picture-placeholder')).toHaveCount(12);
       await expect(page.locator('link[rel="icon"]')).toHaveCount(0);
     }
     await page.getByRole('button', { name: 'Italiano', exact: true }).click();

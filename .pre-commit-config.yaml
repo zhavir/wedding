@@ -76,6 +76,7 @@ repos:
       - id: check-json
         priority: 90
       - id: mixed-line-ending
+        exclude: \.ics$
         types:
           - text
         args: [--fix=lf]

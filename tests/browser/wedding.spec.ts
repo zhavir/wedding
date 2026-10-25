@@ -61,7 +61,7 @@ test('an invalid email link displays its error only once', async ({ page }) => {
 
 test('saved witness reply is personalized and only opens for explicit editing', async ({ page }) => {
   await page.request.post('/api/session', { headers: { Origin: 'http://web:5173' }, data: { code: 'DEMO-ADMIN-2027' } });
-  const created = await page.request.post('/api/admin/invitations', { headers: { Origin: 'http://web:5173' }, data: { invitations: [{ name: 'Giulia', email: `witness-${randomUUID()}@example.com`, is_witness: true }] } });
+  const created = await page.request.post('/api/admin/invitations', { headers: { Origin: 'http://web:5173' }, data: { invitations: [{ name: 'Giulia', email: `witness-${randomUUID()}@example.com`, is_witness: true, language: 'en' }] } });
   expect(created.ok(), await created.text()).toBeTruthy();
   const invite = (await created.json()).items[0];
   await page.goto('/' + new URL(invite.link).hash);
@@ -84,7 +84,7 @@ test('additional guest receives a personal invitation that expires after rejecti
   const admin = await browser.newContext({ baseURL: process.env.WEB_URL || 'http://localhost:5173' });
   const headers = { Origin: 'http://web:5173' };
   await admin.request.post('/api/session', { headers, data: { code: 'DEMO-ADMIN-2027' } });
-  const created = await admin.request.post('/api/admin/invitations', { headers, data: { invitations: [{ name: 'Party host', email: `party-${randomUUID()}@example.com`, max_guests: 2 }] } });
+  const created = await admin.request.post('/api/admin/invitations', { headers, data: { invitations: [{ name: 'Party host', email: `party-${randomUUID()}@example.com`, max_guests: 2, language: 'en' }] } });
   expect(created.ok(), await created.text()).toBeTruthy();
   const parent = (await created.json()).items[0];
   await page.goto('/' + new URL(parent.link).hash);

@@ -57,7 +57,6 @@ export async function restoreSession() {
       await signIn(code, 'link');
     } else {
       session.guest = await api<Guest>('/session');
-      setLanguage(session.guest.language);
     }
   } catch (error) {
     session.guest = null;

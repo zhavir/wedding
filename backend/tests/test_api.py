@@ -33,7 +33,7 @@ def client(tmp_path, monkeypatch):
         async with sessions()() as db:
             await create_invitation(
                 db,
-                InvitationCreate(name="Guest", email="guest@example.com"),
+                InvitationCreate(name="Guest", email="guest@example.com", language="en"),
                 token="GUEST-CODE-123",
             )
             await create_invitation(

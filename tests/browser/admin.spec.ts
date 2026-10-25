@@ -46,6 +46,10 @@ test('SQLAdmin credentials, record creation and sending action', async ({ page, 
   await expect(guestPage.getByLabel('Full name').first()).toHaveValue(name);
   await guestPage.getByRole('link', { name: 'Upload your photos/videos ↗' }).click();
   await expect(guestPage.getByLabel('Choose photos and videos')).toBeVisible();
+  await expect(guestPage.locator('html')).toHaveAttribute('lang', 'en');
+  await guestPage.reload();
+  await expect(guestPage.getByLabel('Choose photos and videos')).toBeVisible();
+  await expect(guestPage.locator('html')).toHaveAttribute('lang', 'en');
   await guestContext.close();
   await row.getByRole('checkbox').check();
   await page.getByRole('button', { name: /Actions/ }).click();

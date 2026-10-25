@@ -12,8 +12,8 @@ test('chapters keep their measure, photos fit, and the invitation never scales',
   const cue = (await page.locator('.skip-opening').boundingBox())!;
   expect(cue.y - (envelope.y + envelope.height)).toBeGreaterThan(24);
   await expect(page.locator('.envelope-paper')).toHaveCount(2);
-  await expect(page.locator('.wax-seal svg')).toHaveCount(1);
-  await expect(page.locator('.monogram svg')).toHaveCount(1);
+  await expect(page.locator('.wax-seal img[src="/monogram.svg"]')).toHaveCount(1);
+  await expect(page.locator('.monogram img[src="/monogram.svg"]')).toHaveCount(1);
   const hero = page.locator('.hero');
   const scene = page.locator('.envelope-scene');
   const original = (await hero.boundingBox())!;

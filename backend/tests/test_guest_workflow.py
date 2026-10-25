@@ -365,6 +365,7 @@ def test_admin_confirmation_preview_is_read_only_and_uses_rsvp_party(client, aws
     async def prepare(attending):
         async with sessions()() as db:
             invite = await db.get(Invitation, invitation_id)
+            assert invite is not None
             invite.guest.language = "it"
             invite.max_guests = 2
             invite.attending = attending

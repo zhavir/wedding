@@ -71,7 +71,7 @@ test("Italian invitation and RSVP", async ({ page }) => {
   await page.getByLabel("Nome e cognome").first().fill("Ospite italiano");
   await page.getByRole("button", { name: "Invia la tua risposta ↗" }).click();
   await expect(
-    page.getByRole("status").filter({ hasText: "Ci siete anche voi!" }),
+    page.getByRole("status").filter({ hasText: "Ci sei anche tu!" }),
   ).toBeVisible();
   await page.reload();
   await openReplyForm(page);
