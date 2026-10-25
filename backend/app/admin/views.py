@@ -36,6 +36,8 @@ AUDIENCES = [
     ("+1", "+1"),
 ]
 
+DATE_FORMAT = "%Y-%m-%d %H:%M UTC"
+
 
 class GuestForm(Form):
     name = StringField("Name", validators=[DataRequired()])
@@ -181,10 +183,15 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
         Invitation.has_rsvp: "RSVP response",
         Invitation.parent_invitation_id: "Invited by",
     }
+    column_formatters = {
+        Invitation.updated_at: lambda model, attr: datetime.fromtimestamp(
+            model.updated_at, UTC
+        ).strftime(DATE_FORMAT)
+    }
     column_formatters_detail = {
         Invitation.id: lambda model, attr: invitation_link(model),
         Invitation.updated_at: lambda model, attr: (
-            datetime.fromtimestamp(model.updated_at, UTC).strftime("%Y-%m-%d %H:%M UTC")
+            datetime.fromtimestamp(model.updated_at, UTC).strftime(DATE_FORMAT)
             if model.updated_at
             else "Not answered"
         ),
@@ -461,7 +468,7 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
     column_formatters = {
         Photo.uploaded_at: lambda model, attr: datetime.fromtimestamp(
             model.uploaded_at, UTC
-        ).strftime("%Y-%m-%d %H:%M UTC")
+        ).strftime(DATE_FORMAT)
     }
     column_formatters_detail = column_formatters
 
