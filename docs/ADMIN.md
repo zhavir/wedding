@@ -28,15 +28,15 @@ For automated provisioning, `--password-stdin` reads one line from stdin. Supply
 
 The menu contains **Guests**, **Invitations**, **Gallery**, and **Invitation Email Template**. Authentication and delivery records remain internal.
 
-1. In **Guests**, enter a name (the only required input) and choose Guest, Witness, Groom, Bride, or +1. Guest is the default audience.
+1. In **Guests**, enter a name (the only required input), optionally add a unique email, and choose Guest, Witness, Groom, Bride, or +1. Guest is the default audience.
 2. Select guests and choose **Create invitations**. Repeating this action reuses their existing invitations. Each guest has one personal invitation.
-3. In **Invitations**, optionally add an email, select English/Italian, set reserved places, and keep **Active** enabled. Email addresses are unique and matched case-insensitively; empty addresses are allowed.
+3. In **Invitations**, select English/Italian, set reserved places, and keep **Active** enabled. Email is owned and edited in **Guests**, is unique and matched case-insensitively, and may be empty.
 4. Open details for the personal link, **Show personal link and short code**, **Preview invitation email**, or **Send invitation**.
 5. Select up to 25 invitations and choose **Send invitation**, then confirm the recipients. Inactive invitations are excluded; entries without an email and sent/sending/unknown deliveries are skipped. **Activate invitations** enables selected records without sending email.
 
 Filters cover answered/unanswered, accepted/declined, active/inactive, and email status. Attendance, dietary details, witness acceptance and the response message belong to the invitation. An unanswered invitation has no attendance value.
 
-Deactivating an invitation blocks its link and sessions. Changing its email resets delivery status to draft; it does not send automatically.
+Deactivating an invitation blocks its link and sessions. Changing the guest's email resets the associated invitation's delivery status to draft; it does not send automatically.
 
 ## Gallery
 
@@ -60,7 +60,7 @@ Docker browser tests provision an independent, random `browser-test-admin` accou
 
 Creating an invitation generates its private link and a short code. **Preview invitation email** shows both without sending anything. The email includes a separate gallery link; either link establishes the same guest session used for RSVP and uploads. Share these credentials only with the intended guest.
 
-Guests without a session can paste the short code on the RSVP form or `/gallery`. **Lost your code?** emails a replacement to the address saved on the invitation. It never creates an invitation for an unknown address. Replacements expire after 15 minutes if unused, and replace the previous link/code only when redeemed. A replacement request has a five-minute cooldown; mail delivery failures do not invalidate the previous invitation.
+Guests without a session can paste the short code on the RSVP form or `/gallery`. **Lost your code?** emails a replacement to the address saved on the guest. It never creates an invitation for an unknown address. Replacements expire after 15 minutes if unused, and replace the previous link/code only when redeemed. A replacement request has a five-minute cooldown; mail delivery failures do not invalidate the previous invitation.
 
 After updating the application, run `docker compose up --build -d --wait` so the initializer creates the invitation-access and login-throttle tables. Production migrations must also run before deploying this version. Deactivating an invitation blocks its codes, links and existing sessions.
 
@@ -106,11 +106,13 @@ Changing an additional attendee's email, removing them, or declining the holder'
 
 ## Faster media moderation
 
+The Gallery list opens with newest uploads first. Click **Uploaded at** to switch between oldest and newest first. Combine **Visible in carousel**, **Visible in gallery**, **Content Type**, status, and uploader filters to narrow the list.
+
 Media moderation displays uploader names and supports searching and filtering by uploader. Open a record's details to see its image or video immediately. Select multiple rows and choose **Make visible in gallery** to publish completed uploads together; incomplete uploads are never approved. Originals remain unchanged.
 
 ## Andrea and Sara's gallery access
 
-Migration `0001_initial` creates two ordinary guest invitations using `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL`. Supply these through production environment secrets in GitHub; local runs default to fictional example addresses. Migration does not send email or grant administrator privileges. In Invitations, open each entry and generate its personal link, or send its invitation after configuring SES. Credentials are generated securely on first use with the application's encryption key. Already migrated databases retain their existing records; changing these secrets does not update existing invitations. Edit those through the administrator interface.
+Migration `0001_initial` creates two ordinary guest invitations using `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL`. Supply these through production environment secrets in GitHub; local runs default to fictional example addresses. Migration does not send email or grant administrator privileges. In Invitations, open each entry and generate its personal link, or send its invitation after configuring SES. Credentials are generated securely on first use with the application's encryption key. Already migrated databases retain their existing records; changing these secrets does not update existing invitations. Edit their names and email addresses in Guests.
 
 ## Email copy and private photo feeds
 

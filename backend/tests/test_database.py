@@ -172,3 +172,37 @@ def test_guest_migration_resumes_after_committed_ddl(tmp_path, monkeypatch, fail
         assert connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 16
         command.upgrade(config, "head")
     db.dispose()
+
+
+def test_guest_email_migration_preserves_addresses_and_invitation_ids(tmp_path):
+    from sqlalchemy import create_engine, inspect, text
+
+    db = create_engine(f"sqlite:///{tmp_path / 'guest-email.db'}")
+    config = Config("alembic.ini")
+    with db.connect() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "0004_guests_and_invitations")
+        connection.execute(
+            text("UPDATE invitations SET email='GROOM@example.test' WHERE id='wedding-groom'")
+        )
+        connection.execute(text("UPDATE invitations SET email=NULL WHERE id='wedding-bride'"))
+        connection.commit()
+        before = connection.execute(
+            text("SELECT id, guest_id, encrypted_token FROM invitations ORDER BY id")
+        ).all()
+        connection.commit()
+        command.upgrade(config, "head")
+        assert "email" not in {c["name"] for c in inspect(connection).get_columns("invitations")}
+        assert (
+            connection.scalar(text("SELECT email FROM guests WHERE id='wedding-groom'"))
+            == "groom@example.test"
+        )
+        assert connection.scalar(text("SELECT email FROM guests WHERE id='wedding-bride'")) is None
+        assert (
+            connection.execute(
+                text("SELECT id, guest_id, encrypted_token FROM invitations ORDER BY id")
+            ).all()
+            == before
+        )
+        command.upgrade(config, "head")
+    db.dispose()

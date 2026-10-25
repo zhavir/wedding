@@ -38,20 +38,25 @@
         : value * value * (3 - 2 * value);
     };
     const measure = () => {
-      // The expanded capsule fits the actual date, without trailing empty space.
+      // Fit the date with extra trailing space for optical balance.
       logoWidth = monogramElement.getBoundingClientRect().width;
       // Extra optical breathing room: the italic ampersand and final S otherwise look crowded.
       // As the capsule grows, its left inset stays at 14px and its right edge moves.
       identityBase = logoWidth + 40;
-      // The date is inserted after a 16px gap with another 14px right inset.
-      identityGrowth = dateElement.scrollWidth + 16;
+      // Match the logo's 14px inset, 1px border, and 6px of optical spacing.
+      const identity = monogramElement.parentElement!.getBoundingClientRect();
+      const date = dateElement.getBoundingClientRect();
+      identityGrowth = date.right - identity.left + 21 - identityBase;
       update();
     };
     measure();
     document.fonts.ready.then(measure);
+    const observer = new ResizeObserver(measure);
+    observer.observe(dateElement);
     addEventListener('scroll', update, { passive: true });
     addEventListener('resize', measure);
     return () => {
+      observer.disconnect();
       removeEventListener('scroll', update);
       removeEventListener('resize', measure);
     };

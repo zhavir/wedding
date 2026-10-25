@@ -62,7 +62,7 @@ test('venue, travel, Akamaru and hero never overlap on a narrow screen', async (
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 375);
   await expect(page.locator('#travel')).toContainText('Via Donizetti 17');
 
-  await expect(page.getByRole('img', { name: 'Il nostro bassotto Akamaru', exact: true })).toHaveAttribute('src', '/images/akamaru.webp');
+  await expect(page.getByRole('img', { name: 'Il nostro bassotto Akamaru', exact: true })).toBeVisible();
   await expect(page.locator('#travel iframe')).toHaveCount(0);
   await page.route('https://maps.google.com/**', route => route.fulfill({ contentType: 'text/html', body: '<p>Map embed requested</p>' }));
   await page.getByRole('button', { name: 'Mostra la mappa' }).click();

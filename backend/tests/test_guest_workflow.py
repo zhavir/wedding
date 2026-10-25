@@ -28,7 +28,11 @@ def test_existing_email_reuses_identity_and_notifies_admin(client, aws, monkeypa
     async def inspect():
         async with sessions()() as db:
             rows = list(
-                await db.scalars(select(Invitation).where(Invitation.email == "alex@example.com"))
+                await db.scalars(
+                    select(Invitation).where(
+                        Invitation.guest.has(Guest.email == "alex@example.com")
+                    )
+                )
             )
             assert len(rows) == 1
             child = rows[0]
@@ -142,7 +146,7 @@ def test_admin_bulk_create_activate_and_send_excludes_inactive(client, aws):
             )
             assert len(invites) == 2
             for i, invite in enumerate(invites):
-                invite.email = f"bulk-{i}@example.com"
+                invite.guest.email = f"bulk-{i}@example.com"
                 invite.active = i == 0
             await db.commit()
             return [invite.id for invite in invites]
@@ -264,3 +268,85 @@ def test_guest_name_is_only_required_input(client):
             assert person and person.audience == "guest"
 
     client.portal.call(guest)
+
+
+def test_guest_owns_email_and_email_edits_reset_delivery(client):
+    admin_login(client)
+
+    async def identity():
+        async with sessions()() as db:
+            invite = await db.scalar(select(Invitation).where(Invitation.name == "Guest"))
+            assert invite is not None
+            invite.email_status = "sent"
+            await db.commit()
+            return invite.id, invite.guest_id
+
+    invitation_id, guest_id = client.portal.call(identity)
+    form = client.get(f"/api/admin/invitation/edit/{invitation_id}")
+    assert 'name="email"' not in form.text
+    result = client.post(
+        f"/api/admin/guest/edit/{guest_id}",
+        data={"name": "Guest", "email": "NEW@example.com", "audience": "guest", "save": "Save"},
+    )
+    assert result.status_code == 200
+
+    async def inspect():
+        async with sessions()() as db:
+            invite = await db.get(Invitation, invitation_id)
+            assert invite is not None
+            assert invite.guest.email == "new@example.com"
+            assert invite.email_status == "draft"
+            assert "email" not in Invitation.__table__.columns
+
+    client.portal.call(inspect)
+    duplicate = client.post(
+        "/api/admin/guest/create",
+        data={
+            "name": "Another guest",
+            "email": "NEW@example.com",
+            "audience": "guest",
+            "save": "Save",
+        },
+    )
+    assert duplicate.status_code == 400
+
+
+def test_plus_one_reuses_guest_email_before_an_invitation_exists(client, aws):
+    admin_login(client)
+    assert (
+        client.post(
+            "/api/admin/guest/create",
+            data={
+                "name": "Existing identity",
+                "email": "friend@example.com",
+                "audience": "guest",
+                "save": "Save",
+            },
+        ).status_code
+        == 200
+    )
+    login(client)
+    assert (
+        client.put(
+            "/api/rsvp",
+            json=body(
+                guests=[{"name": "Guest"}, {"name": "Friend", "email": "FRIEND@example.com"}]
+            ),
+        ).status_code
+        == 200
+    )
+
+    async def inspect():
+        async with sessions()() as db:
+            people = list(
+                await db.scalars(select(Guest).where(Guest.email == "friend@example.com"))
+            )
+            assert len(people) == 1
+            assert people[0].name == "Existing identity" and people[0].audience == "+1"
+            invitations = list(
+                await db.scalars(select(Invitation).where(Invitation.guest_id == people[0].id))
+            )
+            assert len(invitations) == 1 and invitations[0].active
+            assert invitations[0].email_status == "sent"
+
+    client.portal.call(inspect)

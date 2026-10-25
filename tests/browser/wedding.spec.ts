@@ -1,3 +1,4 @@
+import { memoryImage } from './media-fixtures';
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { openReplyForm } from './rsvp-form';
@@ -34,7 +35,7 @@ test('landing page, invitation and RSVP', async ({ page, context }) => {
   await expect(page.getByRole('button', { name: 'Edit your preferences' })).toHaveCount(0);
   await page.getByRole('link', { name: 'Upload your photos/videos ↗' }).click();
   await expect(page).toHaveURL(/\/gallery#upload/);
-  await page.getByLabel('Choose photos and videos').setInputFiles('tests/browser/memory.png');
+  await page.getByLabel('Choose photos and videos').setInputFiles(memoryImage);
   await page.getByLabel('A little caption').fill('A browser-tested memory');
   await page.getByRole('button', { name: /Share the love/ }).click();
   await expect(page.getByText('1 memories received.', { exact: false })).toBeVisible({ timeout: 30000 });

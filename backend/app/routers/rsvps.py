@@ -20,7 +20,7 @@ router = APIRouter()
 async def get_rsvp(invite: Guest, db: DB):
     return {
         "rsvp": await read_response(db, invite.id),
-        "prefill": {"email": invite.email or "", "name": invite.name},
+        "prefill": {"email": invite.guest.email or "", "name": invite.name},
     }
 
 

@@ -1,3 +1,4 @@
+import { previewImage } from './media-fixtures';
 import { test, expect } from '@playwright/test';
 
 test('envelope grows, opens, releases the same invitation upward and reverses continuously', async ({ page }, info) => {
@@ -43,7 +44,7 @@ test('envelope grows, opens, releases the same invitation upward and reverses co
 test('private carousel waits for authentication and clears on logout', async ({ page }) => {
   let requests = 0;
   await page.route('**/api/session', route => route.fulfill({ status: route.request().method() === 'GET' ? 401 : 200, json: route.request().method() === 'POST' ? { id: 'guest', name: 'Guest', max_guests: 2, is_admin: false, is_witness: false } : {} }));
-  await page.route('**/api/photos/carousel', route => { requests++; return route.fulfill({ json: { items: [{ id: 'one', caption: 'A happy moment', preview: '/images/akamaru.webp' }] } }); });
+  await page.route('**/api/photos/carousel', route => { requests++; return route.fulfill({ json: { items: [{ id: 'one', caption: 'A happy moment', preview: previewImage }] } }); });
   await page.goto('/');
   await expect(page.locator('.chapter-trigger')).toBeEnabled();
   expect(requests).toBe(0);
@@ -84,7 +85,7 @@ test('gallery loads immediately after code authentication', async ({ page }) => 
   }));
   await page.route('**/api/photos', route => {
     requests++;
-    return route.fulfill({ json: { items: [{ id: 'one', caption: 'A new memory', kind: 'photo', preview: '/images/akamaru.webp', original: '/images/akamaru.webp', motion: '' }], cursor: null } });
+    return route.fulfill({ json: { items: [{ id: 'one', caption: 'A new memory', kind: 'photo', preview: previewImage, original: previewImage, motion: '' }], cursor: null } });
   });
   await page.goto('/gallery');
   await page.getByLabel('Your invitation code').fill('TEST-CODE');

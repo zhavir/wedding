@@ -41,7 +41,7 @@
   /><Travel /><Akamaru /><Rsvp />
   <section class="section memory-link" id="memories">
     <p class="eyebrow">{t('04 / THROUGH YOUR EYES')}</p>
-    <h2>{t('Share a little happiness.')}</h2>
+    <h2>{t('Share your photos and videos with us.')}</h2>
     <p>{t('Your photos, our favourite memories. Upload them in our private gallery.')}</p>
     <MemoriesCarousel />
     <a class="button" href={resolve('/gallery#upload')}>{t('Upload your photos ↗')}</a>

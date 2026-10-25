@@ -6,15 +6,17 @@
 <section class="section visions" id="ceremony-visions" aria-labelledby="visions-title">
   <p class="eyebrow">{w.visions.eyebrow}</p>
   <h2 id="visions-title">{w.visions.title}</h2>
-  <div class="dreams">
-    <figure>
-      <div class="dream bride">
+  <div
+    class="dreams mx-auto mt-12 grid max-w-[360px] grid-cols-1 items-center gap-12 px-3 min-[601px]:max-w-none min-[601px]:grid-cols-2 min-[601px]:gap-[clamp(2rem,5vw,5rem)] min-[601px]:px-0"
+  >
+    <figure class="m-0 min-w-0">
+      <div class="dream bride aspect-[3/4] overflow-hidden">
         <StaticPicture name="ceremony-bride" alt={w.visions.brideAlt} />
       </div>
       <figcaption>{w.visions.bride}</figcaption>
     </figure>
-    <figure>
-      <div class="dream groom">
+    <figure class="m-0 min-w-0">
+      <div class="dream groom aspect-[3/4] overflow-hidden">
         <StaticPicture name="ceremony-groom" alt={w.visions.groomAlt} />
       </div>
       <figcaption>{w.visions.groom}</figcaption>
@@ -26,21 +28,8 @@
   .visions {
     text-align: center;
   }
-  .dreams {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(2rem, 5vw, 5rem);
-    margin-top: 3rem;
-  }
-  figure {
-    margin: 0;
-    min-width: 0;
-  }
   .dream {
-    overflow: hidden;
     box-shadow: 0 12px 32px #25352b18;
-    aspect-ratio: 3 / 4;
     border: 0.6rem solid #fffdf7;
   }
   .bride {
@@ -58,13 +47,6 @@
     margin-top: 1.5rem;
   }
   @media (max-width: 600px) {
-    .dreams {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 3rem;
-      max-width: 360px;
-      margin-inline: auto;
-      padding-inline: 0.75rem;
-    }
     .dream {
       border-width: 0.3rem;
     }

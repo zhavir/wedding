@@ -2,7 +2,29 @@
   import { t } from '#lib/i18n.svelte.ts';
   import { wedding as w } from '#lib/wedding.ts';
   import StaticPicture from './StaticPicture.svelte';
+  const imageCount = 5;
   let reveal = $state(50);
+  let akamaruIndex = $state(1);
+  let narutoIndex = $state(1);
+  // Prevent repeated advances while the slider stays at an endpoint.
+  let lastEndpoint: 0 | 100 | null = null;
+
+  function updateReveal(value: number): void {
+    reveal = value;
+    const endpoint = value === 0 || value === 100 ? value : null;
+
+    if (endpoint !== null && endpoint !== lastEndpoint) {
+      if (endpoint === 100) {
+        // Akamaru is fully visible; advance the hidden Naruto photo.
+        narutoIndex = (narutoIndex % imageCount) + 1;
+      } else {
+        // Naruto is fully visible; advance the hidden Akamaru photo.
+        akamaruIndex = (akamaruIndex % imageCount) + 1;
+      }
+    }
+
+    lastEndpoint = endpoint;
+  }
 </script>
 
 <section class="section dog-section" id="akamaru">
@@ -10,19 +32,20 @@
     <div class="comparison">
       <div class="layer">
         <StaticPicture
-          name="akamaru-naruto"
+          name={`akamaru-naruto-${narutoIndex}`}
           alt={t('Akamaru from Naruto, the inspiration for his name')}
         />
       </div>
       <div class="layer" style={`clip-path: inset(0 ${100 - reveal}% 0 0)`}>
-        <StaticPicture name="akamaru" alt={t('Our dachshund Akamaru')} />
+        <StaticPicture name={`akamaru-${akamaruIndex}`} alt={t('Our dachshund Akamaru')} />
       </div>
       <span class="divider" style={`left: ${reveal}%`} aria-hidden="true"><span>↔</span></span>
       <input
         type="range"
         min="0"
         max="100"
-        bind:value={reveal}
+        value={reveal}
+        oninput={(event) => updateReveal(Number(event.currentTarget.value))}
         aria-label={t('Reveal the origin of Akamaru’s name')}
         aria-valuetext={t('{percent}% Akamaru, the rest his Naruto namesake', { percent: reveal })}
       />

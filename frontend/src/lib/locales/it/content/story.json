@@ -2,15 +2,45 @@
   "chapters": [
     {
       "title": "Una squadra perfetta",
-      "text": "Un bel giorno, il matchmaking li fece incontrare e, tra una partita e l'altra, scoprirono che la loro squadra funzionava alla perfezione. Da allora divennero inseparabili."
+      "text": "Un bel giorno, il matchmaking li fece incontrare e, tra una partita e l'altra, scoprirono che la loro squadra funzionava alla perfezione. Da allora divennero inseparabili.",
+      "photos": [
+        {
+          "name": "story-01",
+          "caption": "Andrea & Sara"
+        },
+        {
+          "name": "story-02",
+          "caption": "Andrea & Sara"
+        }
+      ]
     },
     {
       "title": "Ovunque, insieme",
-      "text": "Da Minervino Murge e Casapesenna, passando per Rho, Varese, Savosa e infine Boll, la loro avventura li portò sempre più lontano, attraversando città, confini e nuove sfide. Insieme affrontarono tante difficoltà e capirono che qualsiasi luogo poteva diventare casa, purché lo vivessero insieme."
+      "text": "Da Minervino Murge e Casapesenna, passando per Rho, Varese, Savosa e infine Boll, la loro avventura li portò sempre più lontano, attraversando città, confini e nuove sfide. Insieme affrontarono tante difficoltà e capirono che qualsiasi luogo poteva diventare casa, purché lo vivessero insieme.",
+      "photos": [
+        {
+          "name": "story-03",
+          "caption": "Andrea & Sara"
+        },
+        {
+          "name": "story-04",
+          "caption": "Andrea & Sara"
+        }
+      ]
     },
     {
       "title": "Il prossimo capitolo",
-      "text": "Perché, fianco a fianco, avevano scoperto di poter essere la versione migliore di sé stessi. Dopo dieci anni di avventure, viaggi, traslochi, lacrime e risate, sono pronti a iniziare un nuovo capitolo della loro storia. E voi siete chiamati a essere testimoni del loro amore, mentre lo celebrano e lo rendono ufficiale, promettendosi di continuare a scegliersi, ogni giorno, per tutta la vita."
+      "text": "Perché, fianco a fianco, avevano scoperto di poter essere la versione migliore di sé stessi. Dopo dieci anni di avventure, viaggi, traslochi, lacrime e risate, sono pronti a iniziare un nuovo capitolo della loro storia. E voi siete chiamati a essere testimoni del loro amore, mentre lo celebrano e lo rendono ufficiale, promettendosi di continuare a scegliersi, ogni giorno, per tutta la vita.",
+      "photos": [
+        {
+          "name": "story-05",
+          "caption": "Andrea & Sara"
+        },
+        {
+          "name": "story-06",
+          "caption": "Andrea & Sara"
+        }
+      ]
     }
   ]
 }

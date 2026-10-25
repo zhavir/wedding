@@ -79,7 +79,7 @@ docker compose -f compose.yaml up -d --force-recreate api
 
 ## Admin workflow
 
-- **Guests**: create the guest name and audience, then select guests and choose **Create invitations**. In **Invitations**, set optional email, reserved places and **Email language** (English or Italiano).
+- **Guests**: create the guest name, optional email and audience, then select guests and choose **Create invitations**. In **Invitations**, set reserved places and **Email language** (English or Italiano).
 - Email unknown: leave it blank, save, open **View → Show personal link and short code**, and copy the link into your own message. This is a private invitation token, not an S3 download URL. Creating/viewing it sends no mail. Deactivation revokes access.
 - Email known: **Preview invitation email** uses the selected language. Select records and choose **Send invitation**, review, then confirm. Records without an email are skipped. Previously sent messages are not automatically resent.
 - The guest's name and email prefill their first RSVP. Existing saved answers take precedence. Consent must still be checked explicitly.

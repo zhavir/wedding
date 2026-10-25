@@ -5,10 +5,11 @@ from contextlib import suppress
 
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException, Request, Response
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import or_, select, update
 
 from app.core.config import settings
 from app.core.security import COOKIE_NAME, DB, Guest, cipher, digest, set_session_cookie
+from app.db.models import Guest as GuestRecord
 from app.db.models import Invitation, InvitationAccess, InvitationLink, Session
 from app.schemas import Login, RecoverInvitation
 from app.services.access import code_hash, ensure_access, new_code, throttle
@@ -84,7 +85,7 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
         await db.scalars(
             select(Invitation)
             .where(
-                func.lower(Invitation.email) == str(body.email).lower(),
+                Invitation.guest.has(GuestRecord.email == str(body.email)),
                 Invitation.active.is_(True),
                 Invitation.is_admin.is_(False),
             )
@@ -92,7 +93,7 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
         )
     )
     for invite in invites:
-        if not invite.email:
+        if not invite.guest.email:
             continue
         await ensure_access(db, invite.id)
         now = int(time.time())
@@ -132,7 +133,7 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
         )
         # Failure does not invalidate the working invitation or disclose membership.
         with suppress(ClientError, BotoCoreError):
-            await asyncio.to_thread(deliver_email, invite.email, message)
+            await asyncio.to_thread(deliver_email, invite.guest.email, message)
     return {
         "message": "If this email belongs to an active invitation, a replacement code and link will arrive shortly. Please check your spam folder."
     }

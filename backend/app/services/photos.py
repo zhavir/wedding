@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import io
 import subprocess
@@ -191,10 +192,21 @@ def process_photo(photo: Photo) -> None:
                 ) from None
 
 
-def photo_preview(photo: Photo) -> dict[str, str]:
+def photo_preview(photo: Photo) -> dict[str, str | int]:
     return {
         "id": photo.id,
         "caption": photo.caption,
+        "width": photo.width,
+        "height": photo.height,
+        "orientation": (
+            "unknown"
+            if not photo.width or not photo.height
+            else "portrait"
+            if photo.height > photo.width
+            else "landscape"
+            if photo.width > photo.height
+            else "square"
+        ),
         "preview": s3(True).generate_presigned_url(
             "get_object",
             Params={"Bucket": settings().bucket_name, "Key": media_key(photo, "previews", ".webp")},
@@ -203,7 +215,7 @@ def photo_preview(photo: Photo) -> dict[str, str]:
     }
 
 
-def photo_view(photo: Photo) -> dict[str, str]:
+def photo_view(photo: Photo) -> dict[str, str | int]:
     def url(key: str) -> str:
         return s3(True).generate_presigned_url(
             "get_object", Params={"Bucket": settings().bucket_name, "Key": key}, ExpiresIn=3600
@@ -219,3 +231,24 @@ def photo_view(photo: Photo) -> dict[str, str]:
         "motion": url(media_key(photo, "originals", "-motion")) if photo.motion_size else "",
         "original": url(media_key(photo, "originals")),
     }
+
+
+def delete_photo_media(photo: Photo) -> None:
+    """Remove this upload's objects and any unfinished multipart uploads."""
+    client = s3()
+    bucket = settings().bucket_name
+    for upload_id, suffix in [(photo.multipart_id, ""), (photo.motion_multipart_id, "-motion")]:
+        if not upload_id:
+            continue
+        with contextlib.suppress(client.exceptions.NoSuchUpload):
+            client.abort_multipart_upload(
+                Bucket=bucket, Key=media_key(photo, "pending", suffix), UploadId=upload_id
+            )
+    for kind, suffix in [
+        ("pending", ""),
+        ("pending", "-motion"),
+        ("originals", ""),
+        ("originals", "-motion"),
+        ("previews", ".webp"),
+    ]:
+        client.delete_object(Bucket=bucket, Key=media_key(photo, kind, suffix))

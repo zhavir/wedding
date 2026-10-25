@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from app.core.config import settings
+from app.db.models import Guest
 from app.db.session import engine, sessions
 from app.main import app
 from app.manage import migrate
@@ -407,7 +408,12 @@ def test_sqladmin_create_review_send_and_replay(client, aws):
     assert (
         client.post(
             "/api/admin/guest/create",
-            data={"name": "Admin created guest", "audience": "guest", "save": "Save"},
+            data={
+                "name": "Admin created guest",
+                "email": "created@example.com",
+                "audience": "guest",
+                "save": "Save",
+            },
         ).status_code
         == 200
     )
@@ -425,7 +431,6 @@ def test_sqladmin_create_review_send_and_replay(client, aws):
         data={
             "guest": guest_id,
             "language": "en",
-            "email": "created@example.com",
             "max_guests": "2",
             "active": "y",
             "save": "Save",
@@ -440,7 +445,7 @@ def test_sqladmin_create_review_send_and_replay(client, aws):
 
         async with sessions()() as db:
             return await db.scalar(
-                select(Invitation).where(Invitation.email == "created@example.com")
+                select(Invitation).where(Invitation.guest.has(Guest.email == "created@example.com"))
             )
 
     invite = client.portal.call(find_invitation)
@@ -576,7 +581,7 @@ def invitation_code(client):
     async def read():
         async with sessions()() as db:
             invite = await db.scalar(
-                select(Invitation).where(Invitation.email == "guest@example.com")
+                select(Invitation).where(Invitation.guest.has(Guest.email == "guest@example.com"))
             )
             assert invite is not None
             access = await db.get(InvitationAccess, invite.id)
@@ -783,7 +788,7 @@ def test_alembic_migrations_are_idempotent_and_match_models(client):
         async with engine().connect() as connection:
             assert (
                 await connection.scalar(text("SELECT version_num FROM alembic_version"))
-                == "0004_guests_and_invitations"
+                == "0005_guest_email"
             )
             assert await connection.scalar(text("SELECT count(*) FROM invitation_messages")) == 16
             differences = await connection.run_sync(
@@ -1052,7 +1057,7 @@ def test_additional_guest_invitation_lifecycle(client, aws):
                     "id": row.id,
                     "active": row.active,
                     "name": row.name,
-                    "email": row.email,
+                    "email": row.guest.email,
                     "max_guests": row.max_guests,
                     "code": cipher().decrypt(row.encrypted_token.encode()).decode(),
                 }
@@ -1193,7 +1198,7 @@ def test_seeded_couple_have_personal_gallery_access_without_admin_privileges(cli
             await db.commit()
             return (
                 invite.name,
-                invite.email,
+                invite.guest.email,
                 cipher().decrypt(access.encrypted_code.encode()).decode(),
             )
 
@@ -1336,7 +1341,10 @@ def test_authenticated_carousel_only_signs_approved_completed_still_previews(cli
     items = response.json()["items"]
     assert len(items) == len({item["id"] for item in items}) == 30
     assert all(item["id"].startswith("approved-") for item in items)
-    assert all(set(item) == {"id", "caption", "preview"} for item in items)
+    assert all(
+        set(item) == {"id", "caption", "preview", "width", "height", "orientation"}
+        for item in items
+    )
     calls = storage.generate_presigned_url.call_args_list
     assert len(calls) == 30
     assert all(call.args == ("get_object",) for call in calls)
@@ -1450,3 +1458,102 @@ def test_admin_edits_gallery_and_carousel_flags_independently(client):
         response = client.post("/api/admin/photo/edit/moderated-photo", data=data)
         assert response.status_code == 200, response.text
         assert client.portal.call(flags) == (gallery, carousel)
+
+
+@pytest.mark.parametrize(
+    "width,height,orientation",
+    [(600, 900, "portrait"), (1600, 900, "landscape"), (800, 800, "square"), (0, 0, "unknown")],
+)
+def test_photo_preview_orientation(client, width, height, orientation):
+    from app.db.models import Photo
+    from app.services.photos import photo_preview
+
+    preview = photo_preview(Photo(id="orientation", caption="Caption", width=width, height=height))
+    assert (preview["width"], preview["height"], preview["orientation"]) == (
+        width,
+        height,
+        orientation,
+    )
+    assert "original" not in preview
+
+
+def test_admin_delete_photo_removes_media_and_guest_links(client, aws):
+    from app.db.models import Guest, Photo, PhotoGuest
+    from sqlalchemy import select
+
+    async def seed():
+        async with sessions()() as db:
+            db.add(Guest(id="photo-guest", name="Viewer"))
+            db.add(
+                Photo(
+                    id="delete-photo",
+                    owner="guest",
+                    storage_prefix="guest/",
+                    size=100,
+                    content_type="image/jpeg",
+                    caption="Delete me",
+                    status="complete",
+                    expires=0,
+                    multipart_id="unfinished",
+                    motion_multipart_id="unfinished-motion",
+                )
+            )
+            db.add(PhotoGuest(photo_id="delete-photo", guest_id="photo-guest"))
+            await db.commit()
+
+    async def remains():
+        async with sessions()() as db:
+            return await db.get(Photo, "delete-photo"), list(
+                await db.scalars(select(PhotoGuest).where(PhotoGuest.photo_id == "delete-photo"))
+            )
+
+    client.portal.call(seed)
+    client.delete("/api/admin/photo/delete?pks=delete-photo")
+    aws[0].delete_object.assert_not_called()
+    assert client.portal.call(remains)[0] is not None
+    admin_login(client)
+    assert (
+        'data-bs-target="#modal-delete"' in client.get("/api/admin/photo/details/delete-photo").text
+    )
+    response = client.delete("/api/admin/photo/delete?pks=delete-photo")
+    assert response.status_code == 200
+    assert "error=" not in response.text
+    assert client.portal.call(remains) == (None, [])
+    assert {call.kwargs["Key"] for call in aws[0].delete_object.call_args_list} == {
+        "pending/guest/delete-photo",
+        "pending/guest/delete-photo-motion",
+        "originals/guest/delete-photo",
+        "originals/guest/delete-photo-motion",
+        "previews/guest/delete-photo.webp",
+    }
+    assert aws[0].abort_multipart_upload.call_count == 2
+
+
+def test_admin_delete_keeps_record_when_storage_cleanup_fails(client, aws):
+    from app.db.models import Photo
+
+    async def seed():
+        async with sessions()() as db:
+            db.add(
+                Photo(
+                    id="failed-delete",
+                    owner="guest",
+                    size=100,
+                    content_type="image/jpeg",
+                    caption="Keep record",
+                    status="complete",
+                    expires=0,
+                )
+            )
+            await db.commit()
+
+    async def remains():
+        async with sessions()() as db:
+            return await db.get(Photo, "failed-delete") is not None
+
+    client.portal.call(seed)
+    admin_login(client)
+    aws[0].delete_object.side_effect = RuntimeError("Storage unavailable")
+    response = client.delete("/api/admin/photo/delete?pks=failed-delete")
+    assert "error=" in response.text
+    assert client.portal.call(remains)

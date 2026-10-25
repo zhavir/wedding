@@ -1,3 +1,4 @@
+import { memoryImage } from './media-fixtures';
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { adminCredentials, authenticatorCode } from './admin-auth';
@@ -16,13 +17,13 @@ test('SQLAdmin credentials, record creation and sending action', async ({ page, 
   }
   await page.getByRole('link', { name: 'Invitations', exact: true }).click();
   const name = `Browser admin ${Date.now()}`;
+  const email = `browser-admin-${Date.now()}@example.com`;
   await page.goto('/api/admin/guest/create');
   await page.getByLabel('Name', { exact: true }).fill(name);
+  await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.goto('/api/admin/invitation/create');
   await page.getByLabel('Guest', { exact: true }).selectOption({ label: name });
-  await page.getByLabel('Email', { exact: true }).fill(`browser-admin-${Date.now()}@example.com`);
-  const email = await page.getByLabel('Email', { exact: true }).inputValue();
   await page.getByLabel('Email language').selectOption('it');
   await page.getByLabel('Reserved places', { exact: true }).fill('2');
   await page.getByLabel('Active', { exact: true }).check();
@@ -117,7 +118,7 @@ test('uploads remain private until admin approval and can be unpublished', async
   const guestPage = await guest.newPage();
   await guestPage.goto('/gallery#invite=DEMO-LOVE-2027');
   const caption = `Moderation ${Date.now()}`;
-  await guestPage.getByLabel('Choose photos and videos').setInputFiles('tests/browser/memory.png');
+  await guestPage.getByLabel('Choose photos and videos').setInputFiles(memoryImage);
   await guestPage.getByLabel('A little caption').fill(caption);
   const completed = guestPage.waitForResponse(r => /\/api\/photos\/[^/]+\/complete$/.test(r.url()));
   await guestPage.getByRole('button', { name: /Share the love/ }).click();
@@ -177,7 +178,7 @@ for (const paired of [false, true]) {
     test.skip(!process.env.ADMIN_TEST_CREDENTIALS, 'Requires Docker test account');
     await page.goto('/gallery#invite=DEMO-LOVE-2027');
     const caption = `${paired ? 'Live' : 'Video'} ${Date.now()}`;
-    await page.getByLabel('Choose photos and videos').setInputFiles(paired ? [{ name: 'memory.png', mimeType: 'image/png', buffer: readFileSync('tests/browser/memory.png') }, { name: 'memory.mov', mimeType: 'video/quicktime', buffer: readFileSync('tests/browser/memory.mp4') }] : 'tests/browser/memory.mp4');
+    await page.getByLabel('Choose photos and videos').setInputFiles(paired ? [memoryImage, { name: 'memory.mov', mimeType: 'video/quicktime', buffer: readFileSync('tests/browser/memory.mp4') }] : 'tests/browser/memory.mp4');
     await page.getByLabel('A little caption').fill(caption);
     const completion = page.waitForResponse(r => /\/api\/photos\/[^/]+\/complete$/.test(r.url()));
     await page.getByRole('button', { name: /Share the love/ }).click();

@@ -2,15 +2,45 @@
   "chapters": [
     {
       "title": "The perfect team",
-      "text": "One day, matchmaking brought them together. Between one game and the next, they discovered they made the perfect team. From then on, they were inseparable."
+      "text": "One day, matchmaking brought them together. Between one game and the next, they discovered they made the perfect team. From then on, they were inseparable.",
+      "photos": [
+        {
+          "name": "story-01",
+          "caption": "Andrea & Sara"
+        },
+        {
+          "name": "story-02",
+          "caption": "Andrea & Sara"
+        }
+      ]
     },
     {
       "title": "Anywhere, together",
-      "text": "From Minervino Murge and Casapesenna, through Rho, Varese, Savosa and finally Boll, their adventure carried them across cities, borders and new challenges. Together they faced difficult times and discovered that anywhere could be home, as long as they shared it."
+      "text": "From Minervino Murge and Casapesenna, through Rho, Varese, Savosa and finally Boll, their adventure carried them across cities, borders and new challenges. Together they faced difficult times and discovered that anywhere could be home, as long as they shared it.",
+      "photos": [
+        {
+          "name": "story-03",
+          "caption": "Andrea & Sara"
+        },
+        {
+          "name": "story-04",
+          "caption": "Andrea & Sara"
+        }
+      ]
     },
     {
       "title": "Our next chapter",
-      "text": "Side by side, they became the best versions of themselves. After ten years of adventures, journeys, moves, tears and laughter, they are ready for a new chapter. And you are invited to witness their love as they celebrate it, make it official, and promise to keep choosing each other, every day, for the rest of their lives."
+      "text": "Side by side, they became the best versions of themselves. After ten years of adventures, journeys, moves, tears and laughter, they are ready for a new chapter. And you are invited to witness their love as they celebrate it, make it official, and promise to keep choosing each other, every day, for the rest of their lives.",
+      "photos": [
+        {
+          "name": "story-05",
+          "caption": "Andrea & Sara"
+        },
+        {
+          "name": "story-06",
+          "caption": "Andrea & Sara"
+        }
+      ]
     }
   ]
 }

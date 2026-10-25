@@ -26,19 +26,23 @@ async def create_invitation(
         if existing:
             return existing
     email = str(data.email).casefold() if data.email else None
-    if email and await db.scalar(select(Invitation.id).where(Invitation.email == email)):
-        raise ValueError("An invitation already exists for this email address.")
     if guest is None:
-        guest = Guest(
-            id=uuid.uuid7().hex, name=data.name, audience="witness" if data.is_witness else "guest"
-        )
-        db.add(guest)
+        guest = await db.scalar(select(Guest).where(Guest.email == email)) if email else None
+        if guest and await db.scalar(select(Invitation.id).where(Invitation.guest_id == guest.id)):
+            raise ValueError("An invitation already exists for this email address.")
+        if guest is None:
+            guest = Guest(
+                id=uuid.uuid7().hex,
+                name=data.name,
+                email=email,
+                audience="witness" if data.is_witness else "guest",
+            )
+            db.add(guest)
     token = token or secrets.token_urlsafe(32)
     invite = Invitation(
         id=uuid.uuid7().hex,
         name=guest.name,
         guest=guest,
-        email=email,
         language=data.language,
         is_witness=guest.audience == "witness",
         max_guests=data.max_guests,
@@ -66,7 +70,7 @@ def invitation_view(invite: Invitation) -> dict[str, object]:
     return {
         "id": invite.id,
         "name": invite.name,
-        "email": invite.email or "",
+        "email": invite.guest.email or "",
         "language": invite.language,
         "is_witness": invite.is_witness,
         "max_guests": invite.max_guests,

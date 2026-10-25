@@ -7,7 +7,7 @@
 {% else %}
 <h1>Review invitation emails</h1>
 <p>Creating an entry does not send email. Confirm below to send these invitations now.</p>
-<ul>{% for invite in invites %}<li>{{ invite.name }} — {{ invite.email }} ({{ invite.email_status }}){% if not invite.active %} · inactive{% endif %}</li>{% endfor %}</ul>
+<ul>{% for invite in invites %}<li>{{ invite.name }} — {{ invite.guest.email or "No email" }} ({{ invite.email_status }}){% if not invite.active %} · inactive{% endif %}</li>{% endfor %}</ul>
 <p>Only active draft or failed invitations with an email address will be sent. Others will be skipped.</p>
 {% if invites %}
 <form method="post" action="{{ request.url_for('admin:view-invitation-send_confirm') }}">

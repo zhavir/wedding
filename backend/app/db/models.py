@@ -10,6 +10,8 @@ class Guest(Base):
     __tablename__ = "guests"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    __table_args__ = (Index("uq_guest_email", "email", unique=True),)
     audience: Mapped[str] = mapped_column(String(10), default="guest", server_default="guest")
 
     def __str__(self):
@@ -26,7 +28,6 @@ class Invitation(Base):
     __tablename__ = "invitations"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     language: Mapped[str] = mapped_column(String(2), default="en", server_default="en")
     max_guests: Mapped[int] = mapped_column(Integer)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -61,10 +62,7 @@ class Invitation(Base):
         Boolean, default=False, server_default="false", nullable=True
     )
     updated_at: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=True)
-    __table_args__ = (
-        Index("uq_invitation_guest", "guest_id", unique=True),
-        Index("uq_invitation_email", "email", unique=True),
-    )
+    __table_args__ = (Index("uq_invitation_guest", "guest_id", unique=True),)
 
 
 class InvitationLink(Base):

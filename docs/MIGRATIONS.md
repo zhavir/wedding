@@ -57,3 +57,11 @@ The baseline seeds the bride and groom without sending email. Existing invitatio
 Older local databases can contain multiple invitations with the same email, including case-only differences. Revision 0004 now checks for these before changing the schema and reports the number of conflicting groups. Resolve each address explicitly: keep it on the intended invitation and make the other invitations link-only (empty string before this revision, `NULL` once the email column is nullable), or reset a disposable local database only if its data is not needed. The migration does not delete or merge guest records automatically.
 
 Revision 0004 can resume after its DDL has partially committed. It recognizes existing tables, columns, indexes and template seeds, copies responses only for invitations that have not been migrated, and skips legacy tables already removed. After resolving duplicate addresses, rerun `docker compose up --build -d --wait web`; do not manually stamp the revision as complete. Offline SQL output is for fresh execution; use the online runner for recovery.
+
+## Guest email ownership (0005)
+
+Revision `0005_guest_email` adds nullable `guests.email`, copies and normalizes each invitation address, creates a unique guest-email index, and only then drops the old index and `invitations.email`. Guest and invitation IDs, tokens, relationships and RSVP response snapshots are preserved. Name-only guests remain valid. No earlier revision is rewritten.
+
+The migration can resume after committed steps. It refuses to remove the old column if any nonempty address cannot be matched to the guest. DSQL uses separate DDL transactions and waits for the asynchronous unique-index build. See [AWS ALTER TABLE support](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/alter-table-syntax-support.html).
+
+This is a coordinated application/schema update: the old application requires `invitations.email`, while the new application requires `guests.email`. Pause guest/admin writes during the production cutover, verify a recoverable backup, apply the migration with the matching application release, and resume traffic after health and invitation/email checks. Do not roll back only the application across this schema boundary. No production migration is performed by local testing.

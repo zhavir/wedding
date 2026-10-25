@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import cipher
-from app.db.models import Invitation
+from app.db.models import Guest, Invitation
 from app.db.session import sessions
 from app.services.access import ensure_access
 from app.services.aws import ses
@@ -67,7 +67,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
             .where(
                 Invitation.id == invitation_id,
                 Invitation.active.is_(True),
-                Invitation.email != "",
+                Invitation.guest.has(Guest.email != ""),
                 Invitation.is_admin.is_(False),
                 Invitation.email_status.in_(["draft", "failed"]),
             )
@@ -78,7 +78,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
         if not claimed:
             return {"id": invitation_id, "status": "skipped"}
         invite = await db.get(Invitation, invitation_id)
-        if invite is None or not invite.email:
+        if invite is None or not invite.guest.email:
             return {"id": invitation_id, "status": "skipped"}
         access = await ensure_access(db, invite.id)
         selected_message = await invitation_message(db, invite)
@@ -90,7 +90,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
             wedding=await content(invite.language or "en", db),
         )
         try:
-            result = await asyncio.to_thread(deliver_email, invite.email, message)
+            result = await asyncio.to_thread(deliver_email, invite.guest.email, message)
             invite.email_message_id = result["MessageId"]
             invite.email_status = "sent"
         except ClientError as exc:

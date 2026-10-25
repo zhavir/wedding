@@ -24,19 +24,30 @@ Upload these exact, lowercase object keys at the **bucket root**, without an `im
 
 Missing photos show paper placeholders. The frames use `object-fit: cover`, so crop intentionally and keep faces away from the edges.
 
-## Images bundled with the website
+## Other named S3 images
 
-These files live in `frontend/static/images/` and take precedence over S3. Uploading another file with the same name to LandingImages will **not** replace them:
+All landing photographs load from `PUBLIC_ASSET_URL` (the existing LandingImages bucket). There are no bundled website overrides. The picture and video fixtures in `tests/browser/` are test-only and remain local; do not upload them to S3. Upload these additional objects at the bucket root:
 
-| Repository file | Placement |
+| Object key | Placement |
 | --- | --- |
-| `villa-valentina.webp` | Travel section; the component's internal slot is `venue-garden` |
+| `venue-garden.webp` | Venue photograph |
 | `ceremony-bride.webp` | Bride's imagined ceremony |
 | `ceremony-groom.webp` | Groom's imagined ceremony |
-| `akamaru.webp` | Real Akamaru, comparison slider |
-| `akamaru-naruto.webp` | Naruto namesake, comparison slider |
+| `akamaru-1.webp` | Our dog in the comparison slider |
+| `akamaru-2.webp` | Our dog in the comparison slider |
+| `akamaru-3.webp` | Our dog in the comparison slider |
+| `akamaru-4.webp` | Our dog in the comparison slider |
+| `akamaru-5.webp` | Our dog in the comparison slider |
+| `akamaru-naruto-1.webp` | His namesake in the comparison slider |
+| `akamaru-naruto-2.webp` | His namesake in the comparison slider |
+| `akamaru-naruto-3.webp` | His namesake in the comparison slider |
+| `akamaru-naruto-4.webp` | His namesake in the comparison slider |
+| `akamaru-naruto-5.webp` | His namesake in the comparison slider |
+| `favicon.svg` | Browser tab icon |
 
-To replace a bundled picture, replace its repository file and release the frontend. The two Akamaru pictures should use the same 4:5 canvas. `venue-garden.webp`, `venue-interior.webp` and `venue-celebration.webp` are not S3 slots used by the current page.
+Image assets are not stored in the repository. Use your original photographs or the existing S3 objects. The venue object must be named **`venue-garden.webp`**. The two Akamaru pictures should use the same 4:5 canvas. Set `PUBLIC_ASSET_URL` for local previews too; missing configuration or objects show placeholders.
+
+Story image names and individual captions are configured in `frontend/src/lib/locales/{en,it}/content/story.json` under each chapter's `photos` array (`name` omits `.webp`). Ceremony figure captions are `visions.bride` and `visions.groom` in `ceremony-visions.json`. Guest image captions are editable in **Gallery** and appear beneath carousel images.
 
 ## Convert and upload
 
@@ -54,7 +65,7 @@ aws s3 cp tmp/landing-images/venue-exterior.webp s3://YOUR-EXISTING-LANDING-BUCK
 aws s3 cp tmp/landing-images/story-01.webp s3://YOUR-EXISTING-LANDING-BUCKET/story-01.webp --content-type image/webp --cache-control 'public,max-age=3600'
 ```
 
-Repeat for `story-02.webp` through `story-06.webp`. No object ACL is needed. Open `LANDING_IMAGES_URL/story-01.webp` directly, then reload the website. Replacing an existing S3 object does not require a frontend release; cached images may remain for up to an hour. If the direct URL works but the page still shows a placeholder, reload the page and check the exact filename and configured asset URL.
+Repeat for all named objects above, including `story-02.webp` through `story-06.webp`. No object ACL is needed. Open `LANDING_IMAGES_URL/story-01.webp` directly, then reload the website. Replacing an existing S3 object does not require a frontend release; cached images may remain for up to an hour. If the direct URL works but the page still shows a placeholder, reload the page and check the exact filename and configured asset URL.
 
 For local Docker preview, put `PUBLIC_ASSET_URL=https://YOUR-LANDING-BUCKET-URL` in the root `.env`, then rebuild the web image. For Vite, set that environment variable before `npm --prefix frontend run dev`, or use ignored `frontend/.env.local`. This is a build-time setting; changing it on an already-built frontend requires a rebuild.
 
@@ -69,7 +80,11 @@ Signed URLs grant temporary access to individual private objects. Removing visib
 - Venue garden/carriage: [Villa Valentina](https://www.villa-valentina.it/img/explore2.jpg).
 - Bride’s ceremony: the user-supplied [The Sims wedding image](https://preview.redd.it/where-do-you-throw-your-favorite-weddings-v0-73eccgdb15ib1.jpg?width=1080&crop=smart&auto=webp&s=b4a2c94c7351716f8621fd3f56c81b1429df70c7).
 - Groom’s ceremony: [Alpine winter wedding](https://asparklylifeforme.com/wp-content/uploads/2025/10/Alpine-Winter-Wedding-Ceremony-Ideas-4-683x1024.webp).
-- Real Akamaru: the user-supplied Instagram CDN photograph, now preserved in `frontend/static/images/akamaru.webp`; [profile](https://www.instagram.com/akamaru_theminisausage/).
+- Real Akamaru: the user-supplied Instagram CDN photograph, served as `akamaru.webp` from LandingImages; [profile](https://www.instagram.com/akamaru_theminisausage/).
 - Namesake: [Akamaru from Naruto](https://cdn.anime-planet.com/characters/primary/akamaru-1.webp?t=1726407391).
 
-Third-party photography remains subject to its owners’ rights; the repository’s MIT licence covers code. Cormorant Garamond and DM Sans are self-hosted with their SIL Open Font License files. Botanical decorations, ribbon ornaments and favicon remain local SVG/CSS.
+Third-party photography remains subject to its owners’ rights; the repository’s MIT licence covers code. Cormorant Garamond and DM Sans are self-hosted with their SIL Open Font License files. Botanical decorations, the monogram and ribbon ornaments are rendered as inline SVG/CSS; the favicon loads from S3.
+
+Carousel responses include `width`, `height`, and `orientation` (`portrait`, `landscape`, `square`, or `unknown` for older records without dimensions). Frames use the image ratio and contain the whole preview without cropping.
+
+**Gallery → photo details → Delete** (also available in the list) removes the media record, guest assignments, original, preview, pending objects, and unfinished multipart uploads after confirmation. Storage cleanup failures retain the database record so deletion can be retried.

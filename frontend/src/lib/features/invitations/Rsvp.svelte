@@ -119,7 +119,7 @@
         <p>
           {t('We’ve reserved')}
           {session.guest.max_guests}
-          {t('places for your party.')}
+          {session.guest.max_guests === 1 ? t('place for you.') : t('places for your party.')}
         </p>
         {#if !editing && !loadingRsvp}
           <p>{t('Your reply has been saved. Thank you!')}</p>

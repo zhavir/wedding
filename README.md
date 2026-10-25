@@ -24,7 +24,7 @@ docker compose exec api python -m app.manage admin-user --username andrea
 
 Enter and confirm your own password (at least 14 characters), then open **http://localhost:5173/api/admin/**. There is no default admin password. `/admin` redirects to this interface. The old admin email-link login does not authenticate SQLAdmin.
 
-Create a name in **Guests**, select it and choose **Create invitations**, then edit its invitation and review the private link/email preview. Select invitation records and choose **Actions → Send invitation** to review and confirm delivery separately. See [the admin guide](docs/ADMIN.md) for password resets, bulk sending, session behaviour and production credential provisioning.
+Create a name and optional email in **Guests**, select it and choose **Create invitations**, then edit its invitation and review the private link/email preview. Select invitation records and choose **Actions → Send invitation** to review and confirm delivery separately. See [the admin guide](docs/ADMIN.md) for password resets, bulk sending, session behaviour and production credential provisioning.
 
 ## Real email and RSVP notifications
 
@@ -32,9 +32,9 @@ Follow [the SES setup guide](docs/EMAIL.md) to enable real delivery, select an I
 
 ## Edit content and images
 
-See the [content guide](docs/CONTENT.md). Frontend translations are grouped by section/component under `frontend/src/lib/locales/{en,it}/`. Email copy is editable in the admin database. The supplied reference images are bundled under `frontend/static/images/`; personal landing images can use the SST `LandingImages` bucket; see [image names, conversion and upload instructions](docs/ASSETS.md).
+See the [content guide](docs/CONTENT.md). Frontend translations are grouped by section/component under `frontend/src/lib/locales/{en,it}/`. Email copy is editable in the admin database. All landing photographs load by name from the SST `LandingImages` bucket; no website image files are bundled in the repository (test picture and video fixtures stay local); see [image names, conversion and upload instructions](docs/ASSETS.md).
 
-The countdown targets 20 May 2027 at 16:30 in Italy; the RSVP deadline is 30 April 2027. Review the contact email and hotel copy before changing published content. Story photography uses six optional S3 slots; the venue, ceremony and Akamaru reference pictures are bundled.
+The countdown targets 20 May 2027 at 16:30 in Italy; the RSVP deadline is 30 April 2027. Review the contact email and hotel copy before changing published content. Story photography uses six optional S3 slots; the venue, ceremony and Akamaru pictures also load from S3.
 
 ## Validation
 

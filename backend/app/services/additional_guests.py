@@ -3,7 +3,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
-from app.db.models import Invitation, Session
+from app.db.models import Guest, Invitation, Session
 from app.schemas import RSVP, InvitationCreate
 from app.services.invitations import create_invitation
 
@@ -18,7 +18,7 @@ async def sync_additional_guests(db, parent: Invitation, body: RSVP) -> list[str
         else {}
     )
     for child in children:
-        if child.email in desired or not child.active:
+        if child.guest.email in desired or not child.active:
             continue
         child.active = False
         await db.execute(
@@ -38,7 +38,9 @@ async def sync_additional_guests(db, parent: Invitation, body: RSVP) -> list[str
 
     pending = []
     for email, person in desired.items():
-        child = await db.scalar(select(Invitation).where(Invitation.email == email))
+        child = await db.scalar(
+            select(Invitation).where(Invitation.guest.has(Guest.email == email))
+        )
         if child and (child.id in ancestors or child.is_admin):
             raise HTTPException(422, "An additional guest must have their own email address.")
         if child is None:

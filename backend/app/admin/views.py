@@ -39,6 +39,7 @@ AUDIENCES = [
 
 class GuestForm(Form):
     name = StringField("Name", validators=[DataRequired()])
+    email = StringField("Email", validators=[Optional(), Email()])
     audience = SelectField("Audience", choices=AUDIENCES, default="guest")
 
 
@@ -47,25 +48,36 @@ class GuestAdmin(ModelView, model=Guest):
     icon = "fa-solid fa-users"
     form = GuestForm
     can_delete = can_export = False
-    column_list = [Guest.name, Guest.audience]
-    column_searchable_list = [Guest.name]
+    column_list = [Guest.name, Guest.email, Guest.audience]
+    column_searchable_list = [Guest.name, Guest.email]
     column_filters = [AllUniqueStringValuesFilter(Guest.audience)]
+    column_sortable_list = [Guest.name, Guest.email, Guest.audience]
 
     async def on_model_change(self, data, model, is_created, request):
         if data["audience"] not in dict(AUDIENCES):
             raise ValueError("Choose a supported audience.")
+        data["email"] = (data.get("email") or "").strip().casefold() or None
         if is_created:
             model.id = uuid.uuid7().hex
 
-    async def after_model_change(self, data, model, is_created, request):
-        # Keep the invitation's delivery snapshot in sync with the guest identity.
+    async def update_model(self, request, pk, data):
         async with sessions()() as db:
-            await db.execute(
-                update(Invitation)
-                .where(Invitation.guest_id == model.id)
-                .values(name=model.name, is_witness=model.audience == "witness")
-            )
+            guest = await db.get(Guest, pk)
+            if guest is None:
+                raise ValueError("Guest not found.")
+            await self.on_model_change(data, guest, False, request)
+            email = data["email"]
+            if email and await db.scalar(
+                select(Guest.id).where(Guest.email == email, Guest.id != pk)
+            ):
+                raise ValueError("This email already belongs to another guest.")
+            values = {"name": data["name"], "is_witness": data["audience"] == "witness"}
+            if guest.email != email:
+                values.update(email_status="draft", email_error=None, email_message_id=None)
+            guest.name, guest.email, guest.audience = data["name"], email, data["audience"]
+            await db.execute(update(Invitation).where(Invitation.guest_id == pk).values(**values))
             await db.commit()
+            return guest
 
     @action(
         name="create-invitations",
@@ -122,18 +134,16 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     can_export = False
     column_list = [
         Invitation.guest,
-        Invitation.email,
         Invitation.language,
         Invitation.active,
         Invitation.email_status,
         Invitation.attending,
+        Invitation.created_at,
     ]
-    column_searchable_list = [Invitation.name, Invitation.email]
-    column_sortable_list = [Invitation.name, Invitation.email, Invitation.created_at]
+    column_searchable_list = [Invitation.name]
     column_default_sort = (Invitation.created_at, True)
     column_details_list = [
         Invitation.guest,
-        Invitation.email,
         Invitation.language,
         Invitation.id,
         Invitation.active,
@@ -148,6 +158,14 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
         Invitation.response_guests,
         Invitation.witness_acceptance,
         Invitation.updated_at,
+    ]
+    column_sortable_list = [
+        Invitation.guest,
+        Invitation.language,
+        Invitation.active,
+        Invitation.email_status,
+        Invitation.attending,
+        Invitation.created_at,
     ]
     column_labels = {
         Invitation.guest: "Guest",
@@ -181,7 +199,6 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     ]
     form_columns = [
         Invitation.guest,
-        Invitation.email,
         Invitation.language,
         Invitation.max_guests,
         Invitation.active,
@@ -189,7 +206,6 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     form_overrides = {"language": SelectField}
     form_args = {
         "language": {"choices": [("en", "English"), ("it", "Italiano")]},
-        "email": {"validators": [Optional(), Email()]},
         "max_guests": {"default": 2, "validators": [NumberRange(min=1, max=12)]},
     }
 
@@ -216,7 +232,6 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
                 db,
                 InvitationCreate(
                     name=guest.name,
-                    email=data.get("email") or None,
                     language=data["language"],
                     max_guests=data["max_guests"],
                 ),
@@ -235,22 +250,10 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
                 raise ValueError("An invitation stays linked to its original guest.")
             values = InvitationCreate(
                 name=invite.guest.name,
-                email=data.get("email") or None,
                 language=data["language"],
                 max_guests=data["max_guests"],
             )
-            email = str(values.email).casefold() if values.email else None
-            if email and await db.scalar(
-                select(Invitation.id).where(Invitation.email == email, Invitation.id != pk)
-            ):
-                raise ValueError("This email already belongs to another invitation.")
-            if email != invite.email:
-                invite.email_status, invite.email_error = "draft", None
-            invite.email, invite.language, invite.max_guests = (
-                email,
-                values.language,
-                values.max_guests,
-            )
+            invite.language, invite.max_guests = values.language, values.max_guests
             invite.active = bool(data.get("active"))
             await db.commit()
             return invite
@@ -433,9 +436,20 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
     ]
     column_filters = [
         BooleanFilter(Photo.gallery_visible),
+        BooleanFilter(Photo.carousel_visible),
+        AllUniqueStringValuesFilter(Photo.content_type),
         AllUniqueStringValuesFilter(Photo.status),
         UploaderFilter(Photo.owner, title="Uploader", parameter_name="uploader"),
     ]
+    column_sortable_list = [
+        Photo.uploaded_at,
+        Photo.owner,
+        Photo.status,
+        Photo.content_type,
+        Photo.gallery_visible,
+        Photo.carousel_visible,
+    ]
+    column_default_sort = (Photo.uploaded_at, True)
     column_labels = {
         Photo.owner: "Uploaded by",
         Photo.guests: "Visible to guests",
@@ -513,7 +527,12 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
         ) and model.status != "complete":
             raise ValueError("Only successfully processed media can be made visible.")
 
-    can_delete = False
+    async def on_model_delete(self, model, request):
+        from app.services.photos import delete_photo_media
+
+        await asyncio.to_thread(delete_photo_media, model)
+
+    can_delete = True
     can_export = False
     column_list = [
         Photo.uploaded_at,
@@ -551,6 +570,11 @@ class MessageAdmin(ModelView, model=InvitationMessage):
         InvitationMessage.active,
     ]
     column_searchable_list = [InvitationMessage.text]
+    column_sortable_list = [
+        InvitationMessage.language,
+        InvitationMessage.audience,
+        InvitationMessage.active,
+    ]
 
     async def on_model_change(self, data, model, is_created, request):
         import uuid

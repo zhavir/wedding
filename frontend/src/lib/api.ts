@@ -14,6 +14,9 @@ export type Photo = {
   motion: string;
   id: string;
   caption: string;
+  width: number;
+  height: number;
+  orientation: 'portrait' | 'landscape' | 'square' | 'unknown';
   preview: string;
   original: string;
 };

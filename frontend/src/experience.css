@@ -1767,6 +1767,7 @@ body:has(.envelope-scene:not(.opened)) .site-header .header-date {
   }
   .site-header .header-date,
   .site-header.identity-revealed .header-date,
+  body:has(.envelope-scene:not(.opened)) .site-header .header-date,
   body:has(.envelope-scene:not(.opened)) .site-header.identity-revealed .header-date {
     position: absolute;
     left: calc(14px + var(--logo-width, 40px) + 16px);
@@ -1777,8 +1778,8 @@ body:has(.envelope-scene:not(.opened)) .site-header .header-date {
     max-width: none;
     overflow: visible;
     white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
+    opacity: clamp(0, calc(var(--identity-progress, 0) * 4), 1);
+    visibility: visible;
     transition: none;
     pointer-events: none;
   }

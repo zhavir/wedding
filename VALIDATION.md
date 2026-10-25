@@ -1,5 +1,28 @@
 # Validation status
 
+## 2026-10-25 — rebuilt stack and completed regression verification
+
+- `docker compose up --build -d --wait web` completed successfully. Init exited successfully; database, API, local AWS emulator and web became healthy. This resolves the earlier approval-limit verification blocker.
+- **122 backend tests passed** in the Docker test image, including video processing and the guest-email migration tests.
+- The complete browser run passed **74 of 76 tests**. Both failures were the same obsolete favicon assertion on desktop/mobile: without `PUBLIC_ASSET_URL`, the site intentionally omits the S3 favicon. Moved favicon expectations to the asset checks, covering configured asset URLs and unconfigured local placeholders. The affected experience/media suite then passed **20 of 20 tests**, including both previously failing tests. The entire suite was not repeated after this test-only correction.
+- Browser verification used local PostgreSQL, the AWS emulator and local picture/video fixtures. No production deployment, production migration, live S3 changes or real email delivery occurred. Diff whitespace checks and discovery of all 76 browser tests passed.
+
+## 2026-10-25 — guest email ownership and asset/layout cleanup
+
+- Email now belongs to Guest. Migration `0005_guest_email` preserves existing addresses and invitation identities before removing the Invitation email column. Guest email edits reset invitation delivery status; recovery, sending and additional-guest matching use the guest address.
+- API/init Docker images built successfully. A disposable PostgreSQL check passed fresh upgrade, schema parity, repeated upgrade and seed checks. Targeted backend reruns passed after fixing the migration test transaction; the final migration-preservation and existing-guest/+1 tests both passed. A complete backend suite has not been rerun since those fixes.
+- **20 desktop/mobile Playwright checks passed** against local Vite with mocked API and image responses, covering responsive layouts, envelopes, named assets and carousel proportions. Frontend checks, build, lint and formatting, plus Python Ruff/type checks passed.
+- Website photographs and favicon use configured S3 assets. Test-only `tests/browser/memory.png` and `memory.mp4` remain local; preview responses use the local PNG as a data URL. After restoring the PNG fixture, its loader passed and Playwright discovered all **76 tests**; browser execution was not repeated for this fixture-only adjustment.
+- The final local `docker compose up --build -d --wait web` was not executed because automatic approval review reached its usage limit. The running local stack has not been verified against the new schema. No production migration, deployment, S3 modification or real email delivery was performed.
+
+## 2026-10-24 — configurable photographs and gallery deletion
+
+- All landing photographs now use named objects under `PUBLIC_ASSET_URL`. Story captions and image names are configured per chapter and language; existing ceremony captions remain in section content and guest captions in Gallery admin. See `docs/ASSETS.md` for the complete object-name list.
+- Carousel APIs return dimensions and orientation; the frontend preserves image proportions without cropping. Gallery deletion cleans up S3 objects, unfinished multipart uploads and guest assignments.
+- **6 targeted Playwright checks passed** on desktop/mobile Chromium against a local Vite server with mocked API/image responses. Coverage includes portrait/landscape/square rendering, named asset URLs, singular/plural Italian seats, equal expanded-header insets with and without animation, and existing responsive chapter layout.
+- Backend: **117 passed, 2 failed**. Both failures occur because local `ffmpeg` is missing, before video/Live Photo processing can be tested. New orientation and admin deletion checks passed using SQLite and mocked AWS, including storage cleanup failure and unauthenticated access.
+- Frontend checks/build/lint, Python Ruff/type checks and diff whitespace checks passed. No deployment, live S3 upload/deletion, production data changes or email delivery was performed. Existing reference photos must be uploaded to the documented LandingImages keys before releasing the frontend if they are not already present.
+
 ## 2026-10-24 — complete desktop/mobile E2E regression
 
 - **72 of 72 Playwright tests passed** (36 desktop, 36 mobile; 3.6 minutes) against the existing local Docker stack with PostgreSQL and Floci. No tests were skipped.

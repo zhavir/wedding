@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { previewImage } from './media-fixtures';
+import { memoryImage } from './media-fixtures';
 import { test, expect } from '@playwright/test';
 
 test('upload supports multiple selection and desktop file drops', async ({ page }) => {
@@ -84,7 +87,7 @@ test('explicit pagination, load all and viewer navigation across pages', async (
     await route.fulfill({ json: {
       items: Array.from({ length: count }, (_, index) => ({
         id: `photo-${offset + index}`, caption: `Memory ${offset + index + 1}`,
-        preview: '/images/venue-garden.webp', original: '/original-download'
+        preview: previewImage, original: '/original-download'
       })),
       cursor: offset + count < 29 ? String(offset + count) : null
     } });
@@ -128,7 +131,7 @@ test('explicit pagination, load all and viewer navigation across pages', async (
 
 test('gallery accepts a mixed image and video batch', async ({ page }) => {
   await page.goto('/gallery#invite=DEMO-LOVE-2027');
-  await page.getByLabel('Choose photos and videos').setInputFiles(['tests/browser/memory.png', 'tests/browser/memory.mp4']);
+  await page.getByLabel('Choose photos and videos').setInputFiles([memoryImage, { name: 'memory.mp4', mimeType: 'video/mp4', buffer: readFileSync('tests/browser/memory.mp4') }]);
   const completions: string[] = [];
   page.on('request', request => {
     if (/\/api\/photos\/[^/]+\/complete$/.test(request.url())) completions.push(request.url());

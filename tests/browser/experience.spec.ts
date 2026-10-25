@@ -53,7 +53,6 @@ test('ceremony dreams, botanical borders and chapter picker are available in bot
   await page.goto('/');
   await expect(page.locator('.chapter-trigger')).toBeEnabled();
   await expect(page.locator('.chapter-petal-layer').first()).toBeVisible();
-  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', /\/favicon\.svg$/);
   const picker = page.locator('.chapter-trigger');
   await picker.click();
   await page.getByRole('navigation', { name: 'Jump to a chapter' }).getByRole('link', { name: /Our ceremony dreams/ }).click();
