@@ -20,8 +20,8 @@ templates = Environment(
 )
 
 
-async def content(language: str = "en", db: AsyncSession | None = None) -> dict:
-    wedding = deepcopy(CONTENT["it" if language == "it" else "en"])
+async def content(language: str = "it", db: AsyncSession | None = None) -> dict:
+    wedding = deepcopy(CONTENT["en" if language == "en" else "it"])
     wedding["contactEmail"] = settings().email_from
     return wedding
 
@@ -49,16 +49,16 @@ def render_email(
     return {
         "subject": wedding["email"]["subject"],
         "html": templates.get_template(
-            f"invitation_{'it' if invite.guest.language == 'it' else 'en'}.html"
+            f"invitation_{'en' if invite.guest.language == 'en' else 'it'}.html"
         ).render(
             w=wedding,
             guest=invite,
             link=url,
             short_code=short_code,
-            language=invite.guest.language or "en",
+            language=invite.guest.language or "it",
             logo_url=f"{settings().site_url.rstrip('/')}/monogram.png",
         ),
-        "text": f"{'Ciao' if invite.guest.language == 'it' else 'Dear'} {invite.name},\n\n{wedding['email']['intro']}\n\n{wedding['dateLabel']} · {wedding['venue']}\n\n{url}\n\nInvitation code / Codice invito: {short_code}\n\n{wedding['email']['footer']}",
+        "text": f"{'Dear' if invite.guest.language == 'en' else 'Ciao'} {invite.name},\n\n{wedding['email']['intro']}\n\n{wedding['dateLabel']} · {wedding['venue']}\n\n{url}\n\nInvitation code / Codice invito: {short_code}\n\n{wedding['email']['footer']}",
     }
 
 
@@ -90,7 +90,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
             invite,
             cipher().decrypt(access.encrypted_code.encode()).decode(),
             message_template=selected_message,
-            wedding=await content(invite.guest.language or "en", db),
+            wedding=await content(invite.guest.language or "it", db),
         )
         try:
             result = await asyncio.to_thread(deliver_email, invite.guest.email, message)

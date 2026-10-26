@@ -98,6 +98,7 @@
     transform: rotate(0) translateY(-0.4rem);
   }
   figcaption {
+    color: var(--color-olive);
     padding-top: 0.8rem;
     font:
       italic 0.85rem Georgia,

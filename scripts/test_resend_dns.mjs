@@ -18,7 +18,9 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null, e
     ResendDkim: 'p=' + 'A'.repeat(400),
     ResendRsend: 'rsend.example.net',
     ResendSend: 'send.example.net.',
-    ResendReceivingMx: '10 receive.example.net',
+    ImprovMxPrimaryMx: '10 mx1.improvmx.com',
+    ImprovMxSecondaryMx: '20 mx2.improvmx.com',
+    ImprovMxSpf: 'v=spf1 include:spf.improvmx.com ~all',
     ...overrides,
   };
   class SecretOutput {
@@ -75,7 +77,7 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null, e
   return { records, outputs, SecretOutput, zoneCalls, recordOptions };
 }
 
-test('DNS stage creates Resend records from secrets and splits long DKIM values', async () => {
+test('DNS stage creates outbound Resend and inbound ImprovMX records and splits long DKIM values', async () => {
   const { records, outputs, SecretOutput } = await dns();
   for (const [id, name, type] of [
     ['ResendDkimRecord', 'resend._domainkey', 'TXT'],
@@ -100,7 +102,10 @@ test('DNS stage creates Resend records from secrets and splits long DKIM values'
   assert.equal(mx.type, 'MX');
   assert.equal(mx.ttl, 300);
   assert.ok(mx.records[0] instanceof SecretOutput);
-  assert.equal(mx.records[0].value, '10 receive.example.net');
+  assert.deepEqual(Array.from(mx.records, record => record.value), [
+    '10 mx1.improvmx.com', '20 mx2.improvmx.com',
+  ]);
+  assert.equal(records.get('ImprovMxSpfRecord').records[0].value, 'v=spf1 include:spf.improvmx.com ~all');
   assert.ok(!JSON.stringify(outputs).includes('Resend'));
   assert.ok(records.has('EmailVerification') && records.has('EmailDmarc'));
 });
@@ -111,20 +116,24 @@ test('short DKIM values remain unchanged', async () => {
 });
 
 test('missing or malformed DNS values fail without echoing their contents', async () => {
-  for (const overrides of [
+  for (const [index, overrides] of [
     { ResendDkim: undefined }, { ResendDkim: '' },
     { ResendDkim: 'private-value\n' }, { ResendDkim: '"private-value"' },
     { ResendRsend: 'https://private-value.example' }, { ResendSend: '' },
-    { ResendReceivingMx: undefined }, { ResendReceivingMx: '' },
-    { ResendReceivingMx: 'receive.private-value.example' },
-    { ResendReceivingMx: '65536 receive.private-value.example' },
-    { ResendReceivingMx: '10 https://private-value.example' },
-    { ResendReceivingMx: '10 receive.private-value.example\n' },
-  ]) {
+    { ImprovMxPrimaryMx: undefined }, { ImprovMxPrimaryMx: '' },
+    { ImprovMxPrimaryMx: 'receive.private-value.example' },
+    { ImprovMxPrimaryMx: '65536 receive.private-value.example' },
+    { ImprovMxPrimaryMx: '10 https://private-value.example' },
+    { ImprovMxSecondaryMx: '10 receive.private-value.example\n' },
+    { ImprovMxSecondaryMx: undefined }, { ImprovMxSecondaryMx: '' },
+    { ImprovMxSpf: undefined }, { ImprovMxSpf: '' },
+    { ImprovMxSpf: 'v=spf1 include:private-value.example\n ~all' },
+    { ImprovMxSpf: 'v=spf1 include:private-value.example' },
+  ].entries()) {
     await assert.rejects(dns(overrides), (error) => {
       assert.ok(!error.message.includes('private-value'));
       return true;
-    });
+    }, `Invalid DNS fixture ${index} must be rejected`);
   }
 });
 
@@ -183,6 +192,20 @@ test('adopts Resend records after a partially successful deployment', async () =
   ]);
   assert.equal(recordOptions.get('ResendDkimRecord').import, 'Z123_resend._domainkey.example.com_TXT');
   assert.equal(recordOptions.get('ResendReceivingMxRecord').import, 'Z123_example.com_MX');
+});
+
+test('SPF updates preserve unrelated apex TXT records', async () => {
+  const { records, recordOptions } = await dns({}, [existingZone], null, [{
+    name: 'example.com.', type: 'TXT', resourceRecords: [
+      { value: '"verification=keep-me"' },
+      { value: '"v=spf1 include:old.example.net ~all"' },
+    ],
+  }]);
+  const spf = records.get('ImprovMxSpfRecord');
+  assert.equal(recordOptions.get('ImprovMxSpfRecord').import, 'Z123_example.com_TXT');
+  assert.equal(spf.records[0], 'verification=keep-me');
+  assert.equal(spf.records[1].value, 'v=spf1 include:spf.improvmx.com ~all');
+  assert.equal(spf.records.length, 2);
 });
 
 test('record discovery errors and routed records fail without creating replacements', async () => {

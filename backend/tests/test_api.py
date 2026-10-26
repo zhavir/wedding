@@ -860,7 +860,7 @@ def test_confirmation_calendar_and_delivery_failure(client, aws):
 
     assert payload == calendar_attachment("en")
     calendar = payload.decode()
-    assert "DTSTART:20270520T143000Z\r\n" in calendar
+    assert "DTSTART:20270520T140000Z\r\n" in calendar
     assert "DTEND:20270520T220000Z\r\n" in calendar
     assert "#invite=" not in calendar
     assert all(len(line.encode()) <= 75 for line in calendar.split("\r\n"))
@@ -973,12 +973,14 @@ def test_video_and_live_photo_originals_are_private(client, aws, tmp_path, paire
         assert upload["motion_upload"]
     storage.get_object.side_effect = objects
     assert client.post(f"/api/photos/{upload['id']}/complete").status_code == 200
-    owner = client.get("/api/session").json()["id"]
     stored = {call.kwargs["Key"]: call.kwargs["Body"] for call in storage.put_object.call_args_list}
-    assert stored[f"originals/{owner}/{upload['id']}"] == original
+    assert (
+        stored[f"originals/guests/Guest/{upload['id']}-memory{'.jpg' if paired else '.mp4'}"]
+        == original
+    )
     if paired:
-        assert stored[f"originals/{owner}/{upload['id']}-motion"] == video
-    with Image.open(io.BytesIO(stored[f"previews/{owner}/{upload['id']}.webp"])) as preview:
+        assert stored[f"originals/guests/Guest/{upload['id']}-motion-memory.mp4"] == video
+    with Image.open(io.BytesIO(stored[f"previews/guests/Guest/{upload['id']}.webp"])) as preview:
         assert preview.format == "WEBP"
     assert client.get("/api/photos").json()["items"] == []
 
@@ -1004,6 +1006,9 @@ def test_heic_original_and_webp_preview(client, aws):
     storage.get_object.return_value = {"ContentLength": len(data), "Body": io.BytesIO(data)}
     assert client.post(f"/api/photos/{upload['id']}/complete").status_code == 200
     assert storage.put_object.call_args_list[0].kwargs["Body"] == data
+    assert storage.put_object.call_args_list[0].kwargs["Key"] == (
+        f"originals/guests/Guest/{upload['id']}-live.heic"
+    )
 
 
 def test_wrong_video_content_and_incomplete_live_pair_rejected(client, aws):

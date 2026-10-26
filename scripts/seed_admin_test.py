@@ -33,6 +33,8 @@ async def main():
             guest = await db.get(Invitation, link.invitation_id)
             if guest:
                 guest.uploads = 0
+                # Normalize demo records created before the seed language was explicit.
+                guest.guest.language = "en"
         accounts = []
         password_hash = await asyncio.to_thread(hash_password, password)
         for index in range(64):

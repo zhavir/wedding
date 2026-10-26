@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('invitation opens, chapter links skip ahead, and the footer ties again', async ({ page }, testInfo) => {
   await page.goto('/');
@@ -149,7 +149,7 @@ test('save the date downloads the confirmed wedding event in both languages', as
     expect(download.suggestedFilename()).toBe('andrea-sara-wedding.ics');
     const {readFile} = await import('node:fs/promises');
     const data = await readFile((await download.path())!, 'utf8');
-    expect(data).toContain('DTSTART:20270520T143000Z');
+    expect(data).toContain('DTSTART:20270520T140000Z');
     expect(data).toContain('DTEND:20270520T220000Z');
     expect(data).toContain('Villa Valentina');
   }

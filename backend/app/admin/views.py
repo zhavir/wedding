@@ -51,7 +51,7 @@ class GuestForm(Form):
     name = StringField("Name", validators=[DataRequired()])
     email = StringField("Email", validators=[Optional(), Email()])
     language = SelectField(
-        "Language", choices=[("en", "English"), ("it", "Italiano")], default="en"
+        "Language", choices=[("en", "English"), ("it", "Italiano")], default="it"
     )
     audience = SelectField("Audience", choices=AUDIENCES, default="guest")
 
@@ -397,7 +397,7 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
                     invite,
                     code,
                     message_template=selected_message,
-                    wedding=await content(invite.guest.language or "en", db),
+                    wedding=await content(invite.guest.language or "it", db),
                 )["html"],
                 headers={
                     "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; sandbox allow-popups"
@@ -615,7 +615,7 @@ class PhotoAdmin(InvitationNamesMixin, model=Photo):
 
 class MessageForm(Form):
     language = SelectField(
-        "Language", choices=[("en", "English"), ("it", "Italiano")], default="en"
+        "Language", choices=[("en", "English"), ("it", "Italiano")], default="it"
     )
     audience = SelectField("Invitation type", choices=AUDIENCES)
     text = TextAreaField(

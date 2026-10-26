@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('chapters keep their measure, photos fit, and the invitation never scales', async ({ page }, info) => {
   await page.route('**/api/session', route => route.fulfill({ status: 401, json: {} }));

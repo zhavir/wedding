@@ -1,6 +1,6 @@
 import { memoryImage } from './media-fixtures';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { openReplyForm } from './rsvp-form';
 
 test('landing page, invitation and RSVP', async ({ page, context }) => {

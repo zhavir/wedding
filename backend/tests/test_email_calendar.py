@@ -33,6 +33,16 @@ def test_italian_email_grammar_and_website_identity(count):
     assert "https://example.test/#invite=private" in message["html"]
 
 
+def test_email_defaults_to_italian_when_language_is_missing():
+    wedding = asyncio.run(content())
+    assert wedding == asyncio.run(content("it"))
+    invite = Invitation(name="Alex", guest=Guest(), max_guests=2, is_witness=False)
+    message = render_email(invite, wedding=wedding, link="https://example.test/")
+    assert "Siete invitati" in message["subject"]
+    assert 'lang="it"' in message["html"]
+    assert message["text"].startswith("Ciao Alex")
+
+
 def test_confirmation_same_for_all_roles_and_calendar_same_for_all_guests():
     from app.schemas import RSVP
     from app.services.confirmations import queue_confirmation

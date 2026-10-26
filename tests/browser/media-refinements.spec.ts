@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const images = [
   { id: 'portrait', width: 600, height: 900, orientation: 'portrait' },

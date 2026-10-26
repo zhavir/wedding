@@ -1,6 +1,6 @@
 import { memoryImage } from './media-fixtures';
 import { readFileSync } from 'node:fs';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { adminCredentials, authenticatorCode } from './admin-auth';
 
 test('SQLAdmin credentials, record creation and sending action', async ({ page, browser }) => {
@@ -39,6 +39,9 @@ test('SQLAdmin credentials, record creation and sending action', async ({ page, 
   const guestContext = await browser.newContext({ baseURL: process.env.WEB_URL || 'http://localhost:5173' });
   const guestPage = await guestContext.newPage();
   await guestPage.goto('/#rsvp');
+  await guestPage.waitForLoadState('networkidle');
+  await expect(guestPage.locator('html')).toHaveAttribute('lang', 'it');
+  await guestPage.getByRole('button', { name: 'English', exact: true }).click();
   await guestPage.getByLabel('Your invitation code').fill(code!);
   await guestPage.getByRole('button', { name: 'Open my invitation ↗' }).click();
   await guestPage.getByRole('button', { name: 'English', exact: true }).click();

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('static content renders while the authenticated carousel request is pending, then scrolls approved previews', async ({ page }) => {
   let calls = 0;

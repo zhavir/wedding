@@ -87,6 +87,7 @@ export default $config({
         if (
           !/^(?:[0-9]{1,5}) (?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?$/i.test(value) ||
           Number(value.split(" ", 1)[0]) > 65535 ||
+          value.trim() !== value ||
           value.length > 260
         ) {
           throw new Error(
@@ -131,6 +132,7 @@ export default $config({
           improvMxSpf.value.apply((value) => {
             if (
               !/^v=spf1\s+[^\r\n"\\]+\s+[~?+-]all$/i.test(value) ||
+              /[\r\n]/.test(value) ||
               value.length > 255 ||
               value.trim() !== value
             ) {

@@ -73,7 +73,10 @@ async def seed_local() -> None:
         ]:
             if not await db.get(InvitationLink, digest(token)):
                 await create_invitation(
-                    db, InvitationCreate(name=name, email=email), is_admin=admin, token=token
+                    db,
+                    InvitationCreate(name=name, email=email, language="en"),
+                    is_admin=admin,
+                    token=token,
                 )
         await db.commit()
 

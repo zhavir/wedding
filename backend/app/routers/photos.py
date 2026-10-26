@@ -10,7 +10,7 @@ from app.core.security import DB, Guest
 from app.db.models import Invitation, Photo, PhotoGuest
 from app.schemas import FinishUpload, Upload
 from app.services.aws import s3
-from app.services.photos import media_key, photo_preview, photo_view, process_photo
+from app.services.photos import media_key, photo_preview, photo_view, process_photo, upload_prefix
 from app.services.uploads import finish_targets, part_url, start_target
 
 router = APIRouter(prefix="/photos")
@@ -37,7 +37,7 @@ async def begin_upload(body: Upload, invite: Guest, db: DB):
     photo = Photo(
         id=uuid.uuid7().hex,
         owner=invite.id,
-        storage_prefix=f"{invite.id}/",
+        storage_prefix=upload_prefix(invite.name),
         uploader_name=invite.name,
         original_filename=body.filename,
         uploaded_at=int(time.time()),

@@ -90,6 +90,7 @@
     display: block;
   }
   figcaption {
+    color: var(--color-olive);
     box-sizing: border-box;
     height: 3.6rem;
     flex: none;

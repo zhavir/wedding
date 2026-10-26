@@ -4,10 +4,10 @@ repos:
     hooks:
       - id: monogram-png
         name: Generate monogram PNG
-        entry: convert -background none -density 288 frontend/static/monogram.svg -resize 360x360 frontend/static/monogram.png
+        entry: uv run --frozen --no-sync --package wedding-api python scripts/render_monogram.py
         language: system
         pass_filenames: false
-        files: ^frontend/static/monogram\.svg$
+        files: ^(frontend/static/monogram\.(svg|png)|scripts/render_monogram\.py)$
         priority: 90
 
       - id: pyproject-format

@@ -126,7 +126,7 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
             invite,
             code,
             link=f"{settings().site_url.rstrip('/')}/#invite={token}",
-            wedding=await content(invite.guest.language or "en", db),
+            wedding=await content(invite.guest.language or "it", db),
         )
         message["subject"] = "Your replacement invitation / Il tuo nuovo invito"
         message["text"] += (

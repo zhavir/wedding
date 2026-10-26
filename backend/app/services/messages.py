@@ -30,7 +30,7 @@ async def invitation_message(db: AsyncSession, invite: Invitation) -> str | None
             select(InvitationMessage)
             .where(
                 InvitationMessage.active.is_(True),
-                InvitationMessage.language == (invite.guest.language or "en"),
+                InvitationMessage.language == (invite.guest.language or "it"),
                 InvitationMessage.audience == audience,
             )
             .order_by(InvitationMessage.id)

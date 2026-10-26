@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { previewImage } from './media-fixtures';
 import { memoryImage } from './media-fixtures';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('upload supports multiple selection and desktop file drops', async ({ page }) => {
   await page.goto('/gallery#invite=DEMO-LOVE-2027');

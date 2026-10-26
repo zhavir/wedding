@@ -11,6 +11,11 @@ npx sst secret set ResendDkim --stage production-dns
 npx sst secret set ResendRsend --stage production-dns
 npx sst secret set ResendSend --stage production-dns
 npx sst secret set ResendReceivingMx --stage production-dns
+
+# for forwarding the email https://app.improvmx.com/
+npx sst secret set ImprovMxPrimaryMx --stage production-dns
+npx sst secret set ImprovMxSecondaryMx --stage production-dns
+npx sst secret set ImprovMxSpf --stage production-dns
 ```
 
 | SST secret | Record name relative to `SITE_DOMAIN` | Type |
@@ -107,7 +112,7 @@ Open the invitation detail page and inspect **email_error**. Rejections record a
 
 Select **Witness** as the guest audience. The selected language is used for a dedicated witness email and the guest sees a witness-role confirmation in the RSVP form. Saved witness answers appear on the invitation.
 
-After accepting, the guest receives a thank-you email and `andrea-sara-wedding.ics`, with the confirmed ceremony start at 16:30 Europe/Rome and midnight finish. It uses the same event UID as the public calendar download. Edit calendar event details in `frontend/static/calendar/wedding-{en,it}.ics` and confirmation wording in `backend/app/services/email_content.py`. Resend receives the calendar as a Base64 attachment. Delivery states remain in the internal confirmation-email table.
+After accepting, the guest receives a thank-you email and `andrea-sara-wedding.ics`, with arrival at 16:00 Europe/Rome and midnight finish. The ceremony starts at 16:30. It uses the same event UID as the public calendar download. Edit calendar event details in `frontend/static/calendar/wedding-{en,it}.ics` and confirmation wording in `backend/app/services/email_content.py`. Resend receives the calendar as a Base64 attachment. Delivery states remain in the internal confirmation-email table.
 
 Identical replies and dietary/message edits do not resend the confirmation. A new acceptance after declining, or an accepted reply using a different email, sends a new confirmation. Saving the RSVP succeeds even when mail delivery fails. The UI locks a saved form until a full page reload, including navigation away and back.
 
@@ -135,7 +140,7 @@ The website's `/monogram.svg` is the source of the email's `/monogram.png`. To r
 the email-compatible raster after changing the logo:
 
 ```sh
-convert -background none -density 288 frontend/static/monogram.svg -resize 360x360 frontend/static/monogram.png
+uv run --frozen --package wedding-api python scripts/render_monogram.py
 ```
 
 The two static files in `frontend/static/calendar/wedding-{en,it}.ics` are the only calendar

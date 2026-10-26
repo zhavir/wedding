@@ -1,8 +1,10 @@
 import contextlib
 import hashlib
 import io
+import re
 import subprocess
 import warnings
+from pathlib import PurePosixPath
 
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
@@ -20,8 +22,35 @@ register_heif_opener()
 Image.MAX_IMAGE_PIXELS = 60_000_000
 
 
+def upload_prefix(name: str) -> str:
+    folder = re.sub(r"[^\w-]+", "-", name, flags=re.UNICODE).strip("-_")[:56]
+    return f"guests/{folder or 'guest'}/"
+
+
 def media_key(photo: Photo, kind: str, suffix: str = "") -> str:
-    return f"{kind}/{photo.storage_prefix or ''}{photo.id}{suffix}"
+    key = f"{kind}/{photo.storage_prefix or ''}{photo.id}{suffix}"
+    # Existing rows retain their original keys, including unfinished uploads.
+    if not (photo.storage_prefix or "").startswith("guests/") or kind != "originals":
+        return key
+    if suffix == "-motion" and not photo.motion_content_type:
+        return key
+    filename = PurePosixPath(photo.original_filename.replace("\\", "/")).name
+    filename = re.sub(r"[^\w. -]+", "_", filename).strip(" .") or "upload"
+    extensions = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/heic": ".heic",
+        "image/heif": ".heif",
+        "video/mp4": ".mp4",
+        "video/quicktime": ".mov",
+        "video/webm": ".webm",
+    }
+    if suffix == "-motion":
+        filename = f"{PurePosixPath(filename).stem}{extensions[photo.motion_content_type]}"
+    elif not PurePosixPath(filename).suffix:
+        filename += extensions[photo.content_type]
+    return f"{key}-{filename}"
 
 
 def inspect_remote_video(photo: Photo, motion: bool = False):

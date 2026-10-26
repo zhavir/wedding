@@ -49,7 +49,7 @@ async def sync_additional_guests(db, parent: Invitation, body: RSVP) -> list[str
                 InvitationCreate(
                     name=person.name,
                     email=person.email,
-                    language="it" if parent.guest.language == "it" else "en",
+                    language="en" if parent.guest.language == "en" else "it",
                     max_guests=1,
                 ),
             )

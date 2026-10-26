@@ -117,7 +117,7 @@ def participant_copy(wedding: dict, language: str, count: int) -> dict:
     from copy import deepcopy
 
     result = deepcopy(wedding)
-    if language == "it" and count > 1:
+    if language != "en" and count > 1:
         for section, values in ITALIAN_PLURAL.items():
             result[section].update(values)
     return result

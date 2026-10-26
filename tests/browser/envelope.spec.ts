@@ -1,5 +1,5 @@
 import { previewImage } from './media-fixtures';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test('envelope grows, opens, releases the same invitation upward and reverses continuously', async ({ page }, info) => {
   await page.route('**/api/session', route => route.fulfill({ status: 401, json: { detail: 'Not authenticated' } }));

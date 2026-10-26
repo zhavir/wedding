@@ -49,6 +49,9 @@ docker compose --profile test run --rm integration
 
 For host development with the required Node/Python versions:
 
+The `monogram-png` hook renders the SVG with `scripts/render_monogram.py`
+and the Python CairoSVG development dependency installed by `uv sync`.
+
 ```sh
 uv sync --frozen --all-packages --all-groups
 npm ci

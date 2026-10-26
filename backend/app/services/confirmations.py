@@ -20,7 +20,7 @@ from app.services.mail_transport import EmailRejected, EmailUncertain, send_mess
 async def render_confirmation(
     invite: Invitation, participant_count: int, db: AsyncSession | None = None
 ) -> dict[str, str]:
-    wedding = await content(invite.guest.language or "en", db)
+    wedding = await content(invite.guest.language or "it", db)
     wedding = participant_copy(wedding, invite.guest.language, participant_count)
     copy = wedding["confirmationEmail"]
     intro = copy["intro"]
@@ -33,7 +33,7 @@ async def render_confirmation(
             copy=copy,
             intro=intro,
             guest=invite,
-            language=invite.guest.language or "en",
+            language=invite.guest.language or "it",
             site_url=settings().site_url,
             logo_url=f"{settings().site_url.rstrip('/')}/monogram.png",
         ),
@@ -63,7 +63,7 @@ def calendar_attachment(language: str) -> bytes:
     assets = Path(__file__).resolve().parents[1] / "assets"
     if not assets.is_dir():
         assets = Path(__file__).resolve().parents[3] / "frontend" / "static" / "calendar"
-    return (assets / f"wedding-{'it' if language == 'it' else 'en'}.ics").read_bytes()
+    return (assets / f"wedding-{'en' if language == 'en' else 'it'}.ics").read_bytes()
 
 
 def deliver_confirmation(item: ConfirmationEmail, language: str):

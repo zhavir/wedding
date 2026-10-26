@@ -1,5 +1,16 @@
 # Validation status
 
+## 2026-10-26 — Italian defaults, gallery storage and complete regressions
+
+- **181 backend tests passed** in Docker against the current source, including video/Live Photo processing, readable original storage keys, calendar attachments, Italian email defaults and existing-upload compatibility.
+- **82 of 82 browser tests passed** (41 desktop + 41 mobile, no skips) against the rebuilt local PostgreSQL/Floci stack. English-copy flows now select English explicitly; separate checks retain coverage of the Italian default, language persistence and matching story/carousel caption colors. Fresh SQLAdmin guest contexts explicitly switch from Italian before using English selectors.
+- Calendar expectations match arrival at 16:00 Europe/Rome; ceremony remains at 16:30. Both static calendar files retain CRLF line endings for downloads and email attachments.
+- **23 release-script tests passed**. DNS fixtures now cover inbound ImprovMX records alongside outbound Resend records, preserving unrelated TXT records and rejecting multiline/whitespace-contaminated values.
+- Local PostgreSQL/S3 integration passed, including multipart video, private originals, byte integrity, previews and pagination. PostgreSQL fresh upgrade, schema parity, repeated upgrade and seeds passed.
+- The monogram hook now uses `scripts/render_monogram.py` and the locked CairoSVG development dependency. Regeneration is deterministic and produces a transparent 360 × 360 PNG.
+- All repository hooks passed, including Ruff, Python types, frontend lint/format/translation/Svelte checks and workflow syntax. Infrastructure TypeScript, actionlint, frontend production build, local web/API rebuild and production Lambda image build passed. The existing carousel CSS line-clamp warning remains.
+- These checks used local services and mocked AWS. No production deployment or real email delivery was performed.
+
 ## 2026-10-26 — admin navigation, cascade deletion and runtime permissions
 
 - **157 backend tests passed** in Docker. After the final navigation-template and database-grant changes, all **12 admin regressions** and **8 runtime-role/bootstrap tests** passed again against the current source.

@@ -8,6 +8,8 @@ test("switch language, preserve form input and remember choice", async ({
   await expect(
     page.getByRole("heading", { name: "Andrea & Sara", exact: true }).first(),
   ).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "it");
+  await page.getByRole("button", { name: "English", exact: true }).click();
   await page.getByLabel("Your invitation code").fill("NOT-SUBMITTED");
   await page.getByRole("button", { name: "Italiano", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "it");

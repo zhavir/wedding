@@ -72,6 +72,8 @@ For local Docker preview, put `PUBLIC_ASSET_URL=https://YOUR-LANDING-BUCKET-URL`
 
 ## Guest gallery and carousel
 
+New gallery uploads store private originals at `originals/guests/<guest-name>/<upload-id>-<original-filename>`, retaining the original extension. Guest names are sanitized for folder use; upload IDs prevent collisions. Files without an extension receive one based on their media type. Existing uploads retain their stored paths and remain accessible.
+
 Upload guest media through `/gallery#upload`. In **Gallery**, select completed media and use **Make visible in gallery** or **Make visible in carousel**. The flags are independent; the carousel includes still photos only. Open an image's detail page to check or uncheck either flag and individual **Visible to guests** checkboxes, then **Save visibility**. No selected guests means every authenticated guest can see it; otherwise only the selected guest identities can see it in either feed.
 
 Signed URLs grant temporary access to individual private objects. Removing visibility blocks future API results but does not revoke links already issued; those expire after at most one hour. Never put guest originals into LandingImages.

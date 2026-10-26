@@ -1,5 +1,5 @@
 export type Locale = 'en' | 'it';
-export const language = $state<{ current: Locale }>({ current: 'en' });
+export const language = $state<{ current: Locale }>({ current: 'it' });
 const sections = import.meta.glob('./locales/*/ui/*.json', { eager: true, import: 'default' });
 const messages: Record<Locale, Record<string, string>> = { en: {}, it: {} };
 for (const [path, copy] of Object.entries(sections)) {
@@ -27,15 +27,9 @@ export function restoreLanguage() {
   try {
     saved = localStorage.getItem('wedding-language');
   } catch {
-    /* Use browser language. */
+    /* Use Italian by default. */
   }
-  setLanguage(
-    saved === 'it' || saved === 'en'
-      ? saved
-      : navigator.language.toLowerCase().startsWith('it')
-        ? 'it'
-        : 'en'
-  );
+  setLanguage(saved === 'it' || saved === 'en' ? saved : 'it');
 }
 
 export function tp(
