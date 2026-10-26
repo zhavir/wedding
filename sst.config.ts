@@ -30,6 +30,32 @@ export default $config({
       const resendDkim = new sst.Secret("ResendDkim");
       const resendRsend = new sst.Secret("ResendRsend");
       const resendSend = new sst.Secret("ResendSend");
+      const resendReceivingMx = new sst.Secret("ResendReceivingMx");
+      new aws.route53.Record("ResendReceivingMxRecord", {
+        zoneId: zone.zoneId,
+        name: domain,
+        type: "MX",
+        ttl: 300,
+        records: [
+          resendReceivingMx.value.apply((value) => {
+            const match =
+              /^(\d{1,5}) ((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?)$/i.exec(
+                value,
+              );
+            if (
+              !match ||
+              Number(match[1]) > 65535 ||
+              match[2].length > 254 ||
+              value.trim() !== value
+            ) {
+              throw new Error(
+                "ResendReceivingMx must contain an MX priority and DNS hostname, separated by one space.",
+              );
+            }
+            return value;
+          }),
+        ],
+      });
       new aws.route53.Record("ResendDkimRecord", {
         zoneId: zone.zoneId,
         name: `resend._domainkey.${domain}`,

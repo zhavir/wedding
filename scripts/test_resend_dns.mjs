@@ -15,6 +15,7 @@ async function dns(overrides = {}) {
     ResendDkim: 'p=' + 'A'.repeat(400),
     ResendRsend: 'rsend.example.net',
     ResendSend: 'send.example.net.',
+    ResendReceivingMx: '10 receive.example.net',
     ...overrides,
   };
   class SecretOutput {
@@ -68,6 +69,13 @@ test('DNS stage creates Resend records from secrets and splits long DKIM values'
   assert.equal(chunks.join(''), 'p=' + 'A'.repeat(400));
   assert.equal(records.get('ResendRsendRecord').records[0].value, 'rsend.example.net');
   assert.equal(records.get('ResendSendRecord').records[0].value, 'send.example.net.');
+  const mx = records.get('ResendReceivingMxRecord');
+  assert.equal(mx.zoneId, 'zone-id');
+  assert.equal(mx.name, 'example.com');
+  assert.equal(mx.type, 'MX');
+  assert.equal(mx.ttl, 300);
+  assert.ok(mx.records[0] instanceof SecretOutput);
+  assert.equal(mx.records[0].value, '10 receive.example.net');
   assert.ok(!JSON.stringify(outputs).includes('Resend'));
   assert.ok(records.has('EmailVerification') && records.has('EmailDmarc'));
 });
@@ -82,6 +90,11 @@ test('missing or malformed DNS values fail without echoing their contents', asyn
     { ResendDkim: undefined }, { ResendDkim: '' },
     { ResendDkim: 'private-value\n' }, { ResendDkim: '"private-value"' },
     { ResendRsend: 'https://private-value.example' }, { ResendSend: '' },
+    { ResendReceivingMx: undefined }, { ResendReceivingMx: '' },
+    { ResendReceivingMx: 'receive.private-value.example' },
+    { ResendReceivingMx: '65536 receive.private-value.example' },
+    { ResendReceivingMx: '10 https://private-value.example' },
+    { ResendReceivingMx: '10 receive.private-value.example\n' },
   ]) {
     await assert.rejects(dns(overrides), (error) => {
       assert.ok(!error.message.includes('private-value'));

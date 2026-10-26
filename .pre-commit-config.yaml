@@ -2,6 +2,14 @@ minimum_pre_commit_version: '3.2.0'
 repos:
   - repo: local
     hooks:
+      - id: monogram-png
+        name: Generate monogram PNG
+        entry: convert -background none -density 288 frontend/static/monogram.svg -resize 360x360 frontend/static/monogram.png
+        language: system
+        pass_filenames: false
+        files: ^frontend/static/monogram\.svg$
+        priority: 90
+
       - id: pyproject-format
         name: pyproject.toml format
         entry: uv run --frozen --no-sync --package wedding-api pyproject-fmt
