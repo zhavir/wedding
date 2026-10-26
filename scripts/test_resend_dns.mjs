@@ -10,9 +10,10 @@ const source = ts.transpileModule(readFileSync('sst.config.ts', 'utf8'), {
 
 // Evaluate the DNS branch without AWS access or real secret values.
 const existingZone = { zoneId: 'Z123', name: 'example.com.', privateZone: false, nameServers: ['ns.example.net'] };
-async function dns(overrides = {}, zones = [existingZone], lookupError = null) {
+async function dns(overrides = {}, zones = [existingZone], lookupError = null, existingRecords = [], recordsError = null) {
   const zoneCalls = [];
   const records = new Map();
+  const recordOptions = new Map();
   const values = {
     ResendDkim: 'p=' + 'A'.repeat(400),
     ResendRsend: 'rsend.example.net',
@@ -28,6 +29,7 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null) {
     exports: {},
     process: { env: { SITE_DOMAIN: 'EXAMPLE.COM' } },
     $config: (config) => config,
+    $output: (value) => new SecretOutput(value),
     $app: { stage: 'production-dns' },
     $interpolate: (strings, ...args) => String.raw({ raw: strings }, ...args),
     sst: { Secret: class {
@@ -52,7 +54,15 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null) {
         getZone: async (args) => {
           return zones.find((zone) => zone.zoneId === args.zoneId);
         },
-        Record: class { constructor(name, args) { records.set(name, args); } },
+        getRecords: async ({ zoneId }) => {
+          assert.ok(zones.some((zone) => zone.zoneId === zoneId));
+          if (recordsError) throw recordsError;
+          return { resourceRecordSets: existingRecords };
+        },
+        Record: class { constructor(name, args, options) {
+          records.set(name, args);
+          recordOptions.set(name, options);
+        } },
       },
       ses: {
         DomainIdentity: class { domain = 'example.com'; verificationToken = 'legacy'; arn = 'legacy'; },
@@ -62,7 +72,7 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null) {
   };
   runInNewContext(source, sandbox);
   const outputs = await sandbox.exports.default.run();
-  return { records, outputs, SecretOutput, zoneCalls };
+  return { records, outputs, SecretOutput, zoneCalls, recordOptions };
 }
 
 test('DNS stage creates Resend records from secrets and splits long DKIM values', async () => {
@@ -147,4 +157,38 @@ test('returns the existing zone and its nameservers', async () => {
   assert.equal(zoneCalls[0].options.import, 'Z123');
   assert.equal(outputs.hostedZoneId, 'Z123');
   assert.deepEqual(outputs.nameservers, ['ns.example.net']);
+});
+
+test('adopts existing SES and DMARC records without overwriting their values', async () => {
+  const existingRecords = [
+    { name: '_amazonses.example.com.', type: 'TXT' },
+    ...['one', 'two', 'three'].map((token) => ({ name: `${token}._domainkey.example.com.`, type: 'CNAME' })),
+    { name: '_DMARC.EXAMPLE.COM.', type: 'TXT' },
+    { name: 'www.example.com.', type: 'A' },
+  ];
+  const { records, recordOptions } = await dns({}, [existingZone], null, existingRecords);
+  for (const id of ['EmailVerification', 'EmailDkim0', 'EmailDkim1', 'EmailDkim2', 'EmailDmarc']) {
+    const args = records.get(id);
+    assert.equal(recordOptions.get(id).import, `Z123_${args.name}_${args.type}`);
+    assert.equal(args.allowOverwrite, undefined);
+  }
+  assert.equal(recordOptions.get('ResendDkimRecord').import, undefined);
+  assert.ok(![...records.values()].some((args) => args.name === 'www.example.com'));
+});
+
+test('adopts Resend records after a partially successful deployment', async () => {
+  const { recordOptions } = await dns({}, [existingZone], null, [
+    { name: 'resend._domainkey.example.com.', type: 'TXT' },
+    { name: 'example.com.', type: 'MX' },
+  ]);
+  assert.equal(recordOptions.get('ResendDkimRecord').import, 'Z123_resend._domainkey.example.com_TXT');
+  assert.equal(recordOptions.get('ResendReceivingMxRecord').import, 'Z123_example.com_MX');
+});
+
+test('record discovery errors and routed records fail without creating replacements', async () => {
+  const error = new Error('Access denied listing records');
+  await assert.rejects(dns({}, [existingZone], null, [], error), (actual) => actual === error);
+  await assert.rejects(dns({}, [existingZone], null, [
+    { name: '_dmarc.example.com.', type: 'TXT', setIdentifier: 'weighted' },
+  ]), /Cannot adopt routed DNS record/);
 });

@@ -154,8 +154,14 @@ Before the first deployment of automatic discovery:
 
 1. Export and securely retain the existing `production-dns` state with `npx sst state export --stage production-dns`. Inspect which zone and record IDs it tracks. Do not print decrypted secrets or commit the export.
 2. If `DomainZone` tracks the duplicate, remove only its state reference with `npx sst state remove DomainZone --stage production-dns`. This leaves AWS resources intact; see [SST state remove](https://sst.dev/docs/reference/cli/#state-remove). Keep the reference if it already tracks the active zone. The import option adopts a resource into an untracked declaration; it does not retarget an already-managed resource.
-3. Reconcile DNS record state with the active zone. Existing SES verification/DKIM and DMARC records must be imported/adopted if state tracks their copies in the duplicate zone. New Resend records belong in the active zone. Do not enable blanket record overwrites or remove website records.
+3. Reconcile DNS record state with the active zone. The DNS stage now lists existing records and supplies exact name/type import IDs for its SES, DMARC and Resend declarations. Missing records are created. Existing records are imported when their declarations are not already tracked. If state still tracks copies in the duplicate zone, reconcile those stale entries first; an import does not retarget an already-managed resource. Imports surface value mismatches instead of enabling blanket overwrites. Website records are not adopted by this DNS stage.
 4. Remove the unused duplicate after confirming state no longer depends on it. Discovery intentionally fails while both public zones match the domain. If the duplicate was manually deleted, refresh/reconcile the state entries for its records too.
 5. Review the DNS deployment diff: it should import or reuse the active zone, with no hosted-zone creation/deletion and no changes to website aliases or certificate-validation records. Then run `setup-dns` and verify the Resend records through public DNS.
 
 Changing the code or deleting the duplicate in the AWS console alone does not reconcile existing SST state. Subsequent DNS runs keep the `DomainZone` resource declared and protected, avoiding removal of a previously managed zone when discovery finds it.
+
+### Existing-record deployment failures
+
+`InvalidChangeBatch: ... already exists` on `EmailVerification`, `EmailDkim0`–`EmailDkim2`, or `EmailDmarc` means the records exist in Route 53 but the deployment is attempting to create them. The DNS stage discovers and imports exact name/type matches before creating missing records. It also handles Resend records left by a partially successful run. The deployment identity must allow `route53:ListResourceRecordSets`. A read failure stops the deployment; it is not treated as an empty zone.
+
+Do not delete these records to resolve the conflict. Review the next `setup-dns` diff for imports. If Pulumi reports a value mismatch, reconcile that specific record's intended value; do not enable blanket `allowOverwrite`. If state still points at a different zone, use the one-time reconciliation procedure above first.

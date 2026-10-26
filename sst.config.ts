@@ -49,11 +49,37 @@ export default $config({
           retainOnDelete: true,
         },
       );
+      const existingRecords = existingZone
+        ? (await aws.route53.getRecords({ zoneId: existingZone.zoneId })).resourceRecordSets
+        : [];
+      function dnsRecord(
+        id: string,
+        args: aws.route53.RecordArgs & { name: $util.Input<string>; type: string },
+      ) {
+        return $output(args.name).apply((name) => {
+          const normalized = name.replace(/\.$/, "").toLowerCase();
+          const matches = existingRecords.filter(
+            (record) =>
+              record.name.replace(/\.$/, "").toLowerCase() === normalized &&
+              record.type === args.type,
+          );
+          if (matches.length > 1 || matches.some((record) => record.setIdentifier)) {
+            throw new Error(
+              `Cannot adopt routed DNS record for ${id}. Reconcile its state explicitly.`,
+            );
+          }
+          return new aws.route53.Record(id, args, {
+            import: matches.length
+              ? `${existingZone!.zoneId}_${normalized}_${args.type}`
+              : undefined,
+          });
+        });
+      }
       const resendDkim = new sst.Secret("ResendDkim");
       const resendRsend = new sst.Secret("ResendRsend");
       const resendSend = new sst.Secret("ResendSend");
       const resendReceivingMx = new sst.Secret("ResendReceivingMx");
-      new aws.route53.Record("ResendReceivingMxRecord", {
+      dnsRecord("ResendReceivingMxRecord", {
         zoneId: zone.zoneId,
         name: domain,
         type: "MX",
@@ -78,7 +104,7 @@ export default $config({
           }),
         ],
       });
-      new aws.route53.Record("ResendDkimRecord", {
+      dnsRecord("ResendDkimRecord", {
         zoneId: zone.zoneId,
         name: `resend._domainkey.${domain}`,
         type: "TXT",
@@ -100,7 +126,7 @@ export default $config({
         ["rsend", resendRsend],
         ["send", resendSend],
       ] as const) {
-        new aws.route53.Record(
+        dnsRecord(
           name === "rsend" ? "ResendRsendRecord" : "ResendSendRecord",
           {
             zoneId: zone.zoneId,
@@ -131,7 +157,7 @@ export default $config({
         domain,
       });
       // The AWS provider adds Route 53's TXT quotes; pass unquoted values here.
-      new aws.route53.Record("EmailVerification", {
+      dnsRecord("EmailVerification", {
         zoneId: zone.zoneId,
         name: `_amazonses.${domain}`,
         type: "TXT",
@@ -142,7 +168,7 @@ export default $config({
         domain: identity.domain,
       });
       for (let i = 0; i < 3; i++) {
-        new aws.route53.Record(`EmailDkim${i}`, {
+        dnsRecord(`EmailDkim${i}`, {
           zoneId: zone.zoneId,
           name: $interpolate`${dkim.dkimTokens[i]}._domainkey.${domain}`,
           type: "CNAME",
@@ -150,7 +176,7 @@ export default $config({
           records: [$interpolate`${dkim.dkimTokens[i]}.dkim.amazonses.com`],
         });
       }
-      new aws.route53.Record("EmailDmarc", {
+      dnsRecord("EmailDmarc", {
         zoneId: zone.zoneId,
         name: `_dmarc.${domain}`,
         type: "TXT",
