@@ -9,7 +9,9 @@ const source = ts.transpileModule(readFileSync('sst.config.ts', 'utf8'), {
 }).outputText;
 
 // Evaluate the DNS branch without AWS access or real secret values.
-async function dns(overrides = {}) {
+const existingZone = { zoneId: 'Z123', name: 'example.com.', privateZone: false, nameServers: ['ns.example.net'] };
+async function dns(overrides = {}, zones = [existingZone], lookupError = null) {
+  const zoneCalls = [];
   const records = new Map();
   const values = {
     ResendDkim: 'p=' + 'A'.repeat(400),
@@ -36,7 +38,20 @@ async function dns(overrides = {}) {
     } },
     aws: {
       route53: {
-        Zone: class { zoneId = 'zone-id'; nameServers = ['ns.example.net']; },
+        Zone: class {
+          constructor(name, args, options) {
+            zoneCalls.push({ name, args, options });
+            this.zoneId = options.import ?? 'ZNEW';
+            this.nameServers = ['ns.example.net'];
+          }
+        },
+        getZones: async () => {
+          if (lookupError) throw lookupError;
+          return { ids: zones.map((zone) => zone.zoneId) };
+        },
+        getZone: async (args) => {
+          return zones.find((zone) => zone.zoneId === args.zoneId);
+        },
         Record: class { constructor(name, args) { records.set(name, args); } },
       },
       ses: {
@@ -47,7 +62,7 @@ async function dns(overrides = {}) {
   };
   runInNewContext(source, sandbox);
   const outputs = await sandbox.exports.default.run();
-  return { records, outputs, SecretOutput };
+  return { records, outputs, SecretOutput, zoneCalls };
 }
 
 test('DNS stage creates Resend records from secrets and splits long DKIM values', async () => {
@@ -58,7 +73,7 @@ test('DNS stage creates Resend records from secrets and splits long DKIM values'
     ['ResendSendRecord', 'send', 'CNAME'],
   ]) {
     const record = records.get(id);
-    assert.equal(record.zoneId, 'zone-id');
+    assert.equal(record.zoneId, 'Z123');
     assert.equal(record.name, name + '.example.com');
     assert.equal(record.type, type);
     assert.equal(record.ttl, 300);
@@ -70,7 +85,7 @@ test('DNS stage creates Resend records from secrets and splits long DKIM values'
   assert.equal(records.get('ResendRsendRecord').records[0].value, 'rsend.example.net');
   assert.equal(records.get('ResendSendRecord').records[0].value, 'send.example.net.');
   const mx = records.get('ResendReceivingMxRecord');
-  assert.equal(mx.zoneId, 'zone-id');
+  assert.equal(mx.zoneId, 'Z123');
   assert.equal(mx.name, 'example.com');
   assert.equal(mx.type, 'MX');
   assert.equal(mx.ttl, 300);
@@ -101,4 +116,35 @@ test('missing or malformed DNS values fail without echoing their contents', asyn
       return true;
     });
   }
+});
+
+test('creates a zone only when no public zone matches, then imports it on later runs', async () => {
+  const first = await dns({}, []);
+  assert.equal(first.zoneCalls[0].options.import, undefined);
+  assert.equal(first.outputs.hostedZoneId, 'ZNEW');
+  const second = await dns({}, [{ ...existingZone, zoneId: 'ZNEW' }]);
+  assert.equal(second.zoneCalls[0].options.import, 'ZNEW');
+  assert.equal(second.zoneCalls[0].options.protect, true);
+  assert.equal(second.zoneCalls[0].options.retainOnDelete, true);
+});
+
+test('ignores private zones and zones for other domains', async () => {
+  const { zoneCalls } = await dns({}, [
+    { ...existingZone, privateZone: true },
+    { ...existingZone, zoneId: 'ZOTHER', name: 'other.com.' },
+  ]);
+  assert.equal(zoneCalls[0].options.import, undefined);
+});
+
+test('rejects duplicate matches and propagates lookup failures', async () => {
+  await assert.rejects(dns({}, [existingZone, { ...existingZone, zoneId: 'ZDUP' }]), /Multiple public hosted zones/);
+  const error = new Error('Access denied');
+  await assert.rejects(dns({}, [], error), (actual) => actual === error);
+});
+
+test('returns the existing zone and its nameservers', async () => {
+  const { outputs, zoneCalls } = await dns();
+  assert.equal(zoneCalls[0].options.import, 'Z123');
+  assert.equal(outputs.hostedZoneId, 'Z123');
+  assert.deepEqual(outputs.nameservers, ['ns.example.net']);
 });

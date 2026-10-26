@@ -4,7 +4,7 @@ Production sends invitations, recovery/+1 emails, RSVP confirmations (including 
 
 ## DNS values stored as AWS-backed SST secrets
 
-For `saraandreawedding.online`, set `SITE_DOMAIN` to that domain in the GitHub `production` environment. Store the record values using SST's interactive prompts in an authenticated operator terminal:
+For `saraandreawedding.online`, set `SITE_DOMAIN` to that domain in the GitHub `production` environment secrets. SST discovers the matching public zone. The DNS stage imports it, or creates one if none exists; multiple matches block deployment. No hosted-zone ID setting is needed. Store the record values using SST's interactive prompts in an authenticated operator terminal:
 
 ```sh
 npx sst secret set ResendDkim --stage production-dns
@@ -40,7 +40,7 @@ Complete these steps before deploying this change to the existing site. Keep the
 
 1. **Create a Resend account/team.** Enable account MFA and review the account's sending limits/approval requirements in its dashboard. Choose a plan with enough capacity for invitations, recovery messages, confirmations and notifications. Do not assume domain verification alone removes account limits.
 2. **Add your sending domain in Resend → Domains.** To retain `wedding@example.com`, verify `example.com`. Alternatively verify a dedicated subdomain such as `mail.example.com` and use `wedding@mail.example.com`. The sender must match the verified domain. Use your own domain, not the development `resend.dev` sender. See [verified domains](https://resend.com/docs/dashboard/domains/introduction).
-3. **Publish the Resend records through SST.** Set the four DNS secrets described above, then run **Release to AWS → setup-dns**. The protected `production-dns` stage creates the DKIM TXT at `resend._domainkey` , CNAMEs at `rsend` and `send`, and the receiving MX at the domain apex in the existing public hosted zone for `SITE_DOMAIN`. Use the exact values from your Resend domain screen. After DNS propagation, return to Resend → Domains and verify the domain. Keep existing website/certificate records and the managed `_dmarc` policy. Resolve any existing mailbox MX configuration before enabling Resend receiving, as described above. See [verified domains](https://resend.com/docs/dashboard/domains/introduction).
+3. **Publish the Resend records through SST.** Set the four DNS secrets described above, then run **Release to AWS → setup-dns**. The protected `production-dns` stage creates the DKIM TXT at `resend._domainkey`, CNAMEs at `rsend` and `send`, and the receiving MX at the domain apex in the existing public hosted zone for `SITE_DOMAIN`. Use the exact values from your Resend domain screen. After DNS propagation, return to Resend → Domains and verify the domain. Keep existing website/certificate records and the managed `_dmarc` policy. Resolve any existing mailbox MX configuration before enabling Resend receiving, as described above. See [verified domains](https://resend.com/docs/dashboard/domains/introduction).
 4. **Keep receiving mail working.** The DNS stage supports receiving into Resend, but this integration does not create personal-inbox forwarding. `EMAIL_FROM` also supplies the public contact address and email-template contact link. Choose a sender whose replies you can receive, or arrange mailbox forwarding separately. Leave open/click tracking disabled for invitation emails containing private sign-in links.
 5. **Create a dedicated API key** in Resend → API Keys with **Sending access**, restricted to the selected domain. Save it in your password manager. See [API key permissions](https://resend.com/docs/dashboard/api-keys/introduction).
 6. **Store the key in SST**, from an authorised operator terminal in this checkout, using the same AWS account/profile and `eu-central-1` region as production:
@@ -145,3 +145,17 @@ these exact files into its email package for confirmation attachments. Migration
 emails; their delivery records remain in use.
 Keep the event UID shared across languages; there are no guest-specific calendar fields
 or database-managed calendar translations.
+
+## One-time reconciliation of duplicate hosted zones
+
+For this deployment, the active zone verified on 2026-10-26 is `Z040088625TSPX8U807F4`; `Z019473720GAUNEG3BUO6` is the duplicate. Keep the current registrar nameservers and the active zone's website and certificate records.
+
+Before the first deployment of automatic discovery:
+
+1. Export and securely retain the existing `production-dns` state with `npx sst state export --stage production-dns`. Inspect which zone and record IDs it tracks. Do not print decrypted secrets or commit the export.
+2. If `DomainZone` tracks the duplicate, remove only its state reference with `npx sst state remove DomainZone --stage production-dns`. This leaves AWS resources intact; see [SST state remove](https://sst.dev/docs/reference/cli/#state-remove). Keep the reference if it already tracks the active zone. The import option adopts a resource into an untracked declaration; it does not retarget an already-managed resource.
+3. Reconcile DNS record state with the active zone. Existing SES verification/DKIM and DMARC records must be imported/adopted if state tracks their copies in the duplicate zone. New Resend records belong in the active zone. Do not enable blanket record overwrites or remove website records.
+4. Remove the unused duplicate after confirming state no longer depends on it. Discovery intentionally fails while both public zones match the domain. If the duplicate was manually deleted, refresh/reconcile the state entries for its records too.
+5. Review the DNS deployment diff: it should import or reuse the active zone, with no hosted-zone creation/deletion and no changes to website aliases or certificate-validation records. Then run `setup-dns` and verify the Resend records through public DNS.
+
+Changing the code or deleting the duplicate in the AWS console alone does not reconcile existing SST state. Subsequent DNS runs keep the `DomainZone` resource declared and protected, avoiding removal of a previously managed zone when discovery finds it.

@@ -22,11 +22,33 @@ export default $config({
         "Set SITE_DOMAIN to a domain name without a scheme, path or whitespace.",
       );
     }
-    // Separate state prevents a DNS bootstrap rerun from removing the application.
+    const zoneIds = await aws.route53.getZones();
+    const zones = await Promise.all(
+      zoneIds.ids.map((zoneId) => aws.route53.getZone({ zoneId })),
+    );
+    const matches = zones.filter(
+      (zone) =>
+        !zone.privateZone &&
+        zone.name.replace(/\.$/, "").toLowerCase() === domain,
+    );
+    if (matches.length > 1) {
+      throw new Error(
+        "Multiple public hosted zones match SITE_DOMAIN. Reconcile the duplicate zones before deploying.",
+      );
+    }
+    const existingZone = matches[0];
     if ($app.stage === "production-dns") {
-      const zone = new aws.route53.Zone("DomainZone", {
-        name: domain,
-      });
+      // Keep the resource declared on every run: import an existing zone or create
+      // one if absent. Switching a managed zone to a lookup would remove it from state.
+      const zone = new aws.route53.Zone(
+        "DomainZone",
+        { name: domain },
+        {
+          import: existingZone?.zoneId,
+          protect: true,
+          retainOnDelete: true,
+        },
+      );
       const resendDkim = new sst.Secret("ResendDkim");
       const resendRsend = new sst.Secret("ResendRsend");
       const resendSend = new sst.Secret("ResendSend");
@@ -147,10 +169,10 @@ export default $config({
         "Use production-dns for DNS setup or production for the website.",
       );
     }
-    const zone = aws.route53.getZoneOutput({
-      name: domain,
-      privateZone: false,
-    });
+    if (!existingZone) {
+      throw new Error("No public hosted zone matches SITE_DOMAIN. Run setup-dns first.");
+    }
+    const zone = existingZone;
     const docker = await import("@pulumi/docker-build");
     const path = await import("node:path");
     const emailFrom = process.env.EMAIL_FROM;

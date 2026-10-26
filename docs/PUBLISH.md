@@ -27,7 +27,7 @@ Only for a new installation: follow the remaining sections in order, starting wi
 2. Enable MFA on the AWS root user and your administrator. Use your existing administrator/service identity for initial setup and local operator commands. Do not copy its access keys into GitHub.
 3. In AWS Billing, create a monthly cost budget with email alerts, for example $5 and $10 thresholds. Alerts do not cap spending.
 4. Use **Europe (Frankfurt), `eu-central-1`** for the application. Resend sending is configured separately. SST automatically creates CloudFront certificates in **US East (N. Virginia), `us-east-1`**, as CloudFront requires.
-5. Do not manually create a Route 53 hosted zone, certificate, S3 website, database, or Lambda. SST creates these. If your registrar is Route 53 and it created a zone during registration, remove that *unused* zone before bootstrap (only if it has no services/records you need). Never delete an active zone. An existing active zone needs a deliberate import/migration before following this fresh-account guide.
+5. Keep the active public Route 53 hosted zone. SST discovers public zones matching `SITE_DOMAIN`: `setup-dns` imports the single match or creates a zone if none exists. Multiple matches block deployment. SST creates the application resources and certificates. Never delete the active zone.
 
 ## 2. Configure GitHub before the first push
 
@@ -102,10 +102,10 @@ The first push can run repository-setup workflows, which is why `GH_TOKEN` and `
 
 ## 5. Create DNS with SST, then delegate the domain
 
-Before running `setup-dns`, add the domain in Resend and set `ResendDkim`, `ResendRsend` and `ResendSend` in SST stage `production-dns`, using the interactive commands in [email setup](EMAIL.md#dns-values-stored-as-aws-backed-sst-secrets).
+Before running `setup-dns`, add the domain in Resend and set `ResendDkim`, `ResendRsend`, `ResendSend` and `ResendReceivingMx` in SST stage `production-dns`, using the interactive commands in [email setup](EMAIL.md#dns-values-stored-as-aws-backed-sst-secrets).
 
 1. Open **Actions → Release to AWS → Run workflow**. Choose branch `main`, operation `setup-dns`, and enter `deploy` in the approval field. Approve any configured environment review.
-2. This runs checks, then deploys the protected SST stage `production-dns`. It creates one public Route 53 zone, the secret-backed Resend DKIM TXT and `rsend`/`send` CNAME records, and the retained SES identity/verification/DKIM and monitoring-mode DMARC resources. It does not create the application or wait for DNS verification.
+2. This runs checks, then deploys the protected SST stage `production-dns`. It imports the single public zone matching `SITE_DOMAIN`, or creates one if none exists, and creates the secret-backed Resend DKIM TXT and `rsend`/`send` CNAME records, the receiving MX record, and the retained SES identity/verification/DKIM and monitoring-mode DMARC resources. It does not create the application or wait for DNS verification.
 3. Open the AWS Route 53 console with your operator account, select the hosted zone for your domain, and copy all four NS record values. Deployment outputs are deliberately withheld from public job summaries.
 4. At your domain registrar, change the domain's **authoritative nameservers** to those four values. If registered with Route 53, change them under **Registered domains**, not just the hosted zone's NS record. This one manual step proves control of the domain; SST cannot change an unrelated registrar account.
 5. Wait for delegation to propagate, potentially up to 48 hours. Check with `nslookup -type=NS example.com` (Windows/macOS/Linux where installed), or `dig NS example.com`. The public result must match the SST output. Existing DNSSEC/DS records from a previous provider must be removed or correctly migrated to avoid `SERVFAIL`.
@@ -154,7 +154,7 @@ Paste the dedicated Resend sending key at the `ResendApiKey` prompt. See [email 
 ## 7. Publish the HTTPS site
 
 1. Run **Release to AWS** again with operation `deploy`, branch `main`, approval `deploy`.
-2. SST finds the public zone for `SITE_DOMAIN`, creates the CloudFront certificate with DNS validation, HTTPS routing and DNS aliases. Both the apex domain and `www` receive certificates; `www` redirects to the apex. HTTP requests redirect to HTTPS. Leave DNS validation records in place for automatic certificate renewal.
+2. SST looks up the single public zone matching `SITE_DOMAIN` and creates the CloudFront certificate with DNS validation, HTTPS routing and DNS aliases. Both the apex domain and `www` receive certificates; `www` redirects to the apex. HTTP requests redirect to HTTPS. Leave DNS validation records in place for automatic certificate renewal.
 3. The workflow builds the frontend and Lambda container, deploys resources, applies database migrations/grants, then checks API health and the admin login page. Allow time for certificate issuance and CloudFront propagation. If the certificate waits for validation, fix delegation/CAA restrictions before rerunning. If a new account's Lambda concurrency quota is too low for the configured reservation, request an increase in Service Quotas before retrying.
 4. Deployment outputs are deliberately withheld from the public job summary. Open `https://example.com`. Check `http://example.com` and `https://www.example.com` redirect correctly and the browser reports a trusted certificate.
 
