@@ -4,6 +4,8 @@ The website is already released in production. The first-publication instruction
 
 ## Updating the existing production site
 
+For the SES-to-Resend change, first complete [the production email migration checklist](EMAIL.md). It adds the new SST `ResendApiKey` secret and sender DNS verification; do not recreate the existing application secrets.
+
 1. For website photos, follow [the exact S3 filenames and destinations](ASSETS.md). S3-backed editorial pictures do not need an application release. Bundled pictures, translations, styling and code do.
 2. Validate changes locally using the commands in [README](../README.md). Review pending migrations and the deployment diff against the existing production stage. Preserve the deployed migration history; never stamp, reset or recreate a production database to resolve an upgrade error.
 3. Preserve `SITE_DOMAIN`, the existing `production` and `production-dns` stages, `InviteEncryptionKey`, administrator credentials, and bucket identities. Do not rerun initial secret creation, registrar delegation or repository creation for an ordinary update.
@@ -24,7 +26,7 @@ Only for a new installation: follow the remaining sections in order, starting wi
 1. Buy/register `example.com` with your chosen registrar, if you have not already. Compare **renewal** prices, not just first-year offers. Domain registration is separate from hosting. SST does not purchase the domain or change registrar account settings.
 2. Enable MFA on the AWS root user and your administrator. Use your existing administrator/service identity for initial setup and local operator commands. Do not copy its access keys into GitHub.
 3. In AWS Billing, create a monthly cost budget with email alerts, for example $5 and $10 thresholds. Alerts do not cap spending.
-4. Use **Europe (Frankfurt), `eu-central-1`** for the application and SES. SST automatically creates CloudFront certificates in **US East (N. Virginia), `us-east-1`**, as CloudFront requires.
+4. Use **Europe (Frankfurt), `eu-central-1`** for the application. Resend sending is configured separately. SST automatically creates CloudFront certificates in **US East (N. Virginia), `us-east-1`**, as CloudFront requires.
 5. Do not manually create a Route 53 hosted zone, certificate, S3 website, database, or Lambda. SST creates these. If your registrar is Route 53 and it created a zone during registration, remove that *unused* zone before bootstrap (only if it has no services/records you need). Never delete an active zone. An existing active zone needs a deliberate import/migration before following this fresh-account guide.
 
 ## 2. Configure GitHub before the first push
@@ -49,7 +51,6 @@ The checked-in release workflow currently supports a **personally owned reposito
 | `WEDDING_BRIDE_NAME` | Bride display name | Website deployment |
 | `WEDDING_BRIDE_EMAIL` | Bride email address | Website deployment |
 | `RSVP_NOTIFICATION_EMAIL` | An existing inbox you read | Optional |
-| `SES_IDENTITY_ARN` | Leave unset to use SST's domain identity | Optional override for an already verified SES identity |
 
 There are **no AWS access-key secrets**, certificate secrets, or application-key secrets to add in GitHub. The workflow supplies `STAGE`, AWS region, and the Git commit SHA. The invitation encryption key lives in SST, configured in step 6.
 
@@ -101,13 +102,15 @@ The first push can run repository-setup workflows, which is why `GH_TOKEN` and `
 
 ## 5. Create DNS with SST, then delegate the domain
 
+Before running `setup-dns`, add the domain in Resend and set `ResendDkim`, `ResendRsend` and `ResendSend` in SST stage `production-dns`, using the interactive commands in [email setup](EMAIL.md#dns-values-stored-as-aws-backed-sst-secrets).
+
 1. Open **Actions → Release to AWS → Run workflow**. Choose branch `main`, operation `setup-dns`, and enter `deploy` in the approval field. Approve any configured environment review.
-2. This runs checks, then deploys the protected SST stage `production-dns`. It creates one public Route 53 zone, the SES domain identity, verification TXT record, three DKIM CNAMEs, and a monitoring-mode DMARC record. It does not create the application or wait for DNS verification.
+2. This runs checks, then deploys the protected SST stage `production-dns`. It creates one public Route 53 zone, the secret-backed Resend DKIM TXT and `rsend`/`send` CNAME records, and the retained SES identity/verification/DKIM and monitoring-mode DMARC resources. It does not create the application or wait for DNS verification.
 3. Open the AWS Route 53 console with your operator account, select the hosted zone for your domain, and copy all four NS record values. Deployment outputs are deliberately withheld from public job summaries.
 4. At your domain registrar, change the domain's **authoritative nameservers** to those four values. If registered with Route 53, change them under **Registered domains**, not just the hosted zone's NS record. This one manual step proves control of the domain; SST cannot change an unrelated registrar account.
 5. Wait for delegation to propagate, potentially up to 48 hours. Check with `nslookup -type=NS example.com` (Windows/macOS/Linux where installed), or `dig NS example.com`. The public result must match the SST output. Existing DNSSEC/DS records from a previous provider must be removed or correctly migrated to avoid `SERVFAIL`.
-6. In Frankfurt SES, wait for the domain identity and DKIM to show verified/success. SST manages the DNS records; do not delete certificate or SES validation records later. SES uses its default MAIL FROM domain for SPF; aligned DKIM supplies DMARC alignment. This setup sends mail but **does not provide a mailbox** at `wedding@...`.
-7. The application deployment will request SES production access automatically after identity verification. Monitor the request in SES **Account dashboard**. Until AWS approves, verify every test recipient, including `RSVP_NOTIFICATION_EMAIL`. See [email setup](EMAIL.md). AWS approval remains asynchronous and cannot be guaranteed by SST.
+6. Verify the SST-managed DNS records in Resend and wait for verification, following [the email setup guide](EMAIL.md). Existing SES records remain managed for compatibility but are not used for production delivery. Do not remove certificate validation or mailbox records.
+7. Create a domain-scoped Resend sending API key and store it in SST as described below. There is no AWS SES production-access request.
 
 If DNS setup is rerun, it updates the same DNS stage. It cannot remove the separate application stage. Do not change `SITE_DOMAIN` casually after publication: DNS migration and old invitation URLs need deliberate handling.
 
@@ -139,11 +142,14 @@ uv sync --frozen --all-packages --all-groups
 uv run --frozen --package wedding-api python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 npx sst secret set InviteEncryptionKey --stage production
 npx sst secret set AdminPassword --stage production
+npx sst secret set ResendApiKey --stage production
 ```
 
 Check the AWS account ID first. Paste the generated key into the SST prompt and save it in your password manager. Do not paste it into GitHub logs or commit it. Keep it stable for future releases: replacing it invalidates existing encrypted invitation credentials. This command sets a secret; it does not deploy the app. A local SST diff/deploy also requires the environment variables from step 2, set in that terminal.
 
 Enter a separate password of 14–1024 characters at the `AdminPassword` prompt and save it in your password manager. SST uses it only to create a missing administrator; redeployment never resets an existing account. The username comes from the `ADMIN_USERNAME` GitHub environment secret.
+
+Paste the dedicated Resend sending key at the `ResendApiKey` prompt. See [email setup](EMAIL.md) for domain verification and sender configuration.
 
 ## 7. Publish the HTTPS site
 
@@ -156,7 +162,7 @@ Enter a separate password of 14–1024 characters at the `AdminPassword` prompt 
 
 SST has already run migrations, granted the runtime database role, and created the administrator if missing. No local database connection or manual SQL is needed. Open `https://example.com/admin`, sign in using `ADMIN_USERNAME` and the initial password stored as `AdminPassword`, and configure MFA as described in [administration](ADMIN.md). Existing accounts retain their current password and MFA.
 
-The release also checks/submits the SES production-access request in Frankfurt, using `WEDDING_GROOM_EMAIL` as the contact inbox. Read its status in the release job; pending or denied access still restricts recipient delivery. Check the SES console for approval or requests for more information. Once sending is permitted, create a test invitation for an inbox you control. Verify actual email receipt, invitation login, saving RSVP, notifications, photo upload/moderation and original download before inviting guests. A successful health endpoint alone does not prove these flows.
+The release does not check provider delivery. Follow [the Resend smoke test](EMAIL.md) using an inbox you control. Verify receipt, invitation login, RSVP confirmation/calendar, organiser notifications, photo upload/moderation and original download before inviting guests. A successful health endpoint alone does not prove these flows.
 
 Future updates: push/merge reviewed changes and run operation `deploy` again. DNS setup and secret creation are one-time tasks. Both production stages retain/protect resources; do not use `sst remove` as a routine rollback. Retained resources continue billing until deliberately removed.
 
@@ -164,7 +170,7 @@ Future updates: push/merge reviewed changes and run operation `deploy` again. DN
 
 Use the **non-exportable ACM public certificate** that SST provisions for CloudFront: it has [no certificate fee](https://aws.amazon.com/certificate-manager/pricing/) and managed renewal. A self-signed certificate would produce browser trust errors and saves no certificate cost here. Do not create an ACM Private CA or request an exportable certificate for this site.
 
-One [Route 53 public hosted zone costs $0.50/month](https://aws.amazon.com/route53/pricing/) for the first 25 zones; CloudFront alias A/AAAA queries are free. Other DNS queries may cost a small amount. Domain registration/renewal, S3 storage/downloads, CloudFront, Lambda, API Gateway, SES, ECR, logs and Aurora DSQL are separate usage charges. There is no always-on VM, load balancer, NAT gateway or database server in this architecture. Free-tier eligibility and media traffic affect the final bill; this is not a zero-cost guarantee.
+One [Route 53 public hosted zone costs $0.50/month](https://aws.amazon.com/route53/pricing/) for the first 25 zones; CloudFront alias A/AAAA queries are free. Other DNS queries may cost a small amount. Domain registration/renewal, S3 storage/downloads, CloudFront, Lambda, API Gateway, Resend, ECR, logs and Aurora DSQL are separate usage charges. There is no always-on VM, load balancer, NAT gateway or database server in this architecture. Free-tier eligibility and media traffic affect the final bill; this is not a zero-cost guarantee.
 
 ## Public repository privacy
 

@@ -53,7 +53,11 @@ def test_runtime_role_grants(monkeypatch, role_exists, fail_commit):
         "GRANT SELECT, UPDATE (failed_attempts, locked_until, totp_secret, "
         "totp_enabled, totp_last_step, version) ON admin_users TO wedding_app"
     )
-    assert grants[2] == "GRANT DELETE ON invitation_messages, photo_guests TO wedding_app"
+    assert grants[2] == (
+        "GRANT DELETE ON invitation_messages, photo_guests, photos, guests, invitations, "
+        "invitation_access, invitation_links, sessions, rsvp_notifications, confirmation_emails "
+        "TO wedding_app"
+    )
     assert statements[-1] == f"AWS IAM GRANT wedding_app TO '{role}'"
 
 

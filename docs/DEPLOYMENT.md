@@ -1,18 +1,18 @@
 # AWS deployment with SST
 
-The product is already released in production. Preserve the existing SST stages, database, buckets and invitation encryption key when updating it. Local tests and infrastructure type checks do not prove an AWS deployment or SES delivery. Releases deploy directly to production. Verify real email delivery, database access, admin login and media moderation after deployment and before inviting guests.
+The product is already released in production. Preserve the existing SST stages, database, buckets and invitation encryption key when updating it. Local tests and infrastructure type checks do not prove an AWS deployment or Resend delivery. Releases deploy directly to production. Verify real email delivery, database access, admin login and media moderation after deployment and before inviting guests.
 
 ## Infrastructure
 
 SST provisions a single CloudFront origin for the static SvelteKit site and `/api` routes through API Gateway to the FastAPI Lambda container. Cookies and Origin headers reach the API; API responses use `Cache-Control: no-store`. The app restores only the configured canonical site host for admin redirects. Originals, motion components and WebP previews stay in a private S3 bucket. Pending uploads expire after one day.
 
-Aurora DSQL is the serverless SQL database, with no always-running PostgreSQL server, VPC or NAT gateway. The region is `eu-central-1`. It is selected to meet the SQLAlchemy requirement with usage-based billing; free allowances are not a guarantee of a zero bill. S3 storage/requests, downloads, SES, CloudFront, API Gateway, Lambda, ECR and logs can incur charges. Set an AWS Budget; see https://aws.amazon.com/rds/aurora/dsql/pricing/ for current database allowances. Production resources are retained/protected from accidental removal.
+Aurora DSQL is the serverless SQL database, with no always-running PostgreSQL server, VPC or NAT gateway. The region is `eu-central-1`. It is selected to meet the SQLAlchemy requirement with usage-based billing; free allowances are not a guarantee of a zero bill. S3 storage/requests, downloads, Resend, CloudFront, API Gateway, Lambda, ECR and logs can incur charges. Set an AWS Budget; see https://aws.amazon.com/rds/aurora/dsql/pricing/ for current database allowances. Production resources are retained/protected from accidental removal.
 
 The Lambda runtime role has:
 
-- `dsql:DbConnect` only for its database, mapped to `wedding_app`. SQL grants allow reads/inserts/updates and deletion of editable invitation messages and photo-to-guest targeting links. No schema administration is granted.
-- Object access only to its bucket's `pending/`, `originals/` and `previews/` prefixes; deletion only in `pending/`.
-- `ses:SendEmail` and `ses:SendRawEmail` only for the configured identity ARN, restricted by `ses:FromAddress`.
+- `dsql:DbConnect` only for its database, mapped to `wedding_app`. SQL deletion grants cover guests, invitations, photos, targeting links, invitation messages, invitation access/links/sessions, and notification/confirmation records for admin cascade deletion. Administrator accounts cannot be deleted by the runtime role. No schema administration is granted.
+- Object access and deletion only within its bucket's `pending/`, `originals/` and `previews/` prefixes.
+- No SES sending permissions. Transactional email uses a domain-scoped Resend API key supplied by the SST `ResendApiKey` secret.
 - Log writes only to its own log group, retained seven days.
 
 Migrations and admin-account provisioning run in a private SST-managed bootstrap Lambda with `dsql:DbConnectAdmin`, scoped to this database. It has no public route or function URL. Only that function receives the initial admin password; the public API keeps its restricted role. Guest invitation tokens never grant SQLAdmin access.
@@ -46,11 +46,11 @@ that production warming is working.
 
 ## One-time owner setup
 
-Follow [production updates and initial setup](PUBLISH.md) for registration, GitHub configuration before the first push, AWS OIDC, SST DNS bootstrap, registrar delegation, SES approval, encryption-key setup and first deployment.
+Follow [production updates and initial setup](PUBLISH.md) for registration, GitHub configuration before the first push, AWS OIDC, SST DNS bootstrap, registrar delegation, Resend setup, encryption-key setup and first deployment.
 
-Set `SITE_DOMAIN=example.com` in the GitHub `production` environment. The `setup-dns` operation creates the public hosted zone and SES verification/DKIM/DMARC records in the protected `production-dns` SST stage. After delegation, `deploy` creates the application in the separate protected `production` stage. SST creates a free non-exportable ACM certificate, validation records, CloudFront aliases and the `www` redirect. HTTP redirects to HTTPS. Keep both stages and their resource names stable.
+Set `SITE_DOMAIN=example.com` in the GitHub `production` environment. The `setup-dns` operation creates the public hosted zone, secret-backed Resend DKIM/`rsend`/`send` records, and retained SES verification/DKIM/DMARC records in the protected `production-dns` SST stage. After delegation, `deploy` creates the application in the separate protected `production` stage. SST creates a free non-exportable ACM certificate, validation records, CloudFront aliases and the `www` redirect. HTTP redirects to HTTPS. Keep both stages and their resource names stable.
 
-`EMAIL_FROM` must belong to this domain unless you explicitly set `SES_IDENTITY_ARN` for a different verified sender. No SES ARN secret is needed for the managed domain identity. The runtime role retains its scoped SES permissions. Mailbox hosting and SES production-access approval are separate from DNS setup. `EMAIL_FROM` also supplies the contact address in backend email templates and the frontend footer (via the build-time `PUBLIC_CONTACT_EMAIL` variable). For local frontend development, set `PUBLIC_CONTACT_EMAIL` to match the backend sender. Incoming mail forwarding to the bride and groom must be configured separately; the application currently provisions outgoing SES delivery only.
+`EMAIL_FROM` must be on a Resend-verified domain. Set the three DNS-stage secrets and run `setup-dns`, then configure the SST `ResendApiKey` secret before deploying; follow the [production email migration checklist](EMAIL.md). `EMAIL_FROM` also supplies the contact address in backend email templates and the frontend footer (`PUBLIC_CONTACT_EMAIL`). Mailbox hosting/forwarding is separate. The DNS stage retains its legacy SES records to preserve existing managed resources, but neither the runtime nor bootstrap uses SES.
 
 ## Release
 
@@ -78,22 +78,14 @@ Enter a password of 14–1024 characters at the prompt; save it in your password
 
 SST creates the account only when that username is absent. Sign in at `https://your-site/admin` and complete the existing MFA enrollment prompt. Redeployments preserve existing passwords, MFA enrollment, sessions, account status and lockouts. Changing `AdminPassword` does not reset an existing account; changing `ADMIN_USERNAME` creates another account without deleting the old one. Use the existing `app.manage admin-user` operator command only for an intentional credential reset/recovery.
 
-## SES production access
+## Resend production email
 
-After database initialization, the bootstrap Lambda checks SES in `eu-central-1`. It skips approved and pending requests, reports denied requests without resubmitting, and submits a new request (or retries a failed review) only when the configured sender identity is verified. Requests use `TRANSACTIONAL`, the site URL, English, and `WEDDING_GROOM_EMAIL` as the additional contact. Use an inbox you monitor. AWS has deprecated the API use-case-description field; provide any additional explanation in the support case if requested.
+Follow [the email setup guide](EMAIL.md) for domain verification, Route 53 records, the domain-scoped sending API key, `ResendApiKey`, cutover validation and rotation. Bootstrap only initialises the database and administrator; it does not contact Resend or request SES production access. A successful release does not establish real email delivery.
 
-The workflow reports a fixed, non-sensitive status message. Pending review, denied requests, and unverified identities do not block deployment; AWS API errors do. Unverified identities require DNS verification followed by another deployment. SES approval remains an AWS decision and sandbox restrictions remain until production access is enabled. Check the case in the SES console, handle bounce/complaint feedback, and verify actual email delivery before inviting guests.
-
-The bootstrap role has `ses:GetEmailIdentity` for the configured identity and account-level `ses:GetAccount`/`ses:PutAccountDetails` restricted to Frankfurt. A custom deployment policy must allow creation/passing of the bootstrap role and invocation of its Lambda. The public API receives none of these additional privileges.
-
-See [SES production access](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html) and [PutAccountDetails](https://docs.aws.amazon.com/ses/latest/APIReference-V2/API_PutAccountDetails.html).
-
-## Offline release configuration check
-
-Before authorizing a release, set `STAGE=production`, `AWS_ACCOUNT_ID`, `AWS_DEPLOY_ROLE_ARN`, `SITE_DOMAIN`, `ADMIN_USERNAME`, `EMAIL_FROM`, `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL` in your local environment (optionally set `SES_IDENTITY_ARN` to override the managed identity, and `RSVP_NOTIFICATION_EMAIL` for response notifications), then run:
+Before authorizing a release, set `STAGE=production`, `AWS_ACCOUNT_ID`, `AWS_DEPLOY_ROLE_ARN`, `SITE_DOMAIN`, `ADMIN_USERNAME`, `EMAIL_FROM`, `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL` in your local environment (optionally set `RSVP_NOTIFICATION_EMAIL` for response notifications), then run:
 
 ```sh
 node scripts/validate_release_config.mjs
 ```
 
-This check validates required values and account/region consistency without contacting AWS or printing configured values. The release workflow runs it before requesting AWS credentials. It does not verify SES identity status, IAM permissions, SST secrets, or deployed behavior; those require the explicitly approved production deployment. Configure the same values as secrets in the GitHub `production` environment (the workflow supplies `STAGE` automatically).
+This check validates required values and account/region consistency without contacting AWS or printing configured values. The release workflow runs it before requesting AWS credentials. It does not verify Resend domain/key status, IAM permissions, SST secrets, or deployed behavior; those require the explicitly approved production deployment. Configure the same values as secrets in the GitHub `production` environment (the workflow supplies `STAGE` automatically).

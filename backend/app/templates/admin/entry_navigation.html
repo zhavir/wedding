@@ -1,0 +1,13 @@
+{% set previous, next = model_view.entry_navigation(request, entry, route) %}
+<nav class="d-flex gap-2 mb-3" aria-label="Entry navigation">
+  {% if previous %}
+  <a class="btn" href="{{ previous }}" rel="prev">← Previous entry</a>
+  {% else %}
+  <button class="btn" disabled>← Previous entry</button>
+  {% endif %}
+  {% if next %}
+  <a class="btn" href="{{ next }}" rel="next">Next entry →</a>
+  {% else %}
+  <button class="btn" disabled>Next entry →</button>
+  {% endif %}
+</nav>

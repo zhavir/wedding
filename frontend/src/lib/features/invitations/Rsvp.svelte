@@ -147,8 +147,21 @@
         {tp('Please let us know by', participantCount)}
         {w.rsvpBy}.<br />
         <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- External video. -->
-        <a href="https://youtu.be/uxnbkagUzrU?t=3" target="_blank" rel="noreferrer">
+        <a
+          class="rsvp-video-link"
+          href="https://youtu.be/uxnbkagUzrU?t=3"
+          target="_blank"
+          rel="noreferrer"
+        >
           {t("Oh, e dic sì, 'nda fess e sor't!")}
+          <svg
+            class="inline-arrow"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            aria-hidden="true"><path d="M6 18 18 6M6 6h12v12" /></svg
+          >
         </a>
       </p>
 
@@ -254,20 +267,19 @@
 
                     {#if i > 0}
                       <label for={`guest-email-${i}`}>
-                        {t('Additional guest email')}
+                        {t('Additional guest email (optional)')}
                       </label>
 
                       <input
                         id={`guest-email-${i}`}
                         type="email"
                         bind:value={person.email}
-                        required
                         maxlength="254"
                       />
 
                       <small>
                         {t(
-                          'We will email this guest a personal invitation and photo upload access.'
+                          'If provided, we will email this guest a personal invitation and photo upload access.'
                         )}
                       </small>
                     {/if}
@@ -353,3 +365,10 @@
     <Celebration onend={() => (celebrating = false)} />
   {/key}
 {/if}
+
+<style>
+  .rsvp-video-link {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>

@@ -1,0 +1,7 @@
+{% extends "upstream/sqladmin/details.html" %}
+{% block content %}
+{% with entry=model, route='admin:details' %}
+{% include 'admin/entry_navigation.html' %}
+{% endwith %}
+{{ super() }}
+{% endblock %}

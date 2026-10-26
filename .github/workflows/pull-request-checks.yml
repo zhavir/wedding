@@ -37,7 +37,7 @@ jobs:
       - run: npm ci && npm --prefix frontend ci
       - run: uv run --frozen --package wedding-api prek run --all-files
       - run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12
-      - run: node --test scripts/test_release_config.mjs scripts/test_release_privacy.mjs
+      - run: node --test scripts/test_release_config.mjs scripts/test_release_privacy.mjs scripts/test_resend_dns.mjs
       - run: npx sst install && npx tsc -p tsconfig.infra.json
   tests:
     name: All tests

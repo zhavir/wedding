@@ -13,7 +13,7 @@ async def sync_additional_guests(db, parent: Invitation, body: RSVP) -> list[str
         await db.scalars(select(Invitation).where(Invitation.parent_invitation_id == parent.id))
     )
     desired = (
-        {str(person.email).casefold(): person for person in body.guests[1:]}
+        {str(person.email).casefold(): person for person in body.guests[1:] if person.email}
         if body.attending
         else {}
     )

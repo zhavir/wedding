@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import EmailStr, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings
@@ -20,9 +21,8 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 25 * 1024 * 1024
     max_uploads_per_invite: int = 100
     rsvp_notification_email: EmailStr | None = None
-    ses_endpoint_url: str | None = None
-    ses_region: str | None = None
-    ses_profile: str | None = None
+    email_provider: Literal["resend", "ses-local"] = "resend"
+    resend_api_key: SecretStr | None = None
     email_from: str = "wedding@example.com"
 
     @field_validator("rsvp_notification_email", mode="before")
@@ -40,7 +40,6 @@ class BootstrapSettings(BaseSettings):
     admin_username: str
     admin_password: SecretStr
     runtime_role_arn: str
-    ses_identity: str
     site_url: str
     wedding_groom_email: str
     debug_deploy: bool = False

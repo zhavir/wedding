@@ -5,6 +5,9 @@ import { openReplyForm } from './rsvp-form';
 
 test('landing page, invitation and RSVP', async ({ page, context }) => {
   await page.goto('/');
+  const videoLink = page.getByRole('link', { name: "Oh, e dic sì, 'nda fess e sor't!" });
+  await expect(videoLink).toHaveCSS('text-decoration-line', 'underline');
+  await expect(videoLink.locator('svg')).toHaveAttribute('aria-hidden', 'true');
   await expect(page.getByRole('heading', { name: 'Andrea & Sara', exact: true }).first()).toBeVisible();
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', await page.evaluate(() => document.documentElement.clientWidth));
   await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: /RSVP/ }).click();

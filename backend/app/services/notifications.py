@@ -5,7 +5,6 @@ import html
 import time
 import uuid
 
-from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +13,7 @@ from app.db.models import Invitation, RSVPNotification
 from app.db.session import sessions
 from app.schemas import RSVP
 from app.services.email import deliver_email
+from app.services.mail_transport import EmailRejected, EmailUncertain
 
 
 def queue_notification(db: AsyncSession, invite: Invitation, body: RSVP) -> str | None:
@@ -62,10 +62,10 @@ async def send_notification(key: str) -> None:
                 },
             )
             item.status = "sent"
-        except ClientError as exc:
+        except EmailRejected as exc:
             item.status = "failed"
-            item.error = str(exc.response.get("Error", {}).get("Code", "Email rejected"))
-        except BotoCoreError:
+            item.error = str(exc)
+        except EmailUncertain:
             item.status = "unknown"
-            item.error = "Delivery uncertain. Check SES before resending."
+            item.error = "Delivery uncertain. Check the email provider before resending."
         await db.commit()

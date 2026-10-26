@@ -33,15 +33,16 @@ for (const seats of [1, 2]) {
     await expect(page.locator('.story-keepsakes figcaption')).toHaveCount(6);
     const sources = await page.locator('.hero img, .story-keepsakes img, .dream img, .comparison img, .venue-photo img').evaluateAll(elements => elements.map(el => (el as HTMLImageElement).src));
     if (sources.length) {
-      expect(sources).toHaveLength(12);
+      expect(sources).toHaveLength(13);
       const base = sources[0].slice(0, sources[0].lastIndexOf('/'));
       expect(sources.every(src => src.startsWith(`${base}/`))).toBe(true);
-      expect(sources).toContain(`${base}/venue-garden.webp`);
+      expect(sources).toContain(`${base}/venue-photo-1.webp`);
+      expect(sources).toContain(`${base}/venue-photo-2.webp`);
       await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', `${base}/favicon.svg`);
       expect(sources.some(src => src.includes('/images/'))).toBe(false);
     } else {
       // Local previews without PUBLIC_ASSET_URL deliberately show placeholders.
-      await expect(page.locator('.hero .picture-placeholder, .story-keepsakes .picture-placeholder, .dream .picture-placeholder, .comparison .picture-placeholder, .venue-photo .picture-placeholder')).toHaveCount(12);
+      await expect(page.locator('.hero .picture-placeholder, .story-keepsakes .picture-placeholder, .dream .picture-placeholder, .comparison .picture-placeholder, .venue-photo .picture-placeholder')).toHaveCount(13);
       await expect(page.locator('link[rel="icon"]')).toHaveCount(0);
     }
     await page.getByRole('button', { name: 'Italiano', exact: true }).click();

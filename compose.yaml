@@ -6,6 +6,7 @@ x-api-env: &api-env
   AWS_REGION: eu-central-1
   AWS_ENDPOINT_URL: http://floci:4566
   S3_PUBLIC_ENDPOINT: http://localhost:4566
+  EMAIL_PROVIDER: ses-local
   EMAIL_FROM: ${EMAIL_FROM:-wedding@example.com}
   RSVP_NOTIFICATION_EMAIL: ${RSVP_NOTIFICATION_EMAIL:-}
   BUCKET_NAME: wedding-photos

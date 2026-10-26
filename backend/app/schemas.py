@@ -1,6 +1,14 @@
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 NormalizedEmail = Annotated[EmailStr, AfterValidator(str.casefold)]
 
@@ -18,6 +26,11 @@ class Person(Model):
     name: str = Field(min_length=1, max_length=100)
     dietary: str = Field(default="", max_length=500)
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def blank_email(cls, value):
+        return None if isinstance(value, str) and not value.strip() else value
+
 
 class RSVP(Model):
     email: NormalizedEmail
@@ -32,8 +45,6 @@ class RSVP(Model):
         if self.attending != bool(self.guests):
             raise ValueError("List attending guests, or leave guests empty when declining.")
         emails = [str(person.email).casefold() for person in self.guests[1:] if person.email]
-        if len(emails) != max(0, len(self.guests) - 1):
-            raise ValueError("Every additional guest needs an email address.")
         if len(set(emails)) != len(emails) or str(self.email).casefold() in emails:
             raise ValueError("Each additional guest must have a different email address.")
         return self

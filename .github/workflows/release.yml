@@ -50,7 +50,6 @@ jobs:
       AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
       ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
       EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-      SES_IDENTITY_ARN: ${{ secrets.SES_IDENTITY_ARN }}
       RSVP_NOTIFICATION_EMAIL: ${{ secrets.RSVP_NOTIFICATION_EMAIL }}
       WEDDING_GROOM_NAME: ${{ secrets.WEDDING_GROOM_NAME }}
       WEDDING_GROOM_EMAIL: ${{ secrets.WEDDING_GROOM_EMAIL }}
@@ -93,7 +92,7 @@ jobs:
               "${AWS_ACCOUNT_ID}.dkr.ecr.eu-central-1.amazonaws.com"
       - name: Deploy infrastructure and application
         run: node scripts/private-command.mjs npx sst deploy --stage "$STAGE"
-      - name: Report initialization and SES review status
+      - name: Report initialization status
         if: inputs.operation != 'setup-dns'
         run: node scripts/report-bootstrap.mjs
       - name: Mask generated deployment outputs

@@ -5,7 +5,6 @@ import logging
 import re
 import secrets
 
-import boto3
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
@@ -43,33 +42,6 @@ async def ensure_admin(username: str, password: str) -> str:
     return "created"
 
 
-def request_ses_access(config: BootstrapSettings) -> str:
-    client = boto3.client("sesv2", region_name="eu-central-1")
-    account = client.get_account()
-    if account.get("ProductionAccessEnabled"):
-        return "approved"
-    review = account.get("Details", {}).get("ReviewDetails", {}).get("Status")
-    if review in {"PENDING", "DENIED", "GRANTED"}:
-        return {"PENDING": "pending", "DENIED": "denied", "GRANTED": "review-granted"}[review]
-    if review not in {None, "FAILED"}:
-        raise RuntimeError("Unrecognized SES review status")
-    identity = client.get_email_identity(EmailIdentity=config.ses_identity)
-    if not identity.get("VerifiedForSendingStatus"):
-        return "identity-unverified"
-    try:
-        client.put_account_details(
-            ProductionAccessEnabled=True,
-            MailType="TRANSACTIONAL",
-            WebsiteURL=config.site_url,
-            AdditionalContactEmailAddresses=[config.wedding_groom_email],
-            ContactLanguage="EN",
-        )
-    except client.exceptions.ConflictException:
-        # Another deploy/operator submitted a request after our status check.
-        return "pending"
-    return "submitted"
-
-
 @app.get("/api/health")
 def health():
     # Adapter readiness must not require an initialized database.
@@ -88,8 +60,6 @@ async def bootstrap():
         await migrate(config.runtime_role_arn)
         phase = "administrator"
         admin = await ensure_admin(username, password)
-        phase = "ses"
-        ses = await asyncio.to_thread(request_ses_access, config)
     except Exception as exc:
         if debug:
             logging.getLogger(__name__).exception(
@@ -101,4 +71,4 @@ async def bootstrap():
             )
         logging.getLogger(__name__).error("Deployment initialization failed during %s", phase)
         return JSONResponse({"ok": False}, status_code=500)
-    return {"ok": True, "admin": admin, "ses": ses}
+    return {"ok": True, "admin": admin}

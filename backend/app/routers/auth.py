@@ -4,7 +4,6 @@ import secrets
 import time
 from contextlib import suppress
 
-from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy import or_, select, update
 
@@ -15,6 +14,7 @@ from app.db.models import Invitation, InvitationAccess, InvitationLink, Session
 from app.schemas import Login, RecoverInvitation
 from app.services.access import code_hash, ensure_access, new_code, throttle
 from app.services.email import content, deliver_email, render_email
+from app.services.mail_transport import EmailRejected, EmailUncertain
 
 router = APIRouter()
 
@@ -137,7 +137,7 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
             '<p style="text-align:center">Use within 15 minutes / Da usare entro 15 minuti</p></body>',
         )
         # Failure does not invalidate the working invitation or disclose membership.
-        with suppress(ClientError, BotoCoreError):
+        with suppress(EmailRejected, EmailUncertain):
             await asyncio.to_thread(deliver_email, invite.guest.email, message)
     return {
         "message": "If this email belongs to an active invitation, a replacement code and link will arrive shortly. Please check your spam folder."

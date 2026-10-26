@@ -2,7 +2,7 @@
 
 An English/Italian wedding website for Villa Valentina in Tradate, with a live countdown, story, event details, travel information, a map, hotel placeholder, Akamaru’s section, private RSVP and an infinite-scroll photo gallery.
 
-The frontend uses SvelteKit, TypeScript and Tailwind. The async FastAPI/Pydantic backend uses SQLAlchemy; local Docker runs PostgreSQL and Floci for S3/SES. SQLAdmin provides the organisers’ administration interface. Python packaging uses `uv_build`; dependencies are locked in `uv.lock` and npm lockfiles.
+The frontend uses SvelteKit, TypeScript and Tailwind. The async FastAPI/Pydantic backend uses SQLAlchemy; production transactional email uses Resend, while local Docker runs PostgreSQL and Floci for S3/SES. SQLAdmin provides the organisers’ administration interface. Python packaging uses `uv_build`; dependencies are locked in `uv.lock` and npm lockfiles.
 
 ## Start locally
 
@@ -28,7 +28,7 @@ Create a name and optional email in **Guests**, select it and choose **Create in
 
 ## Real email and RSVP notifications
 
-Follow [the SES setup guide](docs/EMAIL.md) to enable real delivery, select an Italian or English invitation template, share a private link without knowing a guest’s email, and configure `RSVP_NOTIFICATION_EMAIL`. Normal Docker uses Floci and sends no real email. The admin menu contains Guests, Invitations, Gallery and Invitation Email Template. RSVP details live on invitations, and +1 emails are sent automatically with admin notifications.
+Follow [the Resend setup guide](docs/EMAIL.md) to enable real delivery, select an Italian or English invitation template, share a private link without knowing a guest’s email, and configure `RSVP_NOTIFICATION_EMAIL`. Normal Docker uses Floci and sends no real email. The admin menu contains Guests, Invitations, Gallery and Invitation Email Template. RSVP details live on invitations, and +1 emails are sent automatically with admin notifications.
 
 ## Edit content and images
 

@@ -33,12 +33,11 @@ def s3(public: bool = False) -> S3Client:
 @lru_cache
 def ses() -> SESClient:
     cfg = settings()
-    client_session = (
-        boto3.Session(profile_name=cfg.ses_profile) if cfg.ses_profile else boto3.Session()
-    )
-    return client_session.client(
+    if cfg.email_provider != "ses-local" or not cfg.aws_endpoint_url:
+        raise ValueError("SES is only available with an explicit local emulator endpoint")
+    return boto3.client(
         "ses",
-        region_name=cfg.ses_region or cfg.aws_region,
-        endpoint_url=cfg.ses_endpoint_url or cfg.aws_endpoint_url,
+        region_name=cfg.aws_region,
+        endpoint_url=cfg.aws_endpoint_url,
         config=Config(connect_timeout=5, read_timeout=10, retries={"max_attempts": 0}),
     )

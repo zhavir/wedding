@@ -3,11 +3,8 @@
 import asyncio
 import time
 import uuid
-from email.message import EmailMessage
-from email.policy import SMTP
 from pathlib import Path
 
-from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,9 +12,9 @@ from app.core.config import settings
 from app.db.models import ConfirmationEmail, Invitation
 from app.db.session import sessions
 from app.schemas import RSVP
-from app.services.aws import ses
 from app.services.email import content, templates
 from app.services.email_content import participant_copy
+from app.services.mail_transport import EmailRejected, EmailUncertain, send_message
 
 
 async def render_confirmation(
@@ -70,23 +67,10 @@ def calendar_attachment(language: str) -> bytes:
 
 
 def deliver_confirmation(item: ConfirmationEmail, language: str):
-    message = EmailMessage(policy=SMTP)
-    message["From"] = settings().email_from
-    message["To"] = item.recipient
-    message["Subject"] = item.subject
-    message.set_content(item.text_body)
-    message.add_alternative(item.html_body, subtype="html")
-    message.add_attachment(
-        calendar_attachment(language),
-        maintype="text",
-        subtype="calendar",
-        filename="andrea-sara-wedding.ics",
-        params={"charset": "UTF-8", "method": "PUBLISH"},
-    )
-    return ses().send_raw_email(
-        Source=settings().email_from,
-        Destinations=[item.recipient],
-        RawMessage={"Data": message.as_bytes()},
+    return send_message(
+        item.recipient,
+        {"subject": item.subject, "text": item.text_body, "html": item.html_body},
+        attachment=calendar_attachment(language),
     )
 
 
@@ -108,10 +92,10 @@ async def send_confirmation(key: str) -> None:
             assert invite is not None
             result = await asyncio.to_thread(deliver_confirmation, item, invite.guest.language)
             item.status, item.message_id = "sent", result["MessageId"]
-        except ClientError as exc:
+        except EmailRejected as exc:
             item.status = "failed"
-            item.error = str(exc.response.get("Error", {}).get("Code", "Email rejected"))
-        except BotoCoreError:
+            item.error = str(exc)
+        except EmailUncertain:
             item.status = "unknown"
-            item.error = "Delivery uncertain. Check SES before resending."
+            item.error = "Delivery uncertain. Check the email provider before resending."
         await db.commit()

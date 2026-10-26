@@ -8,15 +8,22 @@ from pathlib import Path
 from fastapi import HTTPException
 from jinja2 import ChoiceLoader, PackageLoader, PrefixLoader
 from markupsafe import Markup
-from sqladmin import Admin, ModelView, action, expose
+from sqladmin import Admin, action, expose
 from sqladmin.filters import AllUniqueStringValuesFilter, BooleanFilter
 from sqlalchemy import func, select, update
+from sqlalchemy.ext.asyncio import async_object_session
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 from wtforms import BooleanField, Form, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, NumberRange, Optional
 
 from app.admin.auth import AdminAuth
+from app.admin.deletion import (
+    delete_guest_dependents,
+    delete_invitation_dependents,
+    guest_has_dependents,
+)
+from app.admin.entries import EntryAdmin
 from app.admin.mfa import MfaView
 from app.core.config import settings
 from app.core.security import cipher
@@ -49,15 +56,26 @@ class GuestForm(Form):
     audience = SelectField("Audience", choices=AUDIENCES, default="guest")
 
 
-class GuestAdmin(ModelView, model=Guest):
+class GuestAdmin(EntryAdmin, model=Guest):
     name_plural = "Guests"
     icon = "fa-solid fa-users"
     form = GuestForm
-    can_delete = can_export = False
+    can_export = False
     column_list = [Guest.name, Guest.email, Guest.language, Guest.audience]
     column_searchable_list = [Guest.name, Guest.email]
     column_filters = [AllUniqueStringValuesFilter(Guest.audience)]
     column_sortable_list = [Guest.name, Guest.email, Guest.language, Guest.audience]
+
+    async def check_can_delete(self, request, model):
+        if model is None or not await super().check_can_delete(request, model):
+            return False
+        async with sessions()() as db:
+            return not await guest_has_dependents(db, model.id)
+
+    async def on_model_delete(self, model, request):
+        db = async_object_session(model)
+        assert db is not None
+        await delete_guest_dependents(db, model.id)
 
     async def on_model_change(self, data, model, is_created, request):
         if data["language"] not in {"en", "it"}:
@@ -105,7 +123,7 @@ class GuestAdmin(ModelView, model=Guest):
         )
 
 
-class InvitationNamesMixin(ModelView):
+class InvitationNamesMixin(EntryAdmin):
     async def get_list_value(self, obj, prop, request=None):
         value, formatted = await super().get_list_value(obj, prop, request)
         if prop in {"invitation_id", "owner", "parent_invitation_id"} and value:
@@ -126,6 +144,13 @@ class InvitationNamesMixin(ModelView):
 
 
 class InvitationAdmin(InvitationNamesMixin, model=Invitation):
+    async def check_can_delete(self, request, model):
+        return (
+            model is not None
+            and not model.is_admin
+            and await super().check_can_delete(request, model)
+        )
+
     async def get_detail_value(self, obj, prop, request=None):
         if prop == "id" and not obj.encrypted_token:
             async with sessions()() as db:
@@ -139,8 +164,13 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
     name = "Invitation"
     name_plural = "Invitations"
     icon = "fa-solid fa-envelope"
-    can_delete = False
     can_export = False
+
+    async def on_model_delete(self, model, request):
+        db = async_object_session(model)
+        assert db is not None
+        await delete_invitation_dependents(db, model)
+
     column_list = [
         Invitation.guest,
         Invitation.active,
@@ -600,7 +630,7 @@ class MessageForm(Form):
     active = BooleanField("Active", default=True)
 
 
-class MessageAdmin(ModelView, model=InvitationMessage):
+class MessageAdmin(EntryAdmin, model=InvitationMessage):
     name = "Invitation Email Template"
     name_plural = "Invitation Email Template"
     form = MessageForm

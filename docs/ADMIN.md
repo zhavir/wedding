@@ -41,6 +41,10 @@ Filters cover answered/unanswered, accepted/declined, active/inactive, and email
 
 Deactivating an invitation blocks its link and sessions. Changing the guest's email resets the associated invitation's delivery status to draft; it does not send automatically.
 
+Detail and edit pages have **Previous entry** and **Next entry** controls. **Delete** is available for guests, invitations, gallery uploads, and invitation email templates. Deleting an invitation also removes its child invitations, access links, sessions, responses, delivery records, and uploaded media. Guest records remain, and can be deleted once they have no invitation or gallery upload. Deleting a guest also removes their photo-viewer assignments. Deleting gallery media removes originals, previews, motion components, unfinished uploads, and viewer assignments.
+
+Deploy both the API and infrastructure changes to enable deletion in production: bootstrap updates the database runtime grants, and the API IAM policy grants S3 deletion for originals and previews. Local emulator tests do not verify live AWS permissions.
+
 ## Gallery
 
 Gallery and carousel visibility are independent. **Make visible in gallery** publishes completed uploads; **Make visible in carousel** publishes completed still photos to the landing carousel. Open a record to preview it and edit the **Visible in gallery** and **Visible in carousel** checkboxes, then **Save visibility**. Uncheck either checkbox to hide the item from that feed. The list shows one uploader and an upload date/time in UTC.
@@ -115,7 +119,7 @@ Media moderation displays uploader names and supports searching and filtering by
 
 ## Andrea and Sara's gallery access
 
-Migration `0001_initial` creates two ordinary guest invitations using `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL`. Supply these through production environment secrets in GitHub; local runs default to fictional example addresses. Migration does not send email or grant administrator privileges. In Invitations, open each entry and generate its personal link, or send its invitation after configuring SES. Credentials are generated securely on first use with the application's encryption key. Already migrated databases retain their existing records; changing these secrets does not update existing invitations. Edit their names and email addresses in Guests.
+Migration `0001_initial` creates two ordinary guest invitations using `WEDDING_GROOM_NAME`, `WEDDING_GROOM_EMAIL`, `WEDDING_BRIDE_NAME`, and `WEDDING_BRIDE_EMAIL`. Supply these through production environment secrets in GitHub; local runs default to fictional example addresses. Migration does not send email or grant administrator privileges. In Invitations, open each entry and generate its personal link, or send its invitation after configuring [Resend](EMAIL.md). Credentials are generated securely on first use with the application's encryption key. Already migrated databases retain their existing records; changing these secrets does not update existing invitations. Edit their names and email addresses in Guests.
 
 ## Email copy and private photo feeds
 

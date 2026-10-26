@@ -215,3 +215,35 @@ for (const paired of [false, true]) {
     await admin.close();
   });
 }
+
+test('admin navigates entries and deletes an unlinked guest', async ({ page }) => {
+  test.skip(!process.env.ADMIN_TEST_CREDENTIALS, 'Requires Docker test account');
+  const credentials = adminCredentials();
+  await page.goto('/api/admin/login');
+  await page.getByLabel('Username').fill(credentials.username);
+  await page.getByLabel('Password').fill(credentials.password);
+  await page.getByLabel('Authenticator code').fill(authenticatorCode(credentials.secret));
+  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  const name = `Navigation guest ${Date.now()}`;
+  await page.goto('/api/admin/guest/create');
+  await page.getByLabel('Name', { exact: true }).fill(name);
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.goto(`/api/admin/guest/list?search=${encodeURIComponent(name)}`);
+  await page.getByRole('row').filter({ hasText: name }).getByRole('link', { name: 'View', exact: true }).click();
+  const entryUrl = page.url();
+  const navigation = page.getByRole('navigation', { name: 'Entry navigation' });
+  await expect(navigation).toBeVisible();
+  const previous = navigation.getByRole('link', { name: '← Previous entry', exact: true });
+  await expect(previous).toBeVisible();
+  await previous.click();
+  await navigation.getByRole('link', { name: 'Next entry →', exact: true }).click();
+  await expect(page).toHaveURL(entryUrl);
+  await page.getByRole('link', { name: 'Edit', exact: true }).click();
+  await expect(navigation).toBeVisible();
+  await page.goto(entryUrl);
+  await page.getByRole('link', { name: 'Delete', exact: true }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page).toHaveURL(/\/guest\/list/);
+  await page.goto(`/api/admin/guest/list?search=${encodeURIComponent(name)}`);
+  await expect(page.getByRole('row').filter({ hasText: name })).toHaveCount(0);
+});

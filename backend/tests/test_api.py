@@ -58,6 +58,7 @@ def client(tmp_path, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def aws(monkeypatch):
+    monkeypatch.setenv("EMAIL_PROVIDER", "ses-local")
     storage = MagicMock()
     storage.create_multipart_upload.return_value = {"UploadId": "multipart-test"}
     storage.generate_presigned_post.return_value = {"url": "http://s3", "fields": {}}
@@ -65,11 +66,10 @@ def aws(monkeypatch):
     mail = MagicMock()
     mail.send_email.return_value = {"MessageId": "message-123"}
     mail.send_raw_email.return_value = {"MessageId": "raw-message-123"}
-    monkeypatch.setattr("app.services.confirmations.ses", lambda: mail)
     monkeypatch.setattr("app.routers.photos.s3", lambda public=False: storage)
     monkeypatch.setattr("app.services.photos.s3", lambda public=False: storage)
     monkeypatch.setattr("app.services.uploads.s3", lambda public=False: storage)
-    monkeypatch.setattr("app.services.email.ses", lambda: mail)
+    monkeypatch.setattr("app.services.mail_transport.ses", lambda: mail)
     return storage, mail
 
 
@@ -1124,13 +1124,50 @@ def test_additional_guest_invitation_lifecycle(client, aws):
     assert all(not row["active"] for row in client.portal.call(children))
 
 
-@pytest.mark.parametrize("email", [None, "guest@example.com", "invalid"])
+@pytest.mark.parametrize("email", ["guest@example.com", "invalid"])
 def test_additional_guest_requires_distinct_valid_email(client, email):
     login(client)
     person = {"name": "Alex"}
     if email is not None:
         person["email"] = email
     assert client.put("/api/rsvp", json=body(guests=[{"name": "Guest"}, person])).status_code == 422
+
+
+@pytest.mark.parametrize("email_fields", [{}, {"email": None}, {"email": ""}, {"email": "   "}])
+def test_additional_guest_without_email(client, aws, email_fields):
+    from app.db.models import Invitation
+    from sqlalchemy import select
+
+    _, mail = aws
+    login(client)
+    parent_id = client.get("/api/session").json()["id"]
+    party = body(guests=[{"name": "Guest"}, {"name": "Alex", **email_fields}])
+    assert client.put("/api/rsvp", json=party).status_code == 200
+    saved = client.get("/api/rsvp").json()["rsvp"]
+    assert saved["guests"][1]["name"] == "Alex"
+    assert saved["guests"][1].get("email") is None
+
+    async def children():
+        async with sessions()() as db:
+            return list(
+                await db.scalars(
+                    select(Invitation).where(Invitation.parent_invitation_id == parent_id)
+                )
+            )
+
+    assert client.portal.call(children) == []
+    recipients = [
+        address
+        for call in mail.send_email.call_args_list
+        for address in call.kwargs["Destination"]["ToAddresses"]
+    ]
+    recipients.extend(
+        address
+        for call in mail.send_raw_email.call_args_list
+        for address in call.kwargs["Destinations"]
+    )
+    assert "guest@example.com" in recipients
+    assert set(recipients) <= {"guest@example.com", "groom@example.test", "bride@example.test"}
 
 
 def test_media_admin_preview_uploader_filter_and_bulk_approval(client):

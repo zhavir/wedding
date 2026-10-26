@@ -1,7 +1,6 @@
 import asyncio
 from copy import deepcopy
 
-from botocore.exceptions import BotoCoreError, ClientError
 from jinja2 import Environment, PackageLoader, select_autoescape
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +10,9 @@ from app.core.security import cipher
 from app.db.models import Guest, Invitation
 from app.db.session import sessions
 from app.services.access import ensure_access
-from app.services.aws import ses
 from app.services.email_content import CONTENT, participant_copy
 from app.services.invitations import invitation_link
+from app.services.mail_transport import EmailRejected, EmailUncertain, send_message
 from app.services.messages import invitation_message, render_message
 
 templates = Environment(
@@ -64,7 +63,7 @@ def render_email(
 
 
 async def send_invitation(invitation_id: str) -> dict[str, str]:
-    # Commit the claim before calling SES. Concurrent requests cannot send the same draft twice.
+    # Commit before delivery so concurrent requests cannot send the same draft twice.
     async with sessions()() as db:
         claimed = await db.scalar(
             update(Invitation)
@@ -97,17 +96,12 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
             result = await asyncio.to_thread(deliver_email, invite.guest.email, message)
             invite.email_message_id = result["MessageId"]
             invite.email_status = "sent"
-        except ClientError as exc:
+        except EmailRejected as exc:
             invite.email_status = "failed"
-            invite.email_error = (
-                str(exc.response["Error"].get("Code", "Email rejected"))
-                + ": "
-                + str(exc.response["Error"].get("Message", ""))
-            )
-        except BotoCoreError:
-            # A timeout might happen after SES accepted the message. Never automatically resend.
+            invite.email_error = str(exc)
+        except EmailUncertain:
             invite.email_status = "unknown"
-            invite.email_error = "Delivery uncertain. Check SES before attempting any resend."
+            invite.email_error = "Delivery uncertain. Check the email provider before resending."
         await db.commit()
         return {
             "id": invitation_id,
@@ -117,14 +111,4 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
 
 
 def deliver_email(email: str, message: dict[str, str]):
-    return ses().send_email(
-        Source=settings().email_from,
-        Destination={"ToAddresses": [email]},
-        Message={
-            "Subject": {"Data": message["subject"], "Charset": "UTF-8"},
-            "Body": {
-                "Html": {"Data": message["html"], "Charset": "UTF-8"},
-                "Text": {"Data": message["text"], "Charset": "UTF-8"},
-            },
-        },
-    )
+    return send_message(email, message)

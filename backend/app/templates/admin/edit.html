@@ -1,0 +1,15 @@
+{% extends "upstream/sqladmin/edit.html" %}
+{% block content %}
+{% with entry=obj, route='admin:edit' %}
+{% include 'admin/entry_navigation.html' %}
+{% endwith %}
+{{ super() }}
+{% if model_view.check_can_delete(request, obj) %}
+<div class="mt-3">
+  <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(obj) }}"
+     data-url="{{ model_view._url_for_delete(request, obj) }}" data-bs-toggle="modal"
+     data-bs-target="#modal-delete" class="btn btn-danger">Delete</a>
+</div>
+{% include 'sqladmin/modals/delete.html' %}
+{% endif %}
+{% endblock %}

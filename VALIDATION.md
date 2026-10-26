@@ -1,5 +1,14 @@
 # Validation status
 
+## 2026-10-26 — admin navigation, cascade deletion and runtime permissions
+
+- **157 backend tests passed** in Docker. After the final navigation-template and database-grant changes, all **12 admin regressions** and **8 runtime-role/bootstrap tests** passed again against the current source.
+- **78 of 78 browser tests passed** (39 desktop + 39 mobile, no skips) against the rebuilt local stack. This includes previous/next navigation, guest deletion through the confirmation dialog, the RSVP video underline/arrow, and corrected two-venue-photo expectations. The initial run exposed stale image-count assertions; the final complete rerun passed.
+- Cascade tests cover child invitations, access records, sessions, delivery records, media and viewer assignments; blocked guest deletion; protected administrator invitations; and preserving database records on storage cleanup failure. Navigation covers detail and edit pages for all four admin collections.
+- The local PostgreSQL/Floci integration smoke test passed, including RSVP storage, private photo access, original-byte integrity, previews, pagination and multipart video upload.
+- Frontend translation/Svelte checks, lint, formatting and production build passed. The existing carousel CSS line-clamp warning remains. Python Ruff/format/type checks, infrastructure TypeScript checks, all 12 release-script tests and diff whitespace checks passed.
+- Production deletion requires deploying both the API/bootstrap database grants and the S3 IAM policy. No production deployment, live AWS permission test, production data deletion or real email delivery was performed.
+
 ## 2026-10-25 — rebuilt stack and completed regression verification
 
 - `docker compose up --build -d --wait web` completed successfully. Init exited successfully; database, API, local AWS emulator and web became healthy. This resolves the earlier approval-limit verification blocker.
@@ -124,3 +133,12 @@ GitHub Actions were validated locally, not executed on GitHub. Repository settin
 - Frontend check, lint and production build passed; existing carousel CSS warning remains.
 - Calendar download browser checks passed on desktop and mobile, each in English and Italian, against a local frontend preview with no backend server.
 - Ruff and diff checks passed. Production migration/deployment and live email delivery remain unverified.
+
+## Resend transactional email migration (2026-10-26)
+
+- Docker backend suite: 165 passed, including 19 mocked Resend transport cases covering HTML/text payloads, exact calendar bytes, rejected/uncertain delivery, missing credentials and the local emulator guard.
+- Docker integration passed against PostgreSQL and Floci: invitation/RSVP flow, private access, photo upload/integrity/preview/pagination and multipart video checks. The final API image was rebuilt and is healthy locally.
+- Recovery, notification failure and confirmation regressions: 7 passed in the focused local rerun. Recovery preserves its generic response when either provider rejects delivery.
+- Release configuration/privacy tests: 12 passed. Ruff, formatting, Python type checks, infrastructure TypeScript and diff whitespace checks passed.
+- Production uses the SST `ResendApiKey` secret; Docker explicitly uses `ses-local`. Existing protected SES DNS resources remain managed, but production sending and bootstrap no longer use SES.
+- No production deployment, live Resend account/domain/key validation or inbox delivery was performed. No full browser suite was run for this backend/provider change. Follow [the production email checklist](docs/EMAIL.md) before release.

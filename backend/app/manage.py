@@ -50,7 +50,9 @@ async def migrate(runtime_role: str | None = None) -> None:
         for statement in [
             f"GRANT SELECT, INSERT, UPDATE ON TABLE {tables} TO wedding_app",
             "GRANT SELECT, UPDATE (failed_attempts, locked_until, totp_secret, totp_enabled, totp_last_step, version) ON admin_users TO wedding_app",
-            "GRANT DELETE ON invitation_messages, photo_guests TO wedding_app",
+            "GRANT DELETE ON invitation_messages, photo_guests, photos, guests, invitations, "
+            "invitation_access, invitation_links, sessions, rsvp_notifications, confirmation_emails "
+            "TO wedding_app",
             f"AWS IAM GRANT wedding_app TO '{runtime_role}'",
         ]:
             try:

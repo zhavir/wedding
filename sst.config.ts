@@ -27,6 +27,58 @@ export default $config({
       const zone = new aws.route53.Zone("DomainZone", {
         name: domain,
       });
+      const resendDkim = new sst.Secret("ResendDkim");
+      const resendRsend = new sst.Secret("ResendRsend");
+      const resendSend = new sst.Secret("ResendSend");
+      new aws.route53.Record("ResendDkimRecord", {
+        zoneId: zone.zoneId,
+        name: `resend._domainkey.${domain}`,
+        type: "TXT",
+        ttl: 300,
+        records: [
+          resendDkim.value.apply((value) => {
+            // Supply the raw Resend value; the provider adds the outer TXT quotes.
+            // DNS limits each string to 255 bytes, so split long ASCII DKIM keys.
+            if (!value.trim() || /[^\x20-\x7e]|["\\]/.test(value)) {
+              throw new Error(
+                "ResendDkim must contain the unquoted, single-line DKIM value.",
+              );
+            }
+            return value.match(/.{1,255}/g)!.join('""');
+          }),
+        ],
+      });
+      for (const [name, secret] of [
+        ["rsend", resendRsend],
+        ["send", resendSend],
+      ] as const) {
+        new aws.route53.Record(
+          name === "rsend" ? "ResendRsendRecord" : "ResendSendRecord",
+          {
+            zoneId: zone.zoneId,
+            name: `${name}.${domain}`,
+            type: "CNAME",
+            ttl: 300,
+            records: [
+              secret.value.apply((value) => {
+                if (
+                  !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?$/i.test(
+                    value,
+                  ) ||
+                  value.length > 254
+                ) {
+                  throw new Error(
+                    "Resend CNAME secrets must contain a DNS hostname only.",
+                  );
+                }
+                return value;
+              }),
+            ],
+          },
+        );
+      }
+      // Legacy SES DNS resources stay managed to avoid destructive changes to the
+      // existing protected DNS stage. Production delivery uses Resend exclusively.
       const identity = new aws.ses.DomainIdentity("EmailIdentity", {
         domain,
       });
@@ -76,20 +128,10 @@ export default $config({
     const docker = await import("@pulumi/docker-build");
     const path = await import("node:path");
     const emailFrom = process.env.EMAIL_FROM;
-    const identityArn =
-      process.env.SES_IDENTITY_ARN ||
-      $interpolate`arn:aws:ses:eu-central-1:${aws.getCallerIdentityOutput().accountId}:identity/${domain}`;
-    if (
-      !emailFrom ||
-      (!!process.env.SES_IDENTITY_ARN &&
-        !/^arn:aws:ses:eu-central-1:\d{12}:identity\/.+$/.test(
-          process.env.SES_IDENTITY_ARN,
-        ))
-    ) {
-      throw new Error(
-        "Set EMAIL_FROM for the managed domain, or supply a valid SES_IDENTITY_ARN in eu-central-1.",
-      );
+    if (!emailFrom || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(emailFrom)) {
+      throw new Error("Set EMAIL_FROM to an address on a Resend-verified domain.");
     }
+    const resendApiKey = new sst.Secret("ResendApiKey");
     const encryptionKey = new sst.Secret("InviteEncryptionKey");
     const adminPassword = new sst.Secret("AdminPassword");
     const adminUsername = process.env.ADMIN_USERNAME;
@@ -276,21 +318,16 @@ export default $config({
           },
           {
             Effect: "Allow",
-            Action: ["s3:GetObject", "s3:PutObject", "s3:AbortMultipartUpload"],
+            Action: [
+              "s3:GetObject",
+              "s3:PutObject",
+              "s3:DeleteObject",
+              "s3:AbortMultipartUpload",
+            ],
             Resource: [
               $interpolate`${photos.arn}/originals/*`,
               $interpolate`${photos.arn}/previews/*`,
             ],
-          },
-          {
-            Effect: "Allow",
-            Action: ["ses:SendEmail", "ses:SendRawEmail"],
-            Resource: identityArn,
-            Condition: {
-              StringEquals: {
-                "ses:FromAddress": emailFrom,
-              },
-            },
           },
         ],
       }),
@@ -332,20 +369,6 @@ export default $config({
               Action: "dsql:DbConnectAdmin",
               Resource: database.nodes.cluster.arn,
             },
-            {
-              Effect: "Allow",
-              Action: "ses:GetEmailIdentity",
-              Resource: identityArn,
-            },
-            // These SES operations are account-level and do not support identity ARNs.
-            {
-              Effect: "Allow",
-              Action: ["ses:GetAccount", "ses:PutAccountDetails"],
-              Resource: "*",
-              Condition: {
-                StringEquals: { "aws:RequestedRegion": "eu-central-1" },
-              },
-            },
           ],
         }),
       },
@@ -381,9 +404,6 @@ export default $config({
             RUNTIME_ROLE_ARN: role.arn,
             DEBUG_DEPLOY: process.env.DEBUG_DEPLOY === "1" ? "1" : "0",
             SITE_URL: router.url,
-            SES_IDENTITY: $output(identityArn).apply(
-              (arn) => arn.split(":identity/")[1],
-            ),
             ...Object.fromEntries(
               hostKeys.map((key) => [key, process.env[key]!]),
             ),
@@ -439,7 +459,7 @@ export default $config({
             : "Deployment initialization failed; inspect the private bootstrap configuration and database migration state.",
         );
       }
-      return { admin: body.admin as string, ses: body.ses as string };
+      return { admin: body.admin as string };
     });
     const fn = new aws.lambda.Function(
       "FastApi",
@@ -465,6 +485,8 @@ export default $config({
             SITE_URL: router.url,
             COOKIE_SECURE: "true",
             EMAIL_FROM: emailFrom,
+            EMAIL_PROVIDER: "resend",
+            RESEND_API_KEY: resendApiKey.value,
             RSVP_NOTIFICATION_EMAIL: process.env.RSVP_NOTIFICATION_EMAIL ?? "",
           },
         },
