@@ -78,26 +78,64 @@ export default $config({
       const resendDkim = new sst.Secret("ResendDkim");
       const resendRsend = new sst.Secret("ResendRsend");
       const resendSend = new sst.Secret("ResendSend");
-      const resendReceivingMx = new sst.Secret("ResendReceivingMx");
+      // ImprovMX handles incoming mail; Resend remains the outbound provider.
+      // Route 53 requires both MX destinations in a single MX record set.
+      const improvMxPrimaryMx = new sst.Secret("ImprovMxPrimaryMx");
+      const improvMxSecondaryMx = new sst.Secret("ImprovMxSecondaryMx");
+      const improvMxSpf = new sst.Secret("ImprovMxSpf");
+      const validateMx = (value: string) => {
+        if (
+          !/^(?:[0-9]{1,5}) (?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?$/i.test(value) ||
+          Number(value.split(" ", 1)[0]) > 65535 ||
+          value.length > 260
+        ) {
+          throw new Error(
+            "ImprovMX MX secrets must contain priority and hostname, e.g. '10 mx1.improvmx.com'.",
+          );
+        }
+        return value;
+      };
+      // Retain the previous resource ID so the managed apex MX record is updated
+      // in place rather than destroying and recreating the existing state entry.
       dnsRecord("ResendReceivingMxRecord", {
         zoneId: zone.zoneId,
         name: domain,
         type: "MX",
         ttl: 300,
         records: [
-          resendReceivingMx.value.apply((value) => {
-            const match =
-              /^(\d{1,5}) ((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?)$/i.exec(
-                value,
-              );
+          improvMxPrimaryMx.value.apply(validateMx),
+          improvMxSecondaryMx.value.apply(validateMx),
+        ],
+      });
+      // SPF is a TXT record at the domain apex. Preserve unrelated apex TXT
+      // entries (such as verification records); replace an existing SPF entry.
+      const apexTxtRecords = existingRecords
+        .filter(
+          (record) =>
+            record.name.replace(/\.$/, "").toLowerCase() === domain &&
+            record.type === "TXT",
+        )
+        .flatMap((record) => record.resourceRecords.map((entry) => entry.value))
+        .filter((value) => !/^"?v=spf1(?:\s|$)/i.test(value));
+      dnsRecord("ImprovMxSpfRecord", {
+        zoneId: zone.zoneId,
+        name: domain,
+        type: "TXT",
+        ttl: 300,
+        records: [
+          ...apexTxtRecords.map((value) =>
+            value.startsWith('"') && value.endsWith('"')
+              ? value.slice(1, -1)
+              : value,
+          ),
+          improvMxSpf.value.apply((value) => {
             if (
-              !match ||
-              Number(match[1]) > 65535 ||
-              match[2].length > 254 ||
+              !/^v=spf1\s+[^\r\n"\\]+\s+[~?+-]all$/i.test(value) ||
+              value.length > 255 ||
               value.trim() !== value
             ) {
               throw new Error(
-                "ResendReceivingMx must contain an MX priority and DNS hostname, separated by one space.",
+                "ImprovMxSpf must be a single unquoted SPF TXT value ending in an all mechanism.",
               );
             }
             return value;
