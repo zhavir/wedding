@@ -25,7 +25,19 @@
     <div>
       {#each w.faqs as faq (faq.question)}<details>
           <summary>{faq.question}<span aria-hidden="true">+</span></summary>
-          <p>{faq.answer}</p>
+          <p>
+            {#if 'link' in faq && faq.link}
+              {faq.answer.split(
+                faq.link.placeholder
+              )[0]}<!-- eslint-disable-next-line svelte/no-navigation-without-resolve --><!-- External hotel URL from editable content. --><a
+                href={faq.link.url}
+                target="_blank"
+                rel="noreferrer">{faq.link.label}</a
+              >{faq.answer.split(faq.link.placeholder)[1]}
+            {:else}
+              {faq.answer}
+            {/if}
+          </p>
         </details>{/each}
     </div>
   </div>

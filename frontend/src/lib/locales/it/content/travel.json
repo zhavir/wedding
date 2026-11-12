@@ -5,16 +5,16 @@
     "mapEmbed": "https://maps.google.com/maps?q=Villa%20Valentina%20Via%20Donizetti%2017%20Tradate&output=embed",
     "eyebrow": "LA VILLA",
     "title": "Ci vediamo a Villa Valentina.",
-    "venueLink": "Scoprite la villa ↗",
+    "venueLink": "Scopri la villa ↗",
     "carTitle": "Arrivare in auto",
-    "carText": "Impostate il navigatore su Villa Valentina, Via Donizetti 17, Tradate (VA). Seguite le sue indicazioni, è impossibile perdervi. Una volta arrivati, parcheggerete direttamente in villa.",
+    "carText": "Imposta il navigatore su Villa Valentina, Via Donizetti 17, Tradate (VA). Segui le sue indicazioni (impossibile perdervi) e una volta arrivato, parcheggererai direttamente in villa.",
     "directions": "Indicazioni stradali ↗",
     "trainTitle": "Arrivare con i mezzi pubblici",
-    "trainText": "La linea Trenord, che ogni tanto funziona, Milano Cadorna–Saronno–Varese arriva a Tradate. Fateci sapere in anticipo se vi serve un passaggio dalla stazione alla villa.",
-    "trains": "Organizzate il viaggio in treno ↗",
+    "trainText": "La linea Trenord, che ogni tanto funziona, Milano Cadorna–Saronno–Varese arriva a Tradate. Facci sapere in anticipo se ti serve un passaggio dalla stazione alla villa!",
+    "trains": "Organizza il viaggio in treno ↗",
     "mapTitle": "Dove si trova Villa Valentina?",
     "mapButton": "Mostra la mappa",
     "mapNote": "Proprio qui.",
-    "imageAlt": "Una foto di Villa Valentina"
+    "imageAlt": "Una foto a caso di Villa Valentina"
   }
 }

@@ -13,22 +13,22 @@
     {
       "time": "17:00",
       "title": "Aperitivo",
-      "text": "The ceremony is over: time to relax! Join us for drinks, bites to eat and time together."
+      "text": "The ceremony is over: time to relax! Join us for drinks, bites to eat and plenty of time together."
     },
     {
-      "time": "19:00",
+      "time": "19:30",
       "title": "Dinner",
       "text": "Time to take your seats! Enjoy dinner: the evening is still young."
     },
     {
-      "time": "21:00",
+      "time": "22:00",
       "title": "Cutting the cake",
-      "text": "Wedding cake, a few photographs and something sweet before returning to the celebrations."
+      "text": "Time for cake and something sweet before we get back to chatting!"
     },
     {
-      "time": "22:00 - 00:00",
-      "title": "One last toast and goodbyes",
-      "text": "Liqueurs, chocolate and a few last conversations to end the evening and say goodbye."
+      "time": "00:00",
+      "title": "Goodbyes",
+      "text": "The evening will end with our heartfelt thanks, and you can finally head off to bed."
     }
   ]
 }

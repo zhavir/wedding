@@ -2,19 +2,19 @@
   "faqs": [
     {
       "question": "What should I wear?",
-      "answer": "Whatever you like! Just don’t blame us if you get cold or your shoes get muddy in the garden."
+      "answer": "Basically, whatever you like! Just don’t complain if you get cold: our wedding will be in the evening, and we’re hoping for good weather so we can spend as much time as possible outside in the garden."
     },
     {
       "question": "How do I get there?",
-      "answer": "You will find directions to the villa below. If you have questions or need help planning your journey, just write to us!"
+      "answer": "You’ll find all the directions to the villa below. If you have any questions or need a hand planning your journey, just write to us!"
     },
     {
       "question": "Can I bring my dog?",
-      "answer": "Sorry, Akamaru will be the only four-legged guest at the wedding. Please leave your furry friends at home."
+      "answer": "Sorry, Akamaru will be the only four-legged guest at the wedding. Please leave your furry friend at home."
     },
     {
       "question": "What can I give you?",
-      "answer": "Actually, we would like to turn the question around: what can we give you for all the effort you will make to be here with us? So please don’t expect a wedding list, bank details or a box for envelopes. We have everything we need, thank you! We know that for some of you, being here means arranging a trip, taking time off and making sacrifices. The best gift you can give us is sharing this day with us. Don’t miss it!"
+      "answer": "Actually, we’d like to turn the question around: what can we give you for all the effort you’ll make to be here with us? Don’t expect a wedding gift list, bank details or a box for cash gifts. We know that for some of you, being here will mean planning a trip, taking time off work and making a few sacrifices. The best gift you can give us is sharing this day with us. Don’t miss it!"
     },
     {
       "question": "Where can I park?",
@@ -22,7 +22,12 @@
     },
     {
       "question": "Where can I stay overnight?",
-      "answer": "We do not know the area well enough to recommend accommodation yet. There are not many places around Tradate; write to us if you need a hand finding somewhere."
+      "answer": "If you’re looking for somewhere to stay, we can recommend a hotel with a special arrangement with the villa, {hotel}. Write to us if you’re interested!",
+      "link": {
+        "placeholder": "{hotel}",
+        "label": "Hotel delle Fiere ↗",
+        "url": "https://www.hoteldellefiere.com/"
+      }
     },
     {
       "question": "Can I feed Akamaru?",

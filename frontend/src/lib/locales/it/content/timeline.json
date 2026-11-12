@@ -13,22 +13,22 @@
     {
       "time": "17:00",
       "title": "Aperitivo",
-      "text": "La cerimonia è fatta, ora possiamo rilassarci! Ci aspetta un aperitivo con qualcosa da bere, qualcosa da mangiare e un po' di tempo per stare insieme."
+      "text": "La cerimonia è fatta, ora possiamo rilassarci! Ci aspetta un aperitivo con qualcosa da bere, qualcosa da mangiare e un bel po' di tempo per stare insieme."
     },
     {
-      "time": "19:00",
+      "time": "19:30",
       "title": "Cena",
-      "text": "Si passa a tavola! Godetevi la cena, perché la serata è ancora lunga!"
+      "text": "Si passa a tavola! Godetevi la cena, perché la serata è ancora lunga."
     },
     {
-      "time": "21:00",
+      "time": "22:00",
       "title": "Taglio della torta",
-      "text": "Il momento della torta, delle foto di rito e di qualcosa di buono prima di tornare ai festeggiamenti."
+      "text": "Il momento della torta e di qualcosa di buono prima di tornare alle nostre chiacchiere!"
     },
     {
-      "time": "22:00 - 00:00",
-      "title": "Dopo cena e saluti",
-      "text": "Liquori, cioccolato e qualche ultima chiacchiera per concludere la serata e salutarci."
+      "time": "00:00",
+      "title": "Saluti",
+      "text": "La serata si concluderà con i nostri più sentiti ringraziamenti, e potrete finalmente andare a dormire."
     }
   ]
 }
