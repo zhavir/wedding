@@ -35,7 +35,7 @@ def guest_view(invite: Invitation) -> dict[str, object]:
 
 @router.post("/session")
 async def login(body: Login, db: DB, response: Response, request: Request):
-    await throttle(db, request, "login", 60, 60)
+    await throttle(db, request, "login", 10, 60)
     submitted = body.code.strip()
     link = await db.get(InvitationLink, digest(submitted))
     invite = await db.get(Invitation, link.invitation_id) if link else None

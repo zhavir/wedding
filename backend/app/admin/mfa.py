@@ -11,7 +11,7 @@ import qrcode
 from sqladmin import BaseView, expose
 from starlette.responses import HTMLResponse, RedirectResponse
 
-from app.admin.auth import authenticated_session, failed_attempt
+from app.admin.auth import authenticated_session, failed_attempt, throttle_admin
 from app.db.models import AdminUser
 from app.db.session import sessions
 from app.services.totp import authenticator, consume_code
@@ -24,6 +24,8 @@ class MfaView(BaseView):
     @expose("/mfa", methods=["GET", "POST"])
     async def mfa(self, request):
         async with sessions()() as db:
+            if request.method == "POST" and (response := await throttle_admin(db, request)):
+                return response
             user = await db.get(AdminUser, request.session.get("mfa_user", ""))
             if not user or user.totp_enabled or user.locked_until > time.time():
                 return RedirectResponse(request.url_for("admin:login"), status_code=303)

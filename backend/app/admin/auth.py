@@ -6,13 +6,15 @@ import hmac
 import secrets
 import time
 
+from fastapi import HTTPException
 from sqladmin.authentication import AuthenticationBackend
 from sqlalchemy import update
 from starlette.requests import Request
-from starlette.responses import RedirectResponse
+from starlette.responses import HTMLResponse, RedirectResponse
 
 from app.db.models import AdminUser
 from app.db.session import sessions
+from app.services.access import throttle
 from app.services.totp import consume_code, new_secret
 
 
@@ -48,19 +50,32 @@ def authenticated_session(request: Request, user: AdminUser) -> None:
     request.session.update(user_id=user.username, version=user.version, mfa_authenticated=True)
 
 
+async def throttle_admin(db, request: Request) -> HTMLResponse | None:
+    try:
+        await throttle(db, request, "admin-login", 10, 60)
+    except HTTPException as exc:
+        # SQLAdmin's exception template drops exception headers, including Retry-After.
+        return HTMLResponse(exc.detail, status_code=exc.status_code, headers=exc.headers)
+    return None
+
+
 class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request):
-        form = await request.form()
-        username = str(form.get("username", "")).strip().lower()
-        password = str(form.get("password", ""))
-        code = str(form.get("otp", "")).strip()
-        if len(username) > 100 or len(password) > 1024:
-            return False
         async with sessions()() as db:
+            if response := await throttle_admin(db, request):
+                return response
+            form = await request.form()
+            username = str(form.get("username", "")).strip().lower()
+            password = str(form.get("password", ""))
+            code = str(form.get("otp", "")).strip()
+            if len(username) > 100 or len(password) > 1024:
+                return False
             user = await db.get(AdminUser, username)
+            if user and (not user.active or user.locked_until > int(time.time())):
+                return False
             encoded = user.password_hash if user else "scrypt$" + "00" * 16 + "$" + "00" * 64
             valid = await asyncio.to_thread(verify_password, password, encoded)
-            if not user or not user.active or user.locked_until > int(time.time()):
+            if not user:
                 return False
             if not valid:
                 await failed_attempt(db, user)

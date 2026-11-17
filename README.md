@@ -73,6 +73,8 @@ The landing page links to **`/gallery#upload`**; the gallery and photo uploader 
 
 **Lost your code?** sends a replacement only to an email address already registered on an active guest invitation. The response does not reveal whether an address is registered. A replacement must first be used within 15 minutes. Using it replaces the old code and email link; merely requesting one leaves the existing invitation usable. Requests are rate limited, with a five-minute cooldown per invitation. Existing signed-in devices stay signed in.
 
+Invitation sign-in accepts at most 10 submissions per client address in each fixed one-minute window. Administrator sign-in and MFA enrollment share a separate limit of 10 submissions per address per minute, including unknown usernames. Excess requests return HTTP 429 with `Retry-After`. These counters are stored in the database and survive cleared cookies and application restarts. Administrator accounts additionally lock for 15 minutes after five failed password or authenticator checks. Successful and unsuccessful submissions both count toward the per-address limits; users sharing an address share that budget. Production client-address attribution depends on the trusted proxy configuration.
+
 ## Private photos and sessions
 
 Guest email links establish an HttpOnly session cookie. Browsers retain it for up to 400 days and authenticated requests renew it; a browser can still remove cookies. Revoking an invitation blocks its sessions. SQLAdmin uses a separate password login and eight-hour HttpOnly session cookie.

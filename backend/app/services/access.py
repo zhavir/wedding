@@ -81,5 +81,5 @@ async def throttle(db, request: Request, scope: str, limit: int, seconds: int):
         raise HTTPException(
             429,
             "Too many attempts. Please wait before trying again.",
-            headers={"Retry-After": str(seconds)},
+            headers={"Retry-After": str(max(1, (window + 1) * seconds - int(time.time())))},
         )
