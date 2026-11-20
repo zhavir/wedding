@@ -55,11 +55,7 @@ async def login(body: Login, db: DB, response: Response, request: Request):
         )
         invite = await db.get(Invitation, access.invitation_id) if access else None
         if access and invite and access.code_hash != code_hash(submitted):
-            if (
-                access.pending_expires <= int(time.time())
-                or not access.pending_code
-                or not access.pending_link
-            ):
+            if not access.pending_code or not access.pending_link:
                 invite = None
             elif invite.active:
                 # Promote replacements only after the recipient uses the delivered code/link.
@@ -72,7 +68,6 @@ async def login(body: Login, db: DB, response: Response, request: Request):
                 db.add(InvitationLink(token_hash=digest(token), invitation_id=invite.id))
                 access.pending_code_hash = access.pending_code = None
                 access.pending_link_hash = access.pending_link = None
-                access.pending_expires = 0
     if invite is None or not invite.active:
         raise HTTPException(401, "We couldn't find that invitation. Please check your code.")
     token = secrets.token_urlsafe(48)
@@ -115,7 +110,6 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
                 pending_code=cipher().encrypt(code.encode()).decode(),
                 pending_link_hash=digest(token),
                 pending_link=cipher().encrypt(token.encode()).decode(),
-                pending_expires=now + 900,
             )
             .returning(InvitationAccess.invitation_id)
         )
@@ -129,13 +123,6 @@ async def recover(body: RecoverInvitation, db: DB, request: Request):
             wedding=await content(invite.guest.language or "it", db),
         )
         message["subject"] = "Your replacement invitation / Il tuo nuovo invito"
-        message["text"] += (
-            "\nUse this replacement within 15 minutes. / Usa il nuovo codice entro 15 minuti."
-        )
-        message["html"] = message["html"].replace(
-            "</body>",
-            '<p style="text-align:center">Use within 15 minutes / Da usare entro 15 minuti</p></body>',
-        )
         # Failure does not invalidate the working invitation or disclose membership.
         with suppress(EmailRejected, EmailUncertain):
             await asyncio.to_thread(deliver_email, invite.guest.email, message)

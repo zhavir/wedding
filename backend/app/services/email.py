@@ -62,8 +62,9 @@ def render_email(
     }
 
 
-async def send_invitation(invitation_id: str) -> dict[str, str]:
-    # Commit before delivery so concurrent requests cannot send the same draft twice.
+async def send_invitation(invitation_id: str, *, resend: bool = False) -> dict[str, str]:
+    eligible_statuses = ("draft", "failed", "sent") if resend else ("draft", "failed")
+    # Claim the invitation before contacting the provider to prevent overlapping deliveries.
     async with sessions()() as db:
         claimed = await db.scalar(
             update(Invitation)
@@ -72,7 +73,7 @@ async def send_invitation(invitation_id: str) -> dict[str, str]:
                 Invitation.active.is_(True),
                 Invitation.guest.has(Guest.email != ""),
                 Invitation.is_admin.is_(False),
-                Invitation.email_status.in_(["draft", "failed"]),
+                Invitation.email_status.in_(eligible_statuses),
             )
             .values(email_status="sending", email_error=None)
             .returning(Invitation.id)

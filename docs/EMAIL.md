@@ -69,7 +69,7 @@ Complete these steps before deploying this change to the existing site. Keep the
 The persisted states below apply to invitations, RSVP confirmations and organiser notifications. Recovery requests keep their generic response even when delivery fails; they do not create a delivery-status record. Use Resend logs to investigate those sends.
 
 - Missing key or an HTTP 4xx rejection: persisted as `failed`. Check the configured key/domain/sender, recipient, account status and Resend logs. HTTP 429 means rate/quota limits: reduce the batch size and wait for capacity before an explicit retry. The app does not automatically retry rejected messages.
-- Timeout, connection error, HTTP 5xx or an invalid success response: persisted as `unknown`. Resend may already have accepted the email. Inspect its dashboard by recipient/time before deciding whether to resend. The app intentionally does not automatically retry uncertain sends. Invitations already marked `sent`, `sending` or `unknown` are not claimed again by normal invitation sending.
+- Timeout, connection error, HTTP 5xx or an invalid success response: persisted as `unknown`. Resend may already have accepted the email. Inspect its dashboard by recipient/time before deciding whether to resend. The app intentionally does not automatically retry uncertain sends. Invitations marked `sending` or `unknown` are skipped. To resend an invitation marked `sent`, select **Resend previously sent invitations** during admin review or pass `"resend": true` to the admin send API.
 - Interrupted processes may leave `sending` records; inspect provider history before operator recovery. Do not blindly reset delivery statuses or resend a whole batch.
 - To rotate a key: create a new domain-scoped sending key, set `ResendApiKey` with the same command, redeploy, verify a test delivery, then revoke the old key in Resend. Never revoke the active key before replacement is deployed.
 
@@ -108,7 +108,7 @@ Notifications are awaited by the API, not dispatched through an untracked backgr
 
 ## Inspecting delivery state
 
-Open the invitation detail page and inspect **email_error**. Rejections record a safe HTTP status, not the provider response body. Use the Resend dashboard for details; see the failure-handling section above. `skipped` means no email, an inactive invitation, or an invitation already sent/sending/uncertain.
+Open the invitation detail page and inspect **email_error**. Rejections record a safe HTTP status, not the provider response body. Use the Resend dashboard for details; see the failure-handling section above. `skipped` can mean a missing email address, an inactive invitation, an in-progress or uncertain delivery, or a previously sent invitation without the resend option.
 
 ## Witnesses and acceptance confirmations
 

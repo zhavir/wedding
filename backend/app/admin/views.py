@@ -352,11 +352,12 @@ class InvitationAdmin(InvitationNamesMixin, model=Invitation):
             or not 1 <= len(ids) <= 25
         ):
             raise HTTPException(403, "Review the invitations again before sending.")
+        resend = form.get("resend") == "yes"
         semaphore = asyncio.Semaphore(4)
 
         async def send(invitation_id):
             async with semaphore:
-                return await send_invitation(invitation_id)
+                return await send_invitation(invitation_id, resend=resend)
 
         results = await asyncio.gather(*(send(invitation_id) for invitation_id in ids))
         return await self.templates.TemplateResponse(

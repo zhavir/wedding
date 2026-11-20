@@ -93,6 +93,7 @@ class InvitationBatch(Model):
 
 class SendBatch(Model):
     ids: list[str] = Field(min_length=1, max_length=25)
+    resend: bool = False
 
 
 class RecoverInvitation(Model):

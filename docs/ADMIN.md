@@ -35,7 +35,7 @@ The menu contains **Guests**, **Invitations**, **Gallery**, and **Invitation Ema
 2. Select guests and choose **Create invitations**. Repeating this action reuses their existing invitations. Each guest has one personal invitation.
 3. In **Invitations**, select English/Italian, set reserved places, and keep **Active** enabled. Email is owned and edited in **Guests**, is unique and matched case-insensitively, and may be empty.
 4. Open details for the personal link, **Show personal link and short code**, **Preview invitation email**, or **Send invitation**.
-5. Select up to 25 invitations and choose **Send invitation**, then confirm the recipients. Inactive invitations are excluded; entries without an email and sent/sending/unknown deliveries are skipped. **Activate invitations** enables selected records without sending email.
+5. Select up to 25 invitations and choose **Send invitation**, then confirm the recipients. To send a successful delivery again, check **Resend previously sent invitations** on the review screen. The resend uses the current invitation link and code. Invitations must be active and have an email address. Deliveries in progress or with uncertain status are skipped. **Activate invitations** enables selected records without sending email.
 
 Filters cover answered/unanswered, accepted/declined, active/inactive, and email status. Attendance, dietary details, witness acceptance and the response message belong to the invitation. An unanswered invitation has no attendance value.
 
@@ -67,7 +67,7 @@ Docker browser tests provision an independent, random `browser-test-admin` accou
 
 Creating an invitation generates its private link and a short code. **Preview invitation email** shows both without sending anything. The email includes a separate gallery link; either link establishes the same guest session used for RSVP and uploads. Share these credentials only with the intended guest.
 
-Guests without a session can paste the short code on the RSVP form or `/gallery`. **Lost your code?** emails a replacement to the address saved on the guest. It never creates an invitation for an unknown address. Replacements expire after 15 minutes if unused, and replace the previous link/code only when redeemed. A replacement request has a five-minute cooldown; mail delivery failures do not invalidate the previous invitation.
+Guests without a session can paste the short code on the RSVP form or `/gallery`. **Lost your code?** emails a replacement to the address saved on the guest. It never creates an invitation for an unknown address. Invitation codes and links have no time limit. The first use of a replacement activates it and revokes the previous code and link. A replacement request has a five-minute cooldown. The current invitation remains usable if mail delivery fails.
 
 After updating the application, run `docker compose up --build -d --wait` so the initializer creates the invitation-access and login-throttle tables. Production migrations must also run before deploying this version. Deactivating an invitation blocks its codes, links and existing sessions.
 
@@ -75,7 +75,7 @@ After updating the application, run `docker compose up --build -d --wait` so the
 
 Every additional guest must supply a distinct valid email. The RSVP transaction creates their Guest and active Invitation, or reuses an existing invitation by email. Existing Guest audience changes to +1; witness/bride/groom roles remain intact. The child invitation links to its inviter. Draft/failed emails send automatically after commit, and the configured `RSVP_NOTIFICATION_EMAIL` recipient receives the RSVP notification. Repeated identical responses do not send duplicate notifications.
 
-Removing a +1 or declining the parent's attendance deactivates the linked invitation and revokes its sessions. Re-adding that email reactivates the same invitation and link; old revoked sessions remain revoked. Sent invitations are not sent again. Each invitation stores its own response. Confirmation emails with calendar attachments and durable notification delivery state remain internal.
+Removing a +1 or declining the parent's attendance deactivates the linked invitation and revokes its sessions. Re-adding that email reactivates the same invitation and link; old revoked sessions remain revoked. Reactivation sends email automatically only for draft or failed invitations. Each invitation stores its own response. Confirmation emails with calendar attachments and durable notification delivery state remain internal.
 
 ## Invitation Email Template
 
@@ -109,7 +109,7 @@ The legacy invitation-token administration API and `create-admin` token command 
 
 The first attendee is the invitation holder. Every additional attendee must have a distinct valid email address. Saving an accepted RSVP creates a separate invitation for each additional guest, in the holder's language, and sends their personal link and short code, including gallery/upload access. These invitations allow one attendee each. Admin invitation details show **Invited by** using the original holder's name.
 
-Changing an additional attendee's email, removing them, or declining the holder's RSVP deactivates the old additional invitation and revokes its sessions. An additional guest who declines their own invitation keeps access to revise the response. Re-adding a removed guest reactivates the same invitation and link; previously revoked sessions stay revoked. An already sent invitation is not sent again. Existing email matches reuse the guest and invitation; an ordinary guest becomes audience +1. Existing uploaded media is retained for moderation. Unchanged RSVP retries do not create duplicate invitations or send duplicate emails. Failed email deliveries remain visible and can be resent from Invitations.
+Changing an additional attendee's email, removing them, or declining the holder's RSVP deactivates the old additional invitation and revokes its sessions. An additional guest who declines their own invitation keeps access to revise the response. Re-adding a removed guest reactivates the same invitation and link; previously revoked sessions stay revoked. Existing email matches reuse the guest and invitation; an ordinary guest becomes audience +1. Existing uploaded media is retained for moderation. Unchanged RSVP retries do not create duplicate invitations or send duplicate emails. Failed email deliveries remain visible and can be resent from Invitations.
 
 ## Faster media moderation
 

@@ -227,12 +227,20 @@ def test_generate_preview_send_and_revoke(client, aws):
         == "skipped"
     )
     assert mail.send_email.call_count == 1
+    original_email = mail.send_email.call_args.kwargs
+    resend = client.post("/api/admin/invitations/send", json={**payload, "resend": True})
+    assert resend.json()["results"][0]["status"] == "sent"
+    assert mail.send_email.call_count == 2
+    assert mail.send_email.call_args.kwargs == original_email
     code = invitation["link"].split("#invite=")[1]
     guest_cookie = (
         client.post("/api/session", json={"code": code}).headers["set-cookie"].split(";")[0]
     )
     login(client, "ADMIN-CODE-123")
     client.post(f"/api/admin/invitations/{invitation['id']}/revoke")
+    revoked = client.post("/api/admin/invitations/send", json={**payload, "resend": True})
+    assert revoked.json()["results"][0]["status"] == "skipped"
+    assert mail.send_email.call_count == 2
     assert client.get("/api/session", headers={"cookie": guest_cookie}).status_code == 401
 
 
@@ -463,9 +471,15 @@ def test_sqladmin_create_review_send_and_replay(client, aws):
     assert mail.send_email.call_count == 1
     assert client.post(action_url, data={"csrf": token}).status_code == 403
     review = client.get(f"/api/admin/invitation/action/send-invitations?pks={invite.id}")
+    assert "Resend previously sent invitations" in review.text
     token = extract(r'name="csrf" value="([^"]+)"', review.text)
     client.post(action_url, data={"csrf": token})
     assert mail.send_email.call_count == 1
+    review = client.get(f"/api/admin/invitation/action/send-invitations?pks={invite.id}")
+    token = extract(r'name="csrf" value="([^"]+)"', review.text)
+    result = client.post(action_url, data={"csrf": token, "resend": "yes"})
+    assert result.status_code == 200 and f"{invite.id}: sent" in result.text
+    assert mail.send_email.call_count == 2
 
 
 def test_sqladmin_rejects_cross_origin_and_password_reset_invalidates_session(client):
@@ -627,21 +641,30 @@ def test_recovery_is_private_throttled_and_rotates_only_after_use(client, aws):
     assert login(client, replacement).status_code == 200
 
 
-def test_recovery_link_and_expired_replacement(client, aws):
+@pytest.mark.parametrize(
+    "pattern",
+    [r"#invite=([A-Za-z0-9_-]+)", r"Codice invito: ([A-Z2-9]{5}-[A-Z2-9]{5})"],
+    ids=["link", "code"],
+)
+def test_recovery_ignores_legacy_expiration(client, aws, pattern):
     import re
 
     from app.db.models import InvitationAccess
     from sqlalchemy import select
 
     _, mail = aws
-    original = invitation_code(client)
-    client.post("/api/session/recover", json={"email": "guest@example.com"})
-    content = mail.send_email.call_args.kwargs["Message"]["Body"]["Text"]["Data"]
-    match = re.search(r"#invite=([A-Za-z0-9_-]+)", content)
+    response = client.post("/api/session/recover", json={"email": "guest@example.com"})
+    assert response.status_code == 202
+    email_body = mail.send_email.call_args.kwargs["Message"]["Body"]
+    content = email_body["Text"]["Data"]
+    for part in ("Text", "Html"):
+        assert "15 minutes" not in email_body[part]["Data"]
+        assert "15 minuti" not in email_body[part]["Data"]
+    match = re.search(pattern, content)
     assert match is not None
     replacement = match.group(1)
 
-    async def expire():
+    async def set_legacy_expiration():
         async with sessions()() as db:
             row = await db.scalar(
                 select(InvitationAccess).where(InvitationAccess.pending_link_hash.is_not(None))
@@ -650,9 +673,8 @@ def test_recovery_link_and_expired_replacement(client, aws):
             row.pending_expires = 1
             await db.commit()
 
-    client.portal.call(expire)
-    assert client.post("/api/session", json={"code": replacement}).status_code == 401
-    assert login(client, original).status_code == 200
+    client.portal.call(set_legacy_expiration)
+    assert login(client, replacement).status_code == 200
 
 
 def test_recovery_does_not_send_for_admin_and_is_rate_limited(client, aws):

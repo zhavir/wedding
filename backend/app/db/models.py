@@ -143,6 +143,7 @@ class InvitationAccess(Base):
     pending_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     pending_link_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     pending_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Retain the legacy column for compatibility with existing databases.
     pending_expires: Mapped[int] = mapped_column(Integer, default=0)
 
 

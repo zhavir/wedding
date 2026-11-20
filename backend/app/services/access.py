@@ -50,7 +50,6 @@ async def ensure_access(db, invitation_id: str) -> InvitationAccess:
             code_hash=code_hash(code),
             encrypted_code=cipher().encrypt(code.encode()).decode(),
             recovery_at=0,
-            pending_expires=0,
         )
         db.add(access)
         await db.flush()

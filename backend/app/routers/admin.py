@@ -54,7 +54,7 @@ async def bulk_send(body: SendBatch, admin: Admin):
 
     async def send_one(invitation_id: str):
         async with semaphore:
-            return await send_invitation(invitation_id)
+            return await send_invitation(invitation_id, resend=body.resend)
 
     return {"results": await asyncio.gather(*(send_one(i) for i in dict.fromkeys(body.ids)))}
 
