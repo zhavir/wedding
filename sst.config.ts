@@ -50,11 +50,15 @@ export default $config({
         },
       );
       const existingRecords = existingZone
-        ? (await aws.route53.getRecords({ zoneId: existingZone.zoneId })).resourceRecordSets
+        ? (await aws.route53.getRecords({ zoneId: existingZone.zoneId }))
+            .resourceRecordSets
         : [];
       function dnsRecord(
         id: string,
-        args: aws.route53.RecordArgs & { name: $util.Input<string>; type: string },
+        args: aws.route53.RecordArgs & {
+          name: $util.Input<string>;
+          type: string;
+        },
       ) {
         return $output(args.name).apply((name) => {
           const normalized = name.replace(/\.$/, "").toLowerCase();
@@ -63,7 +67,10 @@ export default $config({
               record.name.replace(/\.$/, "").toLowerCase() === normalized &&
               record.type === args.type,
           );
-          if (matches.length > 1 || matches.some((record) => record.setIdentifier)) {
+          if (
+            matches.length > 1 ||
+            matches.some((record) => record.setIdentifier)
+          ) {
             throw new Error(
               `Cannot adopt routed DNS record for ${id}. Reconcile its state explicitly.`,
             );
@@ -79,14 +86,15 @@ export default $config({
       const resendRsend = new sst.Secret("ResendRsend");
       const resendSend = new sst.Secret("ResendSend");
       const resendLinks = new sst.Secret("ResendLinks");
-      const resendReceivingMx = new sst.Secret("ResendReceivingMx");
       // Route 53 requires all apex MX destinations in a single record set.
       const improvMxPrimaryMx = new sst.Secret("ImprovMxPrimaryMx");
       const improvMxSecondaryMx = new sst.Secret("ImprovMxSecondaryMx");
       const improvMxSpf = new sst.Secret("ImprovMxSpf");
       const validateMx = (value: string) => {
         if (
-          !/^(?:[0-9]{1,5}) (?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?$/i.test(value) ||
+          !/^(?:[0-9]{1,5}) (?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?$/i.test(
+            value,
+          ) ||
           Number(value.split(" ", 1)[0]) > 65535 ||
           value.trim() !== value ||
           value.length > 260
@@ -105,7 +113,6 @@ export default $config({
         type: "MX",
         ttl: 300,
         records: [
-          resendReceivingMx.value.apply(validateMx),
           improvMxPrimaryMx.value.apply(validateMx),
           improvMxSecondaryMx.value.apply(validateMx),
         ],
@@ -169,30 +176,27 @@ export default $config({
         ["ResendSendRecord", "send", resendSend],
         ["ResendLinksRecord", "links", resendLinks],
       ] as const) {
-        dnsRecord(
-          id,
-          {
-            zoneId: zone.zoneId,
-            name: `${name}.${domain}`,
-            type: "CNAME",
-            ttl: 300,
-            records: [
-              secret.value.apply((value) => {
-                if (
-                  !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?$/i.test(
-                    value,
-                  ) ||
-                  value.length > 254
-                ) {
-                  throw new Error(
-                    "Resend CNAME secrets must contain a DNS hostname only.",
-                  );
-                }
-                return value;
-              }),
-            ],
-          },
-        );
+        dnsRecord(id, {
+          zoneId: zone.zoneId,
+          name: `${name}.${domain}`,
+          type: "CNAME",
+          ttl: 300,
+          records: [
+            secret.value.apply((value) => {
+              if (
+                !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\.?$/i.test(
+                  value,
+                ) ||
+                value.length > 254
+              ) {
+                throw new Error(
+                  "Resend CNAME secrets must contain a DNS hostname only.",
+                );
+              }
+              return value;
+            }),
+          ],
+        });
       }
       // Legacy SES DNS resources stay managed to avoid destructive changes to the
       // existing protected DNS stage. Production delivery uses Resend exclusively.
@@ -239,14 +243,18 @@ export default $config({
       );
     }
     if (!existingZone) {
-      throw new Error("No public hosted zone matches SITE_DOMAIN. Run setup-dns first.");
+      throw new Error(
+        "No public hosted zone matches SITE_DOMAIN. Run setup-dns first.",
+      );
     }
     const zone = existingZone;
     const docker = await import("@pulumi/docker-build");
     const path = await import("node:path");
     const emailFrom = process.env.EMAIL_FROM;
     if (!emailFrom || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(emailFrom)) {
-      throw new Error("Set EMAIL_FROM to an address on a Resend-verified domain.");
+      throw new Error(
+        "Set EMAIL_FROM to an address on a Resend-verified domain.",
+      );
     }
     const resendApiKey = new sst.Secret("ResendApiKey");
     const encryptionKey = new sst.Secret("InviteEncryptionKey");
@@ -273,7 +281,9 @@ export default $config({
       },
     });
     // Public editorial images are intentionally separate from private guest uploads.
-    const landingImages = new sst.aws.Bucket("LandingImages", { access: "public" });
+    const landingImages = new sst.aws.Bucket("LandingImages", {
+      access: "public",
+    });
     const photos = new sst.aws.Bucket("Photos", {
       cors: false,
       transform: {

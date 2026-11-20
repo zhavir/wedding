@@ -11,7 +11,6 @@ npx sst secret set ResendDkim --stage production-dns
 npx sst secret set ResendRsend --stage production-dns
 npx sst secret set ResendSend --stage production-dns
 npx sst secret set ResendLinks --stage production-dns
-npx sst secret set ResendReceivingMx --stage production-dns
 
 # for forwarding the email https://app.improvmx.com/
 npx sst secret set ImprovMxPrimaryMx --stage production-dns
@@ -25,7 +24,6 @@ npx sst secret set ImprovMxSpf --stage production-dns
 | `ResendRsend` | `rsend` | CNAME |
 | `ResendSend` | `send` | CNAME |
 | `ResendLinks` | `links` | CNAME |
-| `ResendReceivingMx` | `@` (domain apex) | MX |
 | `ImprovMxPrimaryMx`, `ImprovMxSecondaryMx` | `@` (domain apex) | MX |
 | `ImprovMxSpf` | `@` (domain apex) | TXT |
 
