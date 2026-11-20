@@ -6,34 +6,37 @@
 
 declare module "sst" {
   export interface Resource {
-    "AdminPassword": {
+    "ImprovMxPrimaryMx": {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "Api": {
-      "type": "sst.aws.ApiGatewayV2"
-      "url": string
-    }
-    "Database": {
-      "endpoint": string
-      "region": string
-      "type": "sst.aws.Dsql"
-    }
-    "InviteEncryptionKey": {
+    "ImprovMxSecondaryMx": {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "Photos": {
-      "name": string
-      "type": "sst.aws.Bucket"
+    "ImprovMxSpf": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
-    "Router": {
-      "type": "sst.aws.Router"
-      "url": string
+    "ResendDkim": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
-    "Wedding": {
-      "type": "sst.aws.StaticSite"
-      "url": string
+    "ResendLinks": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "ResendReceivingMx": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "ResendRsend": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "ResendSend": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
   }
 }

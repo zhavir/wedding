@@ -4,35 +4,31 @@
 from typing import Any
 
 class Resource:
-    class AdminPassword:
-        type: str
-        value: str
-
-    class Api:
-        type: str
-        url: str
-
     class App:
         name: str
         stage: str
-
-    class Database:
-        endpoint: str
-        region: str
+    class ImprovMxPrimaryMx:
         type: str
-
-    class InviteEncryptionKey:
+        value: str
+    class ImprovMxSecondaryMx:
+        type: str
+        value: str
+    class ImprovMxSpf:
+        type: str
+        value: str
+    class ResendDkim:
+        type: str
+        value: str
+    class ResendLinks:
+        type: str
+        value: str
+    class ResendReceivingMx:
+        type: str
+        value: str
+    class ResendRsend:
+        type: str
+        value: str
+    class ResendSend:
         type: str
         value: str
 
-    class Photos:
-        name: str
-        type: str
-
-    class Router:
-        type: str
-        url: str
-
-    class Wedding:
-        type: str
-        url: str
