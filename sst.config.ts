@@ -78,8 +78,8 @@ export default $config({
       const resendDkim = new sst.Secret("ResendDkim");
       const resendRsend = new sst.Secret("ResendRsend");
       const resendSend = new sst.Secret("ResendSend");
-      // ImprovMX handles incoming mail; Resend remains the outbound provider.
-      // Route 53 requires both MX destinations in a single MX record set.
+      const resendReceivingMx = new sst.Secret("ResendReceivingMx");
+      // Route 53 requires all apex MX destinations in a single record set.
       const improvMxPrimaryMx = new sst.Secret("ImprovMxPrimaryMx");
       const improvMxSecondaryMx = new sst.Secret("ImprovMxSecondaryMx");
       const improvMxSpf = new sst.Secret("ImprovMxSpf");
@@ -91,7 +91,7 @@ export default $config({
           value.length > 260
         ) {
           throw new Error(
-            "ImprovMX MX secrets must contain priority and hostname, e.g. '10 mx1.improvmx.com'.",
+            "MX secrets must contain priority and hostname, e.g. '10 mx.example.net'.",
           );
         }
         return value;
@@ -104,6 +104,7 @@ export default $config({
         type: "MX",
         ttl: 300,
         records: [
+          resendReceivingMx.value.apply(validateMx),
           improvMxPrimaryMx.value.apply(validateMx),
           improvMxSecondaryMx.value.apply(validateMx),
         ],

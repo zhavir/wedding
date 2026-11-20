@@ -24,6 +24,8 @@ npx sst secret set ImprovMxSpf --stage production-dns
 | `ResendRsend` | `rsend` | CNAME |
 | `ResendSend` | `send` | CNAME |
 | `ResendReceivingMx` | `@` (domain apex) | MX |
+| `ImprovMxPrimaryMx`, `ImprovMxSecondaryMx` | `@` (domain apex) | MX |
+| `ImprovMxSpf` | `@` (domain apex) | TXT |
 
 Paste the raw, single-line DKIM value without surrounding quotes, and the exact target hostname for each CNAME. SST splits long DKIM values into DNS strings automatically. Route 53 uses a TTL of 300 seconds for all four records (there is no `Auto` TTL setting).
 
@@ -33,9 +35,9 @@ Run **Release to AWS → setup-dns** after setting or rotating these secrets. Mi
 
 ## Receiving emails
 
-In Resend → Domains → your `SITE_DOMAIN`, enable receiving and copy the MX priority and hostname shown there. Set `ResendReceivingMx` to `<priority> <hostname>` (for example, `10 receive.example.net`; use your actual dashboard values). Run **Release AWS → setup-dns**, then click **I've added the record** in Resend and wait for the receiving record to become verified. The DNS stage creates this MX record at `SITE_DOMAIN`, with TTL 300.
+Copy the MX priority and hostname from your domain in Resend. Set `ResendReceivingMx` to `9 receive-euw1.forge.rmta.net` for `saraandreawedding.online`, then run **Release to AWS → setup-dns**. SST puts all three MX destinations in the same apex record set with a TTL of 300 seconds. Check the receiving status in Resend after DNS propagation.
 
-Before deploying, check whether the domain already has an MX record. An existing mailbox service must not share this receiving setup: competing MX records can divert mail. If an MX record already exists, resolve ownership or use a dedicated receiving subdomain before deploying. See [Resend custom receiving domains](https://resend.com/docs/dashboard/receiving/custom-domains).
+Mail servers prefer the lowest MX priority number. With Resend at 9 and ImprovMX at 10 and 20, incoming mail normally goes to Resend first, so existing ImprovMX forwarding may stop receiving messages. See [Resend custom receiving domains](https://resend.com/docs/dashboard/receiving/custom-domains#1-add-the-dns-record).
 
 Incoming emails will appear in Resend's Receiving dashboard. The MX record alone does **not** forward them to your personal inbox. That requires a receiving webhook and forwarding handler, which this app does not currently implement; see [Resend forwarding](https://resend.com/docs/dashboard/receiving/forward-emails).
 
@@ -45,7 +47,7 @@ Complete these steps before deploying this change to the existing site. Keep the
 
 1. **Create a Resend account/team.** Enable account MFA and review the account's sending limits/approval requirements in its dashboard. Choose a plan with enough capacity for invitations, recovery messages, confirmations and notifications. Do not assume domain verification alone removes account limits.
 2. **Add your sending domain in Resend → Domains.** To retain `wedding@example.com`, verify `example.com`. Alternatively verify a dedicated subdomain such as `mail.example.com` and use `wedding@mail.example.com`. The sender must match the verified domain. Use your own domain, not the development `resend.dev` sender. See [verified domains](https://resend.com/docs/dashboard/domains/introduction).
-3. **Publish the Resend records through SST.** Set the four DNS secrets described above, then run **Release to AWS → setup-dns**. The protected `production-dns` stage creates the DKIM TXT at `resend._domainkey`, CNAMEs at `rsend` and `send`, and the receiving MX at the domain apex in the existing public hosted zone for `SITE_DOMAIN`. Use the exact values from your Resend domain screen. After DNS propagation, return to Resend → Domains and verify the domain. Keep existing website/certificate records and the managed `_dmarc` policy. Resolve any existing mailbox MX configuration before enabling Resend receiving, as described above. See [verified domains](https://resend.com/docs/dashboard/domains/introduction).
+3. **Publish the Resend records through SST.** Set the DNS secrets described above, then run **Release to AWS → setup-dns**. The protected `production-dns` stage creates the DKIM TXT at `resend._domainkey`, CNAMEs at `rsend` and `send`, and the receiving MX at the domain apex in the existing public hosted zone for `SITE_DOMAIN`. Use the exact values from your Resend domain screen. After DNS propagation, return to Resend → Domains and verify the domain. Keep existing website/certificate records and the managed `_dmarc` policy. Resolve any existing mailbox MX configuration before enabling Resend receiving, as described above. See [verified domains](https://resend.com/docs/dashboard/domains/introduction).
 4. **Keep receiving mail working.** The DNS stage supports receiving into Resend, but this integration does not create personal-inbox forwarding. `EMAIL_FROM` also supplies the public contact address and email-template contact link. Choose a sender whose replies you can receive, or arrange mailbox forwarding separately. Leave open/click tracking disabled for invitation emails containing private sign-in links.
 5. **Create a dedicated API key** in Resend → API Keys with **Sending access**, restricted to the selected domain. Save it in your password manager. See [API key permissions](https://resend.com/docs/dashboard/api-keys/introduction).
 6. **Store the key in SST**, from an authorised operator terminal in this checkout, using the same AWS account/profile and `eu-central-1` region as production:

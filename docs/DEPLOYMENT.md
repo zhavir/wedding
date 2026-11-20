@@ -50,7 +50,7 @@ Follow [production updates and initial setup](PUBLISH.md) for registration, GitH
 
 Set `SITE_DOMAIN=example.com` in the GitHub `production` environment secrets. Both stages discover public zones matching that domain. `setup-dns` imports the single existing zone or creates one if none exists; the zone stays managed and protected on subsequent runs. Multiple matching zones block deployment. `deploy` requires the zone to exist and otherwise asks you to run `setup-dns` first. No hosted-zone ID setting is needed. See [duplicate-zone reconciliation](EMAIL.md#one-time-reconciliation-of-duplicate-hosted-zones) before migrating existing state.
 
-`EMAIL_FROM` must be on a Resend-verified domain. Set the three DNS-stage secrets and run `setup-dns`, then configure the SST `ResendApiKey` secret before deploying; follow the [production email migration checklist](EMAIL.md). `EMAIL_FROM` also supplies the contact address in backend email templates and the frontend footer (`PUBLIC_CONTACT_EMAIL`). Mailbox hosting/forwarding is separate. The DNS stage retains its legacy SES records to preserve existing managed resources, but neither the runtime nor bootstrap uses SES.
+`EMAIL_FROM` must be on a Resend-verified domain. Set the DNS-stage secrets and run `setup-dns`, then configure the SST `ResendApiKey` secret before deploying; follow the [production email migration checklist](EMAIL.md). `EMAIL_FROM` also supplies the contact address in backend email templates and the frontend footer (`PUBLIC_CONTACT_EMAIL`). Mailbox hosting/forwarding is separate. The DNS stage retains its legacy SES records to preserve existing managed resources, but neither the runtime nor bootstrap uses SES.
 
 ## Release
 

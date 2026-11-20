@@ -18,6 +18,7 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null, e
     ResendDkim: 'p=' + 'A'.repeat(400),
     ResendRsend: 'rsend.example.net',
     ResendSend: 'send.example.net.',
+    ResendReceivingMx: '9 receive-euw1.forge.rmta.net',
     ImprovMxPrimaryMx: '10 mx1.improvmx.com',
     ImprovMxSecondaryMx: '20 mx2.improvmx.com',
     ImprovMxSpf: 'v=spf1 include:spf.improvmx.com ~all',
@@ -77,7 +78,7 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null, e
   return { records, outputs, SecretOutput, zoneCalls, recordOptions };
 }
 
-test('DNS stage creates outbound Resend and inbound ImprovMX records and splits long DKIM values', async () => {
+test('DNS stage groups Resend and ImprovMX destinations in one apex MX record set and splits long DKIM values', async () => {
   const { records, outputs, SecretOutput } = await dns();
   for (const [id, name, type] of [
     ['ResendDkimRecord', 'resend._domainkey', 'TXT'],
@@ -101,10 +102,11 @@ test('DNS stage creates outbound Resend and inbound ImprovMX records and splits 
   assert.equal(mx.name, 'example.com');
   assert.equal(mx.type, 'MX');
   assert.equal(mx.ttl, 300);
-  assert.ok(mx.records[0] instanceof SecretOutput);
+  assert.ok(mx.records.every((record) => record instanceof SecretOutput));
   assert.deepEqual(Array.from(mx.records, record => record.value), [
-    '10 mx1.improvmx.com', '20 mx2.improvmx.com',
+    '9 receive-euw1.forge.rmta.net', '10 mx1.improvmx.com', '20 mx2.improvmx.com',
   ]);
+  assert.equal([...records.values()].filter((record) => record.name === mx.name && record.type === 'MX').length, 1);
   assert.equal(records.get('ImprovMxSpfRecord').records[0].value, 'v=spf1 include:spf.improvmx.com ~all');
   assert.ok(!JSON.stringify(outputs).includes('Resend'));
   assert.ok(records.has('EmailVerification') && records.has('EmailDmarc'));
@@ -120,6 +122,7 @@ test('missing or malformed DNS values fail without echoing their contents', asyn
     { ResendDkim: undefined }, { ResendDkim: '' },
     { ResendDkim: 'private-value\n' }, { ResendDkim: '"private-value"' },
     { ResendRsend: 'https://private-value.example' }, { ResendSend: '' },
+    { ResendReceivingMx: undefined }, { ResendReceivingMx: 'receive.private-value.example' },
     { ImprovMxPrimaryMx: undefined }, { ImprovMxPrimaryMx: '' },
     { ImprovMxPrimaryMx: 'receive.private-value.example' },
     { ImprovMxPrimaryMx: '65536 receive.private-value.example' },

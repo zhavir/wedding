@@ -102,7 +102,7 @@ The first push can run repository-setup workflows, which is why `GH_TOKEN` and `
 
 ## 5. Create DNS with SST, then delegate the domain
 
-Before running `setup-dns`, add the domain in Resend and set `ResendDkim`, `ResendRsend`, `ResendSend` and `ResendReceivingMx` in SST stage `production-dns`, using the interactive commands in [email setup](EMAIL.md#dns-values-stored-as-aws-backed-sst-secrets).
+Before running `setup-dns`, add the domain in Resend and set the Resend and ImprovMX DNS secrets in SST stage `production-dns`, using the interactive commands in [email setup](EMAIL.md#dns-values-stored-as-aws-backed-sst-secrets).
 
 1. Open **Actions → Release to AWS → Run workflow**. Choose branch `main`, operation `setup-dns`, and enter `deploy` in the approval field. Approve any configured environment review.
 2. This runs checks, then deploys the protected SST stage `production-dns`. It imports the single public zone matching `SITE_DOMAIN`, or creates one if none exists, and creates the secret-backed Resend DKIM TXT and `rsend`/`send` CNAME records, the receiving MX record, and the retained SES identity/verification/DKIM and monitoring-mode DMARC resources. It does not create the application or wait for DNS verification.
