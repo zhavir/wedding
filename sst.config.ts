@@ -78,6 +78,7 @@ export default $config({
       const resendDkim = new sst.Secret("ResendDkim");
       const resendRsend = new sst.Secret("ResendRsend");
       const resendSend = new sst.Secret("ResendSend");
+      const resendLinks = new sst.Secret("ResendLinks");
       const resendReceivingMx = new sst.Secret("ResendReceivingMx");
       // Route 53 requires all apex MX destinations in a single record set.
       const improvMxPrimaryMx = new sst.Secret("ImprovMxPrimaryMx");
@@ -163,12 +164,13 @@ export default $config({
           }),
         ],
       });
-      for (const [name, secret] of [
-        ["rsend", resendRsend],
-        ["send", resendSend],
+      for (const [id, name, secret] of [
+        ["ResendRsendRecord", "rsend", resendRsend],
+        ["ResendSendRecord", "send", resendSend],
+        ["ResendLinksRecord", "links", resendLinks],
       ] as const) {
         dnsRecord(
-          name === "rsend" ? "ResendRsendRecord" : "ResendSendRecord",
+          id,
           {
             zoneId: zone.zoneId,
             name: `${name}.${domain}`,

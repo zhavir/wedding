@@ -18,6 +18,7 @@ async function dns(overrides = {}, zones = [existingZone], lookupError = null, e
     ResendDkim: 'p=' + 'A'.repeat(400),
     ResendRsend: 'rsend.example.net',
     ResendSend: 'send.example.net.',
+    ResendLinks: 'links.example.net',
     ResendReceivingMx: '9 receive-euw1.forge.rmta.net',
     ImprovMxPrimaryMx: '10 mx1.improvmx.com',
     ImprovMxSecondaryMx: '20 mx2.improvmx.com',
@@ -84,6 +85,7 @@ test('DNS stage groups Resend and ImprovMX destinations in one apex MX record se
     ['ResendDkimRecord', 'resend._domainkey', 'TXT'],
     ['ResendRsendRecord', 'rsend', 'CNAME'],
     ['ResendSendRecord', 'send', 'CNAME'],
+    ['ResendLinksRecord', 'links', 'CNAME'],
   ]) {
     const record = records.get(id);
     assert.equal(record.zoneId, 'Z123');
@@ -97,6 +99,7 @@ test('DNS stage groups Resend and ImprovMX destinations in one apex MX record se
   assert.equal(chunks.join(''), 'p=' + 'A'.repeat(400));
   assert.equal(records.get('ResendRsendRecord').records[0].value, 'rsend.example.net');
   assert.equal(records.get('ResendSendRecord').records[0].value, 'send.example.net.');
+  assert.equal(records.get('ResendLinksRecord').records[0].value, 'links.example.net');
   const mx = records.get('ResendReceivingMxRecord');
   assert.equal(mx.zoneId, 'Z123');
   assert.equal(mx.name, 'example.com');
@@ -122,6 +125,7 @@ test('missing or malformed DNS values fail without echoing their contents', asyn
     { ResendDkim: undefined }, { ResendDkim: '' },
     { ResendDkim: 'private-value\n' }, { ResendDkim: '"private-value"' },
     { ResendRsend: 'https://private-value.example' }, { ResendSend: '' },
+    { ResendLinks: undefined }, { ResendLinks: 'https://private-value.example/path' },
     { ResendReceivingMx: undefined }, { ResendReceivingMx: 'receive.private-value.example' },
     { ImprovMxPrimaryMx: undefined }, { ImprovMxPrimaryMx: '' },
     { ImprovMxPrimaryMx: 'receive.private-value.example' },
@@ -191,9 +195,11 @@ test('adopts existing SES and DMARC records without overwriting their values', a
 test('adopts Resend records after a partially successful deployment', async () => {
   const { recordOptions } = await dns({}, [existingZone], null, [
     { name: 'resend._domainkey.example.com.', type: 'TXT' },
+    { name: 'links.example.com.', type: 'CNAME' },
     { name: 'example.com.', type: 'MX' },
   ]);
   assert.equal(recordOptions.get('ResendDkimRecord').import, 'Z123_resend._domainkey.example.com_TXT');
+  assert.equal(recordOptions.get('ResendLinksRecord').import, 'Z123_links.example.com_CNAME');
   assert.equal(recordOptions.get('ResendReceivingMxRecord').import, 'Z123_example.com_MX');
 });
 
