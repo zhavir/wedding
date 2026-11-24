@@ -40,10 +40,22 @@ def video_preview(data: bytes | str, content_type: str, metadata: dict | None = 
         )
         info = json.loads(probe.stdout)
         streams = [stream for stream in info["streams"] if stream.get("codec_type") == "video"]
-        names = set(info["format"]["format_name"].split(","))
-        expected = {"webm", "matroska"} if content_type == "video/webm" else {"mov", "mp4"}
-        duration = float(info["format"].get("duration", 0))
-        if not streams or not names & expected or not math.isfinite(duration) or duration <= 0:
+        container = info["format"]
+        names = set(container["format_name"].split(","))
+        duration = float(container.get("duration", 0))
+        if names & {"mov", "mp4"}:
+            brand = container.get("tags", {}).get("major_brand", "").strip().lower()
+            if brand:
+                detected_type = "video/quicktime" if brand == "qt" else "video/mp4"
+            else:
+                detected_type = (
+                    "video/quicktime" if content_type == "video/quicktime" else "video/mp4"
+                )
+        elif names & {"webm", "matroska"}:
+            detected_type = "video/webm"
+        else:
+            raise ValueError("Video must be a valid MP4, MOV or WebM file.")
+        if not streams or not math.isfinite(duration) or duration <= 0:
             raise ValueError("Video must be a valid MP4, MOV or WebM file.")
         if int(streams[0].get("width", 0)) * int(streams[0].get("height", 0)) > 35_000_000:
             raise ValueError("Video resolution is too large.")
@@ -53,6 +65,7 @@ def video_preview(data: bytes | str, content_type: str, metadata: dict | None = 
                 height=int(streams[0]["height"]),
                 duration_ms=round(duration * 1000),
                 codec=streams[0].get("codec_name", "")[:40],
+                content_type=detected_type,
             )
         image = subprocess.run(
             [

@@ -178,19 +178,23 @@
     if (current + 1 >= photos.length && hasMore) await load();
     if (viewIndex === current && current + 1 < photos.length) viewIndex = current + 1;
   }
+  const mediaTypes: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    heic: 'image/heic',
+    heif: 'image/heif',
+    mov: 'video/quicktime',
+    mp4: 'video/mp4',
+    m4v: 'video/mp4',
+    webm: 'video/webm'
+  };
+  const allowedMediaTypes = new Set(Object.values(mediaTypes));
   function mediaType(file: File): string {
-    const extensions: Record<string, string> = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      webp: 'image/webp',
-      heic: 'image/heic',
-      heif: 'image/heif',
-      mov: 'video/quicktime',
-      mp4: 'video/mp4',
-      webm: 'video/webm'
-    };
-    return file.type || extensions[file.name.split('.').pop()?.toLowerCase() || ''] || '';
+    if (allowedMediaTypes.has(file.type)) return file.type;
+    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+    return Object.hasOwn(mediaTypes, extension) ? mediaTypes[extension] : '';
   }
   async function upload() {
     if (!files?.length || uploading) return;
@@ -218,24 +222,10 @@
           .filter((file) => !used.includes(file))
           .map((file) => ({ file, motion: undefined }))
       );
-      const allowed = [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/heic',
-        'image/heif',
-        'video/mp4',
-        'video/quicktime',
-        'video/webm'
-      ];
       for (const file of selected) {
         const type = mediaType(file);
-        if (
-          !allowed.includes(type) ||
-          !file.size ||
-          (type.startsWith('image/') && file.size > 25 * 1024 * 1024)
-        )
-          throw new Error(t('Choose supported images up to 25 MB or videos.'));
+        if (!allowedMediaTypes.has(type) || !file.size)
+          throw new Error(t('Choose a supported photo or video.'));
       }
       type UploadTarget = {
         url?: string;
@@ -352,7 +342,7 @@
         bind:this={input}
         id="photos"
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm,.heic,.heif,.mov"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm,.heic,.heif,.mov,.m4v"
         multiple
         required
         bind:files
@@ -372,6 +362,8 @@
               {:else}<img
                   src={preview.url}
                   alt={preview.file.name}
+                  loading="lazy"
+                  decoding="async"
                   onerror={() => (preview.failed = true)}
                 />{/if}
               <button

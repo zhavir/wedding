@@ -1,4 +1,4 @@
-"""Direct S3 multipart transfers without proxying video bytes through FastAPI."""
+"""Direct S3 multipart transfers without proxying upload bytes through FastAPI."""
 
 import math
 
@@ -8,9 +8,9 @@ from fastapi import HTTPException
 from app.core.config import settings
 from app.schemas import FinishUpload
 from app.services.aws import s3
-from app.services.photos import media_key
+from app.services.photos import MULTIPART_THRESHOLD, media_key
 
-PART_SIZE = 64 * 1024**2
+PART_SIZE = MULTIPART_THRESHOLD
 
 
 def part_size(size: int) -> int:

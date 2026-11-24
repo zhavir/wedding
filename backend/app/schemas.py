@@ -70,8 +70,6 @@ class Upload(Model):
 
     @model_validator(mode="after")
     def validate_media(self):
-        if self.content_type.startswith("image/") and self.size > 25 * 1024 * 1024:
-            raise ValueError("Images must be at most 25 MB.")
         if bool(self.motion_size) != bool(self.motion_content_type) or (
             self.motion_size and self.content_type.startswith("video/")
         ):

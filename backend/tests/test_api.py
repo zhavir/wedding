@@ -10,6 +10,7 @@ from app.main import app
 from app.manage import migrate
 from app.schemas import InvitationCreate
 from app.services.invitations import create_invitation
+from botocore.exceptions import ClientError
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -308,9 +309,63 @@ def test_original_bytes_and_preview(client, aws):
     assert client.get("/api/photos").json()["items"] == []
 
 
-@pytest.mark.parametrize(
-    "kind,size", [("image/svg+xml", 10), ("image/jpeg", 0), ("image/png", 26 * 1024 * 1024)]
-)
+def test_large_photo_upload_after_previous_invitation_allowance(client, aws):
+    from app.db.models import Invitation, Photo
+
+    storage, _ = aws
+    login(client)
+    owner = client.get("/api/session").json()["id"]
+
+    async def set_previous_upload_count():
+        async with sessions()() as db:
+            invitation = await db.get(Invitation, owner)
+            assert invitation is not None
+            invitation.uploads = 100
+            await db.commit()
+
+    client.portal.call(set_previous_upload_count)
+    original = io.BytesIO()
+    width, height = 11_000, 9_500
+    Image.effect_noise((width, height), 100).save(original, "JPEG", quality=96)
+    size = original.tell()
+    original.seek(0)
+    assert size > 64 * 1024**2
+    storage.create_multipart_upload.return_value = {"UploadId": "test-multipart"}
+    response = client.post(
+        "/api/photos/upload",
+        json={"filename": "panorama.jpg", "content_type": "image/jpeg", "size": size},
+    )
+    assert response.status_code == 200
+    upload = response.json()
+    assert upload["upload"]["multipart"] is True
+    storage.get_object.return_value = {
+        "ContentLength": size,
+        "ETag": '"original-etag"',
+        "Body": original,
+    }
+    storage.head_object.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
+    part_size = upload["upload"]["part_size"]
+    parts = [{"number": n, "etag": f'"part-{n}"'} for n in range(1, (size - 1) // part_size + 2)]
+    response = client.post(f"/api/photos/{upload['id']}/complete", json={"parts": parts})
+    assert response.status_code == 200
+    assert original.closed
+    storage.complete_multipart_upload.assert_called_once()
+    assert storage.copy.call_args.args[2].endswith("-panorama.jpg")
+    assert storage.copy.call_args.kwargs["ExtraArgs"]["CopySourceIfMatch"] == '"original-etag"'
+    storage.put_object.assert_called_once()
+    with Image.open(io.BytesIO(storage.put_object.call_args.kwargs["Body"])) as preview:
+        assert preview.format == "WEBP" and max(preview.size) <= 1200
+
+    async def check_dimensions():
+        async with sessions()() as db:
+            photo = await db.get(Photo, upload["id"])
+            assert photo is not None and photo.status == "complete"
+            assert (photo.width, photo.height, photo.size) == (width, height, size)
+
+    client.portal.call(check_dimensions)
+
+
+@pytest.mark.parametrize("kind,size", [("image/svg+xml", 10), ("image/jpeg", 0)])
 def test_invalid_upload(client, aws, kind, size):
     login(client)
     assert (
@@ -342,6 +397,25 @@ def test_invalid_image_not_gallery_visible(client, aws):
     storage.get_object.return_value = {"ContentLength": 5, "Body": io.BytesIO(b"hello")}
     assert client.post(f"/api/photos/{photo['id']}/complete").status_code == 422
     storage.put_object.assert_not_called()
+
+
+def test_photo_upload_uses_verified_type_instead_of_filename(client, aws):
+    storage, _ = aws
+    login(client)
+    original = io.BytesIO()
+    Image.new("RGB", (20, 10)).save(original, "PNG")
+    data = original.getvalue()
+    original.seek(0)
+    response = client.post(
+        "/api/photos/upload",
+        json={"filename": "camera.jpg", "content_type": "image/jpeg", "size": len(data)},
+    )
+    assert response.status_code == 200
+    storage.get_object.return_value = {"ContentLength": len(data), "Body": original}
+    assert client.post(f"/api/photos/{response.json()['id']}/complete").status_code == 200
+    stored = storage.put_object.call_args_list[0].kwargs
+    assert stored["ContentType"] == "image/png"
+    assert stored["Body"] == data
 
 
 def admin_login(client):
@@ -980,12 +1054,12 @@ def test_video_and_live_photo_originals_are_private(client, aws, tmp_path, paire
     login(client)
     payload = {
         "filename": "memory",
-        "content_type": "image/jpeg" if paired else "video/mp4",
+        "content_type": "image/jpeg" if paired else "video/webm",
         "size": len(original),
         "consent": True,
     }
     if paired:
-        payload.update(motion_size=len(video), motion_content_type="video/mp4")
+        payload.update(motion_size=len(video), motion_content_type="video/quicktime")
     result = client.post("/api/photos/upload", json=payload)
     assert result.status_code == 200
     upload = result.json()
@@ -1002,6 +1076,9 @@ def test_video_and_live_photo_originals_are_private(client, aws, tmp_path, paire
     )
     if paired:
         assert stored[f"originals/guests/Guest/{upload['id']}-motion-memory.mp4"] == video
+    assert (
+        storage.put_object.call_args_list[-1 if paired else 0].kwargs["ContentType"] == "video/mp4"
+    )
     with Image.open(io.BytesIO(stored[f"previews/guests/Guest/{upload['id']}.webp"])) as preview:
         assert preview.format == "WEBP"
     assert client.get("/api/photos").json()["items"] == []

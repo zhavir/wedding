@@ -131,7 +131,10 @@ test('explicit pagination, load all and viewer navigation across pages', async (
 
 test('gallery accepts a mixed image and video batch', async ({ page }) => {
   await page.goto('/gallery#invite=DEMO-LOVE-2027');
-  await page.getByLabel('Choose photos and videos').setInputFiles([memoryImage, { name: 'memory.mp4', mimeType: 'video/mp4', buffer: readFileSync('tests/browser/memory.mp4') }]);
+  await page.getByLabel('Choose photos and videos').setInputFiles([
+    { ...memoryImage, name: 'camera.jpg', mimeType: 'application/octet-stream' },
+    { name: 'memory.webm', mimeType: 'video/webm', buffer: readFileSync('tests/browser/memory.mp4') },
+  ]);
   const completions: string[] = [];
   page.on('request', request => {
     if (/\/api\/photos\/[^/]+\/complete$/.test(request.url())) completions.push(request.url());

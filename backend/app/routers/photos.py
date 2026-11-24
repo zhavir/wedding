@@ -3,7 +3,7 @@ import time
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import exists, or_, select, update
+from sqlalchemy import exists, or_, select
 
 from app.core.config import settings
 from app.core.security import DB, Guest
@@ -22,18 +22,6 @@ async def begin_upload(body: Upload, invite: Guest, db: DB):
         body.content_type.startswith("video/") or not body.motion_content_type
     ):
         raise HTTPException(422, "A Live Photo needs one still image and its paired video.")
-    if body.content_type.startswith("image/") and body.size > settings().max_upload_bytes:
-        raise HTTPException(413, "This photo is too large.")
-    updated = await db.scalar(
-        update(Invitation)
-        .where(Invitation.id == invite.id, Invitation.uploads < settings().max_uploads_per_invite)
-        .values(uploads=Invitation.uploads + 1)
-        .returning(Invitation.id)
-    )
-    if not updated:
-        raise HTTPException(
-            429, "Your invitation's upload allowance is full. Please contact the couple."
-        )
     photo = Photo(
         id=uuid.uuid7().hex,
         owner=invite.id,

@@ -18,8 +18,6 @@ class Settings(BaseSettings):
     allowed_origins: str = ""
     cookie_secure: bool = True
     session_days: int = Field(default=400, ge=1, le=400)
-    max_upload_bytes: int = 25 * 1024 * 1024
-    max_uploads_per_invite: int = 100
     rsvp_notification_email: EmailStr | None = None
     email_provider: Literal["resend", "ses-local"] = "resend"
     resend_api_key: SecretStr | None = None
